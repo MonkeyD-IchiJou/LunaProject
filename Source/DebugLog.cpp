@@ -1,5 +1,4 @@
 #include "DebugLog.h"
-#include <iostream>
 
 namespace luna
 {
