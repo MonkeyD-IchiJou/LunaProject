@@ -1,28 +1,32 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "platform.h"
-#include "QueueFamilyIndices.h"
+#include "VulkanRenderer.h"
 #include <mutex>
-#include <vector>
-#include <string>
 
 namespace luna
 {
-	/* Init vulkan api, rendering tools */
-	class Renderer
+	class VulkanSwapchain;
+	class BaseFBO;
+	class BasicShader;
+
+	class Renderer :
+		public VulkanRenderer
 	{
 	public:
-		inline VkInstance GetVulkanInstance() const { return m_vulkan_instance; }
-		inline VkDevice GetLogicalDevice() const { return m_logicaldevice; }
-		inline VkPhysicalDevice GetGPU() const { return m_gpu; }
-		inline VkQueue GetGraphicQueue() const { return m_graphic_queue; }
-		inline const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_queuefamily_index; }
-		inline const VkPhysicalDeviceProperties& GetGPUProperties() const { return m_gpu_properties; }
-		inline const VkPhysicalDeviceMemoryProperties& GetGPUMemoryProperties() const { return m_gpu_memProperties; }
+		Renderer();
+		virtual ~Renderer();
 
-		const uint32_t findMemoryType(const uint32_t& typeFilter, const VkMemoryPropertyFlags& properties) const;
-		const VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling& tiling, const VkFormatFeatureFlags& features) const;
+		/* create swapchain, shaders, fbo, renderpass */
+		void CreateResources() override;
+
+		/* delete swap chain, fbo, shaders and renderpass*/
+		void CleanUpResources() override;
+
+
+		void dummy_rendersetup();
+		void dummy_render();
+
 
 	public:
 		/* Singleton class implementation */
@@ -43,64 +47,24 @@ namespace luna
 		}
 
 		/* Warning Once destroyed, forever destroy */
-		inline void Destroy() { DeInit_(); }
+		inline void Destroy() { CleanUpResources(); DeInit_(); }
 
 	private:
-		Renderer();
-		~Renderer() {};
-
-		void SetUpInstanceLayersAndExtension_();
-		void SetUpVulkanDebug_();
-
-		void InitVulkanInstance_();
-		void InitVulkanDebug_();
-
-		void SetUpLogicalDevice_();
-		void InitLogicalDevice_();
-
-		void DeInit_();
+		/* render pass to tell the fbo how to use the image views for presenting and rendering */
+		void InitFinalRenderPass_();
 
 	private:
-		VkInstance m_vulkan_instance = VK_NULL_HANDLE;
-		VkDebugReportCallbackEXT m_debugreport = VK_NULL_HANDLE;
+		VulkanSwapchain* m_swapchain = nullptr;
+		std::vector<BaseFBO*> m_fbos;
+		BasicShader* m_shader = nullptr;
+		VkRenderPass m_renderpass = VK_NULL_HANDLE;
 
-		VkPhysicalDevice m_gpu = VK_NULL_HANDLE;
-		VkPhysicalDeviceProperties m_gpu_properties = {};
-		VkPhysicalDeviceFeatures m_gpu_features = {};
-		VkPhysicalDeviceMemoryProperties m_gpu_memProperties = {};
-		VkPhysicalDeviceFeatures m_required_features = {}; /* features that is required for the app */
+		VkCommandPool m_commandPool = VK_NULL_HANDLE;
+		std::vector<VkCommandBuffer> m_commandbuffers;
 
-		VkDevice m_logicaldevice = VK_NULL_HANDLE;
-		VkQueue m_graphic_queue = VK_NULL_HANDLE;
+		VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
+		VkSemaphore m_renderFinishSemaphore = VK_NULL_HANDLE;
 
-		std::vector<const char*> m_instance_exts;
-		std::vector<const char*> m_instance_layers;
-		std::vector<const char*> m_device_exts;
-		VkDebugReportCallbackCreateInfoEXT m_debuginfo{};
-
-		// queue for submitting later for rendering and display
-		QueueFamilyIndices m_queuefamily_index{};
-
-		struct PhysicalDevice
-		{
-			uint32_t TotalNumOfGPUs = 0;
-			std::vector<VkPhysicalDevice> GPUs;
-			std::vector<VkPhysicalDeviceProperties> GPUs_Properties;
-			std::vector<VkPhysicalDeviceMemoryProperties> GPUs_MemoryProperties;
-			std::vector<VkPhysicalDeviceFeatures> GPUs_DeviceFeatures;
-
-			void Init(const VkInstance& instance);
-
-			inline uint32_t getTotalNumOfGPUs() const { return TotalNumOfGPUs; }
-			inline VkPhysicalDevice getGPU(const uint32_t &whichOne) const { return GPUs[whichOne]; }
-			inline VkPhysicalDeviceProperties getGPUProperties(const uint32_t &whichOne) const { return GPUs_Properties[whichOne]; }
-			inline VkPhysicalDeviceMemoryProperties	getGPUMemoryProperties(const uint32_t &whichOne) const { return GPUs_MemoryProperties[whichOne]; }
-			inline VkPhysicalDeviceFeatures getGPUDeviceFeatures(const uint32_t &whichOne) const { return GPUs_DeviceFeatures[whichOne]; }
-
-			QueueFamilyIndices findQueueFamilies(const uint32_t& whichOne);
-
-		} m_physicaldevices;
-		
 		static std::once_flag m_sflag;
 		static Renderer* m_instance;
 	};

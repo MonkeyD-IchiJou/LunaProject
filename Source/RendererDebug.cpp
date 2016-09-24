@@ -5,7 +5,7 @@
 
 namespace luna
 {
-	void Renderer::SetUpInstanceLayersAndExtension_()
+	void VulkanRenderer::SetUpInstanceLayersAndExtension_()
 	{
 #if _DEBUG
 		/* just print out the number of extension available for the instance only */
@@ -71,7 +71,7 @@ namespace luna
 		return false;
 	}
 
-	void Renderer::SetUpVulkanDebug_()
+	void VulkanRenderer::SetUpVulkanDebug_()
 	{
 		// For reference
 		// Instance layers
@@ -105,7 +105,7 @@ namespace luna
 		m_instance_exts.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
 
-	void Renderer::InitVulkanDebug_()
+	void VulkanRenderer::InitVulkanDebug_()
 	{
 		PFN_vkCreateDebugReportCallbackEXT fvkCreateDebugReportCallbackEXT = 
 			(PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_vulkan_instance, "vkCreateDebugReportCallbackEXT");
@@ -120,11 +120,11 @@ namespace luna
 
 #else
 
-	void Renderer::SetUpVulkanDebug_()
+	void VulkanRenderer::SetUpVulkanDebug_()
 	{
 	}
 
-	void Renderer::InitVulkanDebug_()
+	void VulkanRenderer::InitVulkanDebug_()
 	{
 	}
 

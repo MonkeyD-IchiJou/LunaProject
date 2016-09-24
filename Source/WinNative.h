@@ -8,7 +8,7 @@
 
 namespace luna
 {
-	class Renderer;
+	class VulkanRenderer;
 
 	// multiplatform window, singleton
 	class WinNative
@@ -17,15 +17,16 @@ namespace luna
 		// Update the os window, its input and etc
 		void UpdateOSWin();
 
-		inline auto getSurfaceSizeX() const { return m_surface_size_x; }
-		inline auto getSurfaceSizeY() const { return m_surface_size_y; }
+		inline auto getWinSizeX() const { return m_win_size_x; }
+		inline auto getWinSizeY() const { return m_win_size_y; }
 		inline auto getWinPosX() const { return m_win_pos_x; }
 		inline auto getWinPosY() const { return m_win_pos_y; }
 		inline auto getName() const { return m_win_name; }
 		inline bool isClose() const { return m_close; }
-		
-		auto setSurfaceSizeX(const uint32_t& val);
-		auto setSurfaceSizeY(const uint32_t& val);
+		inline auto getSurface() const { return m_surface; }
+
+		auto setWinSizeX(const uint32_t& val);
+		auto setWinSizeY(const uint32_t& val);
 		auto setWinPosX(const uint32_t& val);
 		auto setWinPosY(const uint32_t& val);
 		auto setName(const std::string& name);
@@ -34,15 +35,6 @@ namespace luna
 		auto getWin32_Instance() const { return m_win32_instance; }
 		auto getHWND() const { return m_win32_handle; }
 #endif // VK_USE_PLATFORM_WIN32_KHR
-
-		inline auto getSurface() const { return m_surface; }
-		inline const auto& getSurfaceCapabilities() const { return m_surface_capabilities; }
-		inline const auto& getSurfaceFormats() const { return m_surface_formats; }
-
-		inline auto getSwapChain() const { return m_swapchain; }
-		inline const auto& getSwapChainExtent() const { return m_swapchain_extent; }
-		inline const auto& getSwapChainImageCount() const { return m_swapchain_image_count; }
-		inline const auto& getSwapChainImageViews() const { return m_swapchain_images_views; }
 
 		// close the window 
 		inline void close() { m_close = true; }
@@ -66,7 +58,9 @@ namespace luna
 		}
 
 		/* Warning Once destroyed, forever destroy */
-		inline void Destroy() { DeInitSwapChain_(); DeInitOSWindowSurface_(); DeInitOSWindow_(); }
+		inline void Destroy() { 
+			DeInitWindowSurface_();  DeInitOSWindow_();
+		}
 
 	private:
 		WinNative();
@@ -75,37 +69,22 @@ namespace luna
 		/* platform specific: init the os window */
 		void InitOSWindow_();
 
-		/* platform specific: de init and destroy the os window */
-		void DeInitOSWindow_();
+		/* platform specific: init the os surface */
+		void InitOSWindowSurface_();
 
 		/* platform specific: init the os window */
 		void UpdateOSWindow_();
 
-		/* platform specific: init the os window surface for vulkan to draw graphics */
-		void InitOSWindowSurface_();
+		/* platform specific: de init and destroy the os window */
+		void DeInitOSWindow_();
 
-		/* Get all the information from the drawing surface */
-		void QuerySurfaceInfo_();
-
-		/* Swap chain created with the help of surface info */
-		void InitSwapChain_();
-
-		/* get the images created by swap chain */
-		void InitSwapChainImages_();
-
-		/* create the image views for the image (handle) */
-		void InitSwapChainImageViews_();
-
-		/* deinit the surface */
-		void DeInitOSWindowSurface_();
-
-		/* deinit the swap chain, images will be deleted along with it */
-		void DeInitSwapChain_();
-
+		/* deinit the window surface */
+		void DeInitWindowSurface_();
+		
 	private:
 
-		uint32_t m_surface_size_x = 0;
-		uint32_t m_surface_size_y = 0;
+		uint32_t m_win_size_x = 0;
+		uint32_t m_win_size_y = 0;
 		uint32_t m_win_pos_x = 0;
 		uint32_t m_win_pos_y = 0;
 		std::string	m_win_name = " ";
@@ -116,22 +95,8 @@ namespace luna
 		HWND m_win32_handle = NULL;
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
-		/* window surface and its images */
 		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-		VkSurfaceCapabilitiesKHR m_surface_capabilities = {};
-		VkSurfaceFormatKHR m_surface_formats = {};
-		std::vector<VkPresentModeKHR> m_presentmode_list;
-
-		/* window surface swapchain */
-		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
-		VkExtent2D m_swapchain_extent = {};
-		uint32_t m_swapchain_image_count = 2;
-
-		/* images object in the swap chain */
-		std::vector<VkImage> m_swapchain_images;
-		std::vector<VkImageView> m_swapchain_images_views;
-
-		const Renderer* renderer_handle = nullptr;
+		VkInstance m_vulkanInstance = VK_NULL_HANDLE;
 
 		static std::once_flag m_sflag;
 		static WinNative* m_instance;

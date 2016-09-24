@@ -92,18 +92,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BaseFBO.cpp" />
+    <ClCompile Include="BasicShader.cpp" />
     <ClCompile Include="DebugLog.cpp" />
+    <ClCompile Include="FixedPipelineCreationInfo.cpp" />
+    <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
+    <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="Vertex.cpp" />
+    <ClCompile Include="VulkanSwapchain.cpp" />
     <ClCompile Include="Win32.cpp" />
     <ClCompile Include="WinNative.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BaseFBO.h" />
+    <ClInclude Include="BasicShader.h" />
     <ClInclude Include="DebugLog.h" />
+    <ClInclude Include="FixedPipelineCreationInfo.h" />
+    <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="VulkanRenderer.h" />
+    <ClInclude Include="ShaderProgram.h" />
+    <ClInclude Include="Vertex.h" />
+    <ClInclude Include="vk_glm.h" />
+    <ClInclude Include="VulkanSwapchain.h" />
     <ClInclude Include="WinNative.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

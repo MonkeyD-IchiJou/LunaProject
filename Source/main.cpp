@@ -1,21 +1,35 @@
-#include "WinNative.h"
 #include "DebugLog.h"
 #include "Renderer.h"
+#include "WinNative.h"
+#include "VulkanSwapchain.h"
+#include "BaseFBO.h"
+#include "BasicShader.h"
 
 /* all the game code is here */
 static void luna_main()
 {
-	/* INIT EARLIER */
+	/* INIT EARLIER FROM HERE */
 	// auto init vulkan when first getinstance
 	luna::Renderer* renderer = luna::Renderer::getInstance();
-
-	// auto create the window when first getinstance
+	
+	// auto create the window and its surface when first getinstance
 	luna::WinNative* window = luna::WinNative::getInstance();
+
+	// create necessary resources
+	renderer->CreateResources();
+
+	/* TILL HERE */
+	renderer->dummy_rendersetup();
+
+	renderer->dummy_render();
+
 
 	// update the window and its input
 	window->UpdateOSWin();
 
+
 	/* Major Clean Up*/
+	renderer->CleanUpResources();
 	window->Destroy();
 	renderer->Destroy();
 }

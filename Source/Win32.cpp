@@ -10,7 +10,7 @@ namespace luna
 
 	void WinNative::InitOSWindow_()
 	{
-		if (m_surface_size_x <= 0 || m_surface_size_y <= 0)
+		if (m_win_size_x <= 0 || m_win_size_y <= 0)
 		{
 			DebugLog::throwEx("window size is undefined");
 		}
@@ -42,7 +42,7 @@ namespace luna
 		DWORD style = WS_OVERLAPPEDWINDOW;
 
 		// Create window with the registered class:
-		RECT wr = { 0, 0, LONG(m_surface_size_x), LONG(m_surface_size_y) };
+		RECT wr = { 0, 0, LONG(m_win_size_x), LONG(m_win_size_y) };
 		AdjustWindowRectEx(&wr, style, FALSE, ex_style);
 
 		m_win32_handle = CreateWindowEx(
@@ -166,14 +166,14 @@ namespace luna
 		createInfo.hinstance = m_win32_instance;
 		createInfo.hwnd	= m_win32_handle;
 
-		vkCreateWin32SurfaceKHR(renderer_handle->GetVulkanInstance(), &createInfo, nullptr, &m_surface);
+		vkCreateWin32SurfaceKHR(m_vulkanInstance, &createInfo, nullptr, &m_surface);
 	}
 
-	auto WinNative::setSurfaceSizeX(const uint32_t & val)
+	auto WinNative::setWinSizeX(const uint32_t & val)
 	{
 	}
 
-	auto WinNative::setSurfaceSizeY(const uint32_t & val)
+	auto WinNative::setWinSizeY(const uint32_t & val)
 	{
 	}
 
