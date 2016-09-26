@@ -5,8 +5,14 @@
 #include "VulkanSwapchain.h"
 #include "BaseFBO.h"
 #include "BasicShader.h"
-
 #include "WinNative.h"
+#include "ResourceManager.h"
+#include "Model.h"
+
+#include "BasicUBO.h"
+
+#define GLM_FORCE_RADIANS
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace luna
 {
@@ -24,6 +30,11 @@ namespace luna
 
 	void Renderer::CreateResources()
 	{
+		// all the resources will be init 
+		ResourceManager* resource = ResourceManager::getInstance();
+		m_quad = resource->Models[eMODELS::QUAD_MODEL];
+		m_ubo = resource->UBO;
+
 		if (m_swapchain == nullptr)
 		{
 			uint32_t width = WinNative::getInstance()->getWinSizeX();
@@ -36,14 +47,14 @@ namespace luna
 			// create the render pass with the info from swap chain images
 			InitFinalRenderPass_();
 
-			// create framebuffer
+			// create framebuffer for each swapchain images
 			m_fbos.resize(m_swapchain->getImageCount());
-			for (auto &fbo : m_fbos)
+			for (int i = 0; i < m_fbos.size(); i++)
 			{
-				fbo = new BaseFBO();
-				fbo->AddColorAttachment(m_swapchain->m_buffers[0].imageview, m_swapchain->getColorFormat());
-				fbo->AddRenderPass(m_renderpass);
-				fbo->Init({width, height});
+				m_fbos[i] = new BaseFBO();
+				m_fbos[i]->AddColorAttachment(m_swapchain->m_buffers[i].imageview, m_swapchain->getColorFormat());
+				m_fbos[i]->AddRenderPass(m_renderpass);
+				m_fbos[i]->Init({width, height});
 			}
 
 			// shader 
@@ -109,6 +120,8 @@ namespace luna
 		{
 			vkDeviceWaitIdle(m_logicaldevice);
 		}
+
+		ResourceManager::getInstance()->Destroy();
 		
 		if (m_imageAvailableSemaphore != VK_NULL_HANDLE)
 		{
@@ -160,11 +173,12 @@ namespace luna
 		}
 	}
 
-	void Renderer::dummy_rendersetup()
+	void Renderer::RenderSetup()
 	{
 		/* create the command pool first */
 		VkCommandPoolCreateInfo commandPool_createinfo{};
 		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
 
 		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
@@ -228,10 +242,13 @@ namespace luna
 			// bind the fbo
 			m_fbos[i]->Bind(m_commandbuffers[i]);
 
-			// bind the shader
+			// bind the shader pipeline stuff
 			m_shader->Bind(m_commandbuffers[i]);
 
-			// Drawing start 
+			// Drawing start
+			m_quad->Draw(m_commandbuffers[i]);
+			ResourceManager::getInstance()->Models[eMODELS::BUNNY_MODEL]->Draw(m_commandbuffers[i]);
+			//ResourceManager::getInstance()->Models[eMODELS::TYRA_MODEL]->Draw(m_commandbuffers[i]);
 
 			// unbind the fbo
 			m_fbos[i]->UnBind(m_commandbuffers[i]);
@@ -240,7 +257,6 @@ namespace luna
 			DebugLog::EC(vkEndCommandBuffer(m_commandbuffers[i]));
 		}
 
-
 		VkSemaphoreCreateInfo semaphore_createInfo{};
 		semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -248,8 +264,19 @@ namespace luna
 		DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderFinishSemaphore));
 	}
 
-	void Renderer::dummy_render()
+	void Renderer::Render()
 	{
+		static auto startTime = std::chrono::high_resolution_clock::now();
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
+
+		UBOData data{};
+		data.model = glm::rotate(glm::mat4(), time * glm::radians(10.f), glm::vec3(0.f, 1.f, 0.f));
+		data.view = glm::lookAt(glm::vec3(0.f, 1.f, 8.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+		data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
+		m_ubo->Update(data);
+
+
 		VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		uint32_t imageindex = 0;
 		m_swapchain->AcquireNextImage(m_imageAvailableSemaphore, &imageindex);

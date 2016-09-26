@@ -146,7 +146,7 @@ namespace luna
 		// always waiting for inputs to occur
 
 		MSG msg{};
-		while (GetMessage(&msg, m_win32_handle, 0, 0))
+		while (PeekMessage(&msg, m_win32_handle, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);

@@ -1,5 +1,6 @@
 #include "FixedPipelineCreationInfo.h"
 #include "Vertex.h"
+#include "WinNative.h"
 
 namespace luna
 {
@@ -34,13 +35,13 @@ namespace luna
 
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = 0.0f;
-		viewport.height	= 0.0f;
+		viewport.width = (float)WinNative::getInstance()->getWinSizeX();
+		viewport.height	= (float)WinNative::getInstance()->getWinSizeY();
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		scissor.offset = { 0, 0 };
-		scissor.extent = {};
+		scissor.extent = {WinNative::getInstance()->getWinSizeX(), WinNative::getInstance()->getWinSizeY()};
 
 		viewportState.sType	= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.viewportCount	= 1;
@@ -57,8 +58,8 @@ namespace luna
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizer.cullMode	= VK_CULL_MODE_BACK_BIT;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.cullMode	= VK_CULL_MODE_NONE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional

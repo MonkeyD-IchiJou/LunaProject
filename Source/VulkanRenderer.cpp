@@ -129,6 +129,10 @@ namespace luna
 
 			DebugLog::print("\n");
 		}
+
+		// only in debug mode we can see the line
+		m_required_features.fillModeNonSolid = VK_TRUE;
+
 #endif // BUILD_ENABLE_VULKAN_DEBUG
 
 		// swap chain extension support 

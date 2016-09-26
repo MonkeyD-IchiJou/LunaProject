@@ -94,15 +94,19 @@
   <ItemGroup>
     <ClCompile Include="BaseFBO.cpp" />
     <ClCompile Include="BasicShader.cpp" />
+    <ClCompile Include="BasicUBO.cpp" />
     <ClCompile Include="DebugLog.cpp" />
     <ClCompile Include="FixedPipelineCreationInfo.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="BasicMesh.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="VulkanBufferObject.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
-    <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="VulkanSwapchain.cpp" />
     <ClCompile Include="Win32.cpp" />
     <ClCompile Include="WinNative.cpp" />
@@ -110,12 +114,19 @@
   <ItemGroup>
     <ClInclude Include="BaseFBO.h" />
     <ClInclude Include="BasicShader.h" />
+    <ClInclude Include="BasicUBO.h" />
     <ClInclude Include="DebugLog.h" />
     <ClInclude Include="FixedPipelineCreationInfo.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="BasicMesh.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="UBOData.h" />
+    <ClInclude Include="VulkanBufferData.h" />
+    <ClInclude Include="VulkanBufferObject.h" />
     <ClInclude Include="VulkanRenderer.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Vertex.h" />

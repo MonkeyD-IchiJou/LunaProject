@@ -10,9 +10,9 @@ namespace luna
 { 
 	struct Vertex
 	{
-		glm::vec3 pos{};
-		glm::vec3 normal{};
-		glm::vec2 texCoord{};
+		glm::vec3 pos;
+		glm::vec3 normal;
+		glm::vec2 texCoord;
 
 		static inline VkVertexInputBindingDescription getBindingDescription()
 		{
@@ -50,9 +50,6 @@ namespace luna
 		{
 			return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
 		}
-
-		Vertex();
-		~Vertex();
 	};
 }
 

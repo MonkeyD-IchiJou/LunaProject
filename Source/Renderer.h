@@ -9,6 +9,8 @@ namespace luna
 	class VulkanSwapchain;
 	class BaseFBO;
 	class BasicShader;
+	class Model;
+	class BasicUBO;
 
 	class Renderer :
 		public VulkanRenderer
@@ -24,8 +26,8 @@ namespace luna
 		void CleanUpResources() override;
 
 
-		void dummy_rendersetup();
-		void dummy_render();
+		void RenderSetup();
+		void Render();
 
 
 	public:
@@ -64,6 +66,10 @@ namespace luna
 
 		VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
 		VkSemaphore m_renderFinishSemaphore = VK_NULL_HANDLE;
+
+		/* a quad mesh to render */
+		Model* m_quad = nullptr;
+		BasicUBO* m_ubo = nullptr;
 
 		static std::once_flag m_sflag;
 		static Renderer* m_instance;
