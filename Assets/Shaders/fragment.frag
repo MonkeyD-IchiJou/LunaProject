@@ -7,6 +7,6 @@ layout(location = 0) in vec2 fragTexCoord;
 
 void main()
 {
-	outColor = vec4(0.25, 0.5, 0.8, 1.0);
+	outColor = vec4(fragTexCoord, 1.0, 1.0);
 
 }
