@@ -8,7 +8,9 @@
 namespace luna
 {
 	class Model;
+	class Texture2D;
 	class BasicUBO;
+
 
 	enum eMODELS
 	{
@@ -16,19 +18,34 @@ namespace luna
 		BOXES_MODEL = 1,
 		BUNNY_MODEL = 2,
 		TYRA_MODEL = 3,
+		CHALET_MODEL = 4,
 		MAX_MODELS
+	};
+
+	enum eTEXTURES
+	{
+		CHALET_TEXTURE = 0,
+		DEFAULT_TEXTURE,
+		BASIC_TEXTURE,
+		HILL_TEXTURE,
+		MAX_TEXTURE
+	};
+
+	enum eIMAGESAMPLING
+	{
+		BASIC_SAMPLER = 0,
+		MAX_SAMPLERS
 	};
 
 	/* all the mesh and texture resources are here */
 	class ResourceManager
 	{
 	public:
-		ResourceManager();
-		~ResourceManager();
-
 		/* all the basic mesh resources is here */
 		std::vector<Model*> Models;
-		BasicUBO* UBO;
+		std::vector<Texture2D*> Textures;
+		std::vector<VkSampler> ImageSamplers;
+		BasicUBO* UBO = nullptr;
 
 	public:
 		/* Singleton class implementation */
@@ -57,6 +74,10 @@ namespace luna
 		void StagingBufferInit_();
 		void DeviceBufferInit_();
 		void CopyBufferToDevice_();
+		void CreateAllSamplers_();
+
+		ResourceManager();
+		~ResourceManager() {};
 
 	private:
 		VkDevice m_logicaldevice = VK_NULL_HANDLE;

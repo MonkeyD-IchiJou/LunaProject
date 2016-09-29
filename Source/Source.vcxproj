@@ -93,6 +93,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BaseFBO.cpp" />
+    <ClCompile Include="BasicImage.cpp" />
     <ClCompile Include="BasicShader.cpp" />
     <ClCompile Include="BasicUBO.cpp" />
     <ClCompile Include="DebugLog.cpp" />
@@ -103,6 +104,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="VulkanBufferObject.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
@@ -113,6 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseFBO.h" />
+    <ClInclude Include="BasicImage.h" />
     <ClInclude Include="BasicShader.h" />
     <ClInclude Include="BasicUBO.h" />
     <ClInclude Include="DebugLog.h" />
@@ -124,6 +127,7 @@
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="Texture2D.h" />
     <ClInclude Include="UBOData.h" />
     <ClInclude Include="VulkanBufferData.h" />
     <ClInclude Include="VulkanBufferObject.h" />

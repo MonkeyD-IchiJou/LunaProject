@@ -8,6 +8,7 @@
 #include "WinNative.h"
 #include "ResourceManager.h"
 #include "Model.h"
+#include "Texture2D.h"
 
 #include "BasicUBO.h"
 
@@ -59,6 +60,8 @@ namespace luna
 
 			// shader 
 			m_shader = new BasicShader();
+			m_shader->SetUBO(resource->UBO);
+			m_shader->SetTexture(resource->Textures[eTEXTURES::CHALET_TEXTURE]->getImage());
 			m_shader->Init(m_renderpass);
 		}
 	}
@@ -176,12 +179,14 @@ namespace luna
 	void Renderer::RenderSetup()
 	{
 		/* create the command pool first */
-		VkCommandPoolCreateInfo commandPool_createinfo{};
-		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+		{
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
 
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+		}
 
 		// if the commandbuffers is not empty, free it
 		if (m_commandbuffers.size() > 0)
@@ -245,11 +250,17 @@ namespace luna
 			// bind the shader pipeline stuff
 			m_shader->Bind(m_commandbuffers[i]);
 
-			// Drawing start
-			m_quad->Draw(m_commandbuffers[i]);
-			ResourceManager::getInstance()->Models[eMODELS::BUNNY_MODEL]->Draw(m_commandbuffers[i]);
-			//ResourceManager::getInstance()->Models[eMODELS::TYRA_MODEL]->Draw(m_commandbuffers[i]);
+			// push the constant
+			m_shader->LoadModelMatrix(m_commandbuffers[i], glm::mat4());
+			m_shader->LoadColor(m_commandbuffers[i], glm::vec4(1.f, 1.f, 0.f, 1.f));
 
+			// Drawing start
+			ResourceManager::getInstance()->Models[eMODELS::BUNNY_MODEL]->Draw(m_commandbuffers[i]);
+			ResourceManager::getInstance()->Models[eMODELS::TYRA_MODEL]->Draw(m_commandbuffers[i]);
+			m_quad->Draw(m_commandbuffers[i]);
+			ResourceManager::getInstance()->Models[eMODELS::CHALET_MODEL]->Draw(m_commandbuffers[i]);
+			
+			
 			// unbind the fbo
 			m_fbos[i]->UnBind(m_commandbuffers[i]);
 
@@ -257,11 +268,13 @@ namespace luna
 			DebugLog::EC(vkEndCommandBuffer(m_commandbuffers[i]));
 		}
 
-		VkSemaphoreCreateInfo semaphore_createInfo{};
-		semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_imageAvailableSemaphore));
-		DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderFinishSemaphore));
+		// create semaphores for presetation and rendering synchronisation
+		{
+			VkSemaphoreCreateInfo semaphore_createInfo{};
+			semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_imageAvailableSemaphore));
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderFinishSemaphore));
+		}
 	}
 
 	void Renderer::Render()
@@ -271,8 +284,8 @@ namespace luna
 		float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
 
 		UBOData data{};
-		data.model = glm::rotate(glm::mat4(), time * glm::radians(10.f), glm::vec3(0.f, 1.f, 0.f));
-		data.view = glm::lookAt(glm::vec3(0.f, 1.f, 8.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+		data.model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0.f, 1.f, 0.f));
+		data.view = glm::lookAt(glm::vec3(0.f, 1.f, 3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
 		data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
 		m_ubo->Update(data);
 

@@ -5,6 +5,9 @@
 #include "Renderer.h"
 #include "BasicUBO.h"
 
+#include "Texture2D.h"
+#include "BasicImage.h"
+
 namespace luna
 {
 	std::once_flag ResourceManager::m_sflag{};
@@ -18,13 +21,22 @@ namespace luna
 		Init_();
 	}
 
-	ResourceManager::~ResourceManager()
-	{
-	}
-
 	void ResourceManager::Init_()
 	{
-		// ubo first
+		// image samplers create first 
+		CreateAllSamplers_();
+
+		/*********************************************************************************************************************************************/
+		/*-------------------------------------------------------------------------------------------------------------------------------------------*/
+		/*                                                         Allocated DEVICE MEMORY                                                           */
+		/*-------------------------------------------------------------------------------------------------------------------------------------------*/
+		/* [                                  DATA BUFFER                                  ] [      IMAGE BUFFER       ] [      IMAGE BUFFER       ] */
+		/*-------------------------------------------------------------------------------------------------------------------------------------------*/
+		/* { | UBO datas | Vertex Datas | Index Datas | Vertex Datas | Index Datas | PAD | } { | Image Datas | | PAD | } { | Image Datas | | PAD | } */
+		/*-------------------------------------------------------------------------------------------------------------------------------------------*/
+		/*********************************************************************************************************************************************/
+
+		// init ubos
 		UBO = new BasicUBO();
 
 		// init all the mesh
@@ -33,7 +45,14 @@ namespace luna
 		Models[eMODELS::BOXES_MODEL] = new Model("./../Assets/Models/boxes.lrl");
 		Models[eMODELS::BUNNY_MODEL] = new Model("./../Assets/Models/bunny.lrl");
 		Models[eMODELS::TYRA_MODEL] = new Model("./../Assets/Models/tyra.lrl");
-		
+		Models[eMODELS::CHALET_MODEL] = new Model("./../Assets/Models/chalet.lrl");
+
+		// init all images
+		Textures.resize(MAX_TEXTURE);
+		Textures[eTEXTURES::CHALET_TEXTURE] = new Texture2D("./../Assets/Textures/chalet.jpg", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
+		Textures[eTEXTURES::DEFAULT_TEXTURE] = new Texture2D("./../Assets/Textures/default.tga", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
+		Textures[eTEXTURES::BASIC_TEXTURE] = new Texture2D("./../Assets/Textures/texture.jpg", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
+		Textures[eTEXTURES::HILL_TEXTURE] = new Texture2D("./../Assets/Textures/hills.tga", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
 
 		// after retrieved all the models datas 
 		LoadToDevice_();
@@ -41,8 +60,9 @@ namespace luna
 
 	void ResourceManager::LoadToDevice_()
 	{
-		/* buffer creation based on all the resources sizes, then allocate the device memory to it */
+		/* staged buffer creation based on all the resources sizes, then allocate the device memory to it */
 		StagingBufferInit_();
+
 
 		/* map all the data to the staged device memory */
 		UBO->MapToDeviceMemory(m_devicememory_staged);
@@ -50,16 +70,33 @@ namespace luna
 		{
 			model->MapToDeviceMemory(m_logicaldevice, m_devicememory_staged);
 		}
+		for (auto &texture : Textures)
+		{
+			texture->getImage()->MapToDeviceMemory(m_devicememory_staged);
+		}
+		
+
+		/* main buffer creation based on all the resources sizes, then allocate the device memory to it */
+		DeviceBufferInit_();
+
 
 		/* copy the buffer datas to the real buffer */
-		DeviceBufferInit_();
+		for (auto &texture : Textures)
+		{
+			texture->getImage()->TransitionStagedAndMainImageLayout(); // transition the image layout before copying 
+		}
 		CopyBufferToDevice_();
 
-		/* lastly tell the mesh which buffer to talk to when rendering */
+
+		/* last setup */
 		UBO->setMainBuffer(m_mainBuffer.buffer);
 		for (auto &model : Models)
 		{
 			model->setMainBuffer(m_mainBuffer.buffer);
+		}
+		for (auto &texture : Textures)
+		{
+			texture->getImage()->CreateImageView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 	}
 
@@ -80,6 +117,7 @@ namespace luna
 		{
 			VkMemoryRequirements memoryrequirement{};
 			vkGetBufferMemoryRequirements(m_logicaldevice, m_stagingBuffer.buffer, &memoryrequirement);
+
 			m_stagingBuffer.MemoryTypeIndex = Renderer::getInstance()->findMemoryType(memoryrequirement.memoryTypeBits,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT); // find the best heap in the GPU to store at
 			m_stagingBuffer.BufferTotalSize = VulkanBufferObject::CurrentBufferTotalSize;
@@ -93,12 +131,34 @@ namespace luna
 			VkMemoryAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			allocInfo.allocationSize = m_stagingBuffer.RequirementSizeInDeviceMem;
+			for (auto &texture : Textures)
+			{
+				allocInfo.allocationSize += texture->getImage()->GetStageBufferData().RequirementSizeInDeviceMem;
+			}
 			allocInfo.memoryTypeIndex = m_stagingBuffer.MemoryTypeIndex;
 
 			DebugLog::EC(vkAllocateMemory(m_logicaldevice, &allocInfo, nullptr, &m_devicememory_staged));
 
 			// bind the buffer at the beginning of 0 offset in the Device Memory
 			vkBindBufferMemory(m_logicaldevice, m_stagingBuffer.buffer, m_devicememory_staged, 0);
+
+			// bind all image buffers here
+			for (int i = 0; i < Textures.size(); ++i)
+			{
+				BasicImage* image = Textures[i]->getImage();
+				const VulkanImageBufferData & imagebuffer = image->GetStageBufferData();
+
+				if (i != 0)
+				{
+					image->SetImageBufferOffset( Textures[i-1]->getImage()->GetBufferOffset() + Textures[i-1]->getImage()->GetStageBufferData().RequirementSizeInDeviceMem );
+				}
+				else
+				{
+					image->SetImageBufferOffset( m_stagingBuffer.RequirementSizeInDeviceMem );
+				}
+
+				vkBindImageMemory(m_logicaldevice, imagebuffer.buffer, m_devicememory_staged, image->GetBufferOffset());
+			}
 		}
 	}
 
@@ -117,6 +177,7 @@ namespace luna
 		{
 			VkMemoryRequirements memoryrequirement{};
 			vkGetBufferMemoryRequirements(m_logicaldevice, m_mainBuffer.buffer, &memoryrequirement);
+
 			m_mainBuffer.MemoryTypeIndex = Renderer::getInstance()->findMemoryType(memoryrequirement.memoryTypeBits,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT); // find the best heap in the GPU to store at
 			m_mainBuffer.BufferTotalSize = VulkanBufferObject::CurrentBufferTotalSize;
@@ -130,12 +191,34 @@ namespace luna
 			VkMemoryAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			allocInfo.allocationSize = m_mainBuffer.RequirementSizeInDeviceMem;
+			for (auto &texture : Textures)
+			{
+				allocInfo.allocationSize += texture->getImage()->GetMainBufferData().RequirementSizeInDeviceMem;
+			}
 			allocInfo.memoryTypeIndex = m_mainBuffer.MemoryTypeIndex;
 
 			DebugLog::EC(vkAllocateMemory(m_logicaldevice, &allocInfo, nullptr, &m_devicememory_main));
 
 			// bind the buffer at the beginning of 0 offset in the Device Memory
 			vkBindBufferMemory(m_logicaldevice, m_mainBuffer.buffer, m_devicememory_main, 0);
+
+			// bind all image buffers here
+			for (int i = 0; i < Textures.size(); ++i)
+			{
+				BasicImage* image = Textures[i]->getImage();
+				const VulkanImageBufferData & imagebuffer = image->GetMainBufferData();
+				
+				if (i != 0)
+				{
+					image->SetImageBufferOffset( Textures[i-1]->getImage()->GetBufferOffset() + Textures[i-1]->getImage()->GetMainBufferData().RequirementSizeInDeviceMem );
+				}
+				else
+				{
+					image->SetImageBufferOffset( m_mainBuffer.RequirementSizeInDeviceMem );
+				}
+
+				vkBindImageMemory(m_logicaldevice, imagebuffer.buffer, m_devicememory_main, image->GetBufferOffset());
+			}
 		}
 	}
 
@@ -174,6 +257,13 @@ namespace luna
 		copyregion.size = VulkanBufferObject::CurrentBufferTotalSize;
 		vkCmdCopyBuffer(commandbuffer, m_stagingBuffer.buffer, m_mainBuffer.buffer, 1, &copyregion);
 
+		// image copy as well
+		for (auto &texture : Textures)
+		{
+			texture->getImage()->CopyImage(commandbuffer);
+		}
+
+		// end the command buffer recording
 		vkEndCommandBuffer(commandbuffer);
 
 		// then submit this to the graphics queue to execute it
@@ -201,6 +291,32 @@ namespace luna
 		}
 	}
 
+	void ResourceManager::CreateAllSamplers_()
+	{
+		ImageSamplers.resize(MAX_SAMPLERS);
+
+		// image sampler
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = 16;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE; // mainly used for percentage-closer filtering on shadow maps
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.f;
+		samplerInfo.minLod = 0.f;
+		samplerInfo.maxLod = 0.f;
+
+		DebugLog::EC(vkCreateSampler(m_logicaldevice, &samplerInfo, nullptr, &ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]));
+	}
+
 	void ResourceManager::Destroy()
 	{
 		for (auto &model : Models)
@@ -218,6 +334,25 @@ namespace luna
 			delete UBO;
 			UBO = nullptr;
 		}
+
+		for (auto &texture : Textures)
+		{
+			if (texture != nullptr)
+			{
+				delete texture;
+				texture = nullptr;
+			}
+		}
+		Textures.clear();
+
+		for (auto &sampler : ImageSamplers)
+		{
+			if (sampler != VK_NULL_HANDLE)
+			{
+				vkDestroySampler(m_logicaldevice, sampler, nullptr);
+			}
+		}
+		ImageSamplers.clear();
 
 		if (m_stagingBuffer.buffer != VK_NULL_HANDLE)
 		{

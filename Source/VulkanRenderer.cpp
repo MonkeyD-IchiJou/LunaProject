@@ -21,48 +21,6 @@ namespace luna
 		InitLogicalDevice_();
 	}
 
-	const uint32_t VulkanRenderer::findMemoryType(const uint32_t & typeFilter, const VkMemoryPropertyFlags & properties) const
-	{
-		// find a memory type that is suitable for the buffer
-		for (uint32_t i = 0; i < m_gpu_memProperties.memoryTypeCount; ++i)
-		{
-			auto check = (typeFilter & (1 << i)); // must be more than 0
-
-			if (check)
-			{
-				if (((m_gpu_memProperties.memoryTypes[i].propertyFlags & properties) == properties))
-				{
-					return i;
-				}
-			}
-		}
-
-		DebugLog::throwEx("failed to find suitable memory type");
-
-		return 0;
-	}
-
-	const VkFormat VulkanRenderer::findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling & tiling, const VkFormatFeatureFlags & features) const
-	{
-		for (VkFormat format : candidates)
-		{
-			VkFormatProperties props{};
-			vkGetPhysicalDeviceFormatProperties(m_gpu, format, &props);
-
-			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-			{
-				return format;
-			}
-			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-			{
-				return format;
-			}
-		}
-
-		DebugLog::throwEx("failed to find supported format!");
-		return VkFormat();
-	}
-
 	void VulkanRenderer::InitVulkanInstance_()
 	{
 		VkApplicationInfo app_info{};
@@ -76,15 +34,12 @@ namespace luna
 		VkInstanceCreateInfo instance_create_info{};
 		instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		instance_create_info.pApplicationInfo = &app_info;
-		instance_create_info.enabledLayerCount = (uint32_t)m_instance_layers.size();
-		instance_create_info.ppEnabledLayerNames = m_instance_layers.data();
 		instance_create_info.enabledExtensionCount = (uint32_t)m_instance_exts.size();
 		instance_create_info.ppEnabledExtensionNames = m_instance_exts.data();
-
 #if _DEBUG
+		instance_create_info.enabledLayerCount = (uint32_t)m_instance_layers.size();
+		instance_create_info.ppEnabledLayerNames = m_instance_layers.data();
 		instance_create_info.pNext = &m_debuginfo; // tell the instance about my debug layer has turned on
-#else
-		instance_create_info.pNext = nullptr;
 #endif
 
 		DebugLog::EC(vkCreateInstance(&instance_create_info, nullptr, &m_vulkan_instance));
@@ -193,6 +148,48 @@ namespace luna
 			vkDestroyInstance(m_vulkan_instance, nullptr);
 			m_vulkan_instance = VK_NULL_HANDLE;
 		}
+	}
+
+	const uint32_t VulkanRenderer::findMemoryType(const uint32_t & typeFilter, const VkMemoryPropertyFlags & properties) const
+	{
+		// find a memory type that is suitable for the buffer
+		for (uint32_t i = 0; i < m_gpu_memProperties.memoryTypeCount; ++i)
+		{
+			auto check = (typeFilter & (1 << i)); // must be more than 0
+
+			if (check)
+			{
+				if (((m_gpu_memProperties.memoryTypes[i].propertyFlags & properties) == properties))
+				{
+					return i;
+				}
+			}
+		}
+
+		DebugLog::throwEx("failed to find suitable memory type");
+
+		return 0;
+	}
+
+	const VkFormat VulkanRenderer::findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling & tiling, const VkFormatFeatureFlags & features) const
+	{
+		for (VkFormat format : candidates)
+		{
+			VkFormatProperties props{};
+			vkGetPhysicalDeviceFormatProperties(m_gpu, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+			{
+				return format;
+			}
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+			{
+				return format;
+			}
+		}
+
+		DebugLog::throwEx("failed to find supported format!");
+		return VkFormat();
 	}
 
 

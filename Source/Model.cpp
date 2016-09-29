@@ -15,10 +15,10 @@ namespace luna
 				m_meshes.resize(1);
 
 				const std::vector<Vertex> vertices = {
-					{ { -1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
-					{ { 1.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
-					{ { 1.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
-					{ { -1.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } }
+					{ { -1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
+					{ { 1.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+					{ { 1.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+					{ { -1.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }
 				};
 
 				const std::vector<uint32_t> indices = {
@@ -58,6 +58,8 @@ namespace luna
 
 	Model::Model(std::string path)
 	{
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+
 		// load the lrl files
 		// open my lrl file
 		std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -113,6 +115,8 @@ namespace luna
 
 			this->m_meshes.push_back(new BasicMesh(vertices, indices));
 		}
+
+#endif
 	}
 
 	void Model::Draw(const VkCommandBuffer & commandbuffer)
