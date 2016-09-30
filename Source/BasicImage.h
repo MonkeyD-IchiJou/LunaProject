@@ -1,82 +1,58 @@
 #ifndef BASIC_IMAGE_H
 #define BASIC_IMAGE_H
 
-#include "VulkanBufferData.h"
+#include "VulkanImageBufferObject.h"
 
 namespace luna
 {
-	class BasicImage
+	class BasicImage : public VulkanImageBufferObject
 	{
 	public:
 		BasicImage(unsigned char* pixels, const int& texwidth, const int& texheight, const int& texchannels);
-		~BasicImage();
-
-		/* create the image buffer */
-		void CreateImage();
-
-		/* create the image view */
-		void CreateImageView(const VkFormat& format, const VkImageAspectFlags& aspectFlags);
-
-		/* copy the staged image buffer into the main image buffer*/
-		void CopyImage(const VkCommandBuffer& commandbuffer);
-
-		/* image layout changes for both buffer */
-		void TransitionStagedAndMainImageLayout();
+		virtual ~BasicImage();
 
 		/* map the pixels to the device memory */
 		const void MapToDeviceMemory(const VkDeviceMemory& devicememory);
 
+		/* image layout changes for both buffer */
+		void TransitionStagedAndMainImageLayout();
+
+		/* copy the staged image buffer into the main image buffer*/
+		void CopyImage(const VkCommandBuffer& commandbuffer);
+
+		/* create the image view */
+		void CreateImageView(const VkFormat& format, const VkImageAspectFlags& aspectFlags) override;
+
+		/* get stage buffer data */
 		inline const auto& GetStageBufferData() const { return m_stagebuff; }
-		inline const auto& GetMainBufferData() const { return m_imagebuff; }
-		inline const auto GetImageView() const { return m_imageview; }
+
+		/* get the image sampler for this image */
 		inline const auto GetImageSampler() const { return m_imagesampler; }
-		inline const auto GetBufferOffset() const { return m_imageBufferOffset; }
 
-		inline void SetImageSampler(VkSampler sampler) { this->m_imagesampler = sampler; }
+		/* get the staged buffer offset in the main device memory */
+		inline const auto GetStagedBufferOffset() const { return m_stagedBufferOffset; }
+
 		/* set the image buffer offset in the device memory */
-		inline void SetImageBufferOffset(VkDeviceSize imageBufferOffset) { this->m_imageBufferOffset = imageBufferOffset; }
+		inline void SetStagedBufferOffset(VkDeviceSize stagedBufferOffset) { this->m_stagedBufferOffset = stagedBufferOffset; }
 
-	private:
-		/* image layout transitioning for better usage in gpu */
-		void TransitionImageLayout_(VkImage srcimage, const VkImageLayout& oldLayout, const VkImageLayout& newLayout, const VkImageAspectFlags& aspectMask, 
-			const VkAccessFlags& srcAccessMask, const VkAccessFlags& dstAccessMask);
-		void CreateImageBuff_(VulkanImageBufferData& buff, const VkMemoryPropertyFlags & memoryproperties);
-		static VkCommandBuffer BeginSingleTimeCommands_(const VkDevice & logicaldevice, VkCommandPool commandPool);
-		static void EndSingleTimeCommands_(const VkDevice & logicaldevice, VkCommandBuffer commandBuffer);
+		/* set the image sampler for this image */
+		inline void SetImageSampler(VkSampler sampler) { this->m_imagesampler = sampler; }
 
 	private:
 		/* the pixels in this image */
 		unsigned char* m_pixels = nullptr;
 
-		/* the total width of this image */
-		int m_texwidth = 0;
-
-		/* the total height of this image */
-		int m_texheight = 0;
-
 		/* the total channels in this channel */
 		int m_texchannels = 0;
 
-		/* total image size in bytes */
-		VkDeviceSize m_imageTotalSize = 0;
-
-		/* the beginning offset (aligned bytes) of the image buffer to be mapped of*/
-		VkDeviceSize m_imageBufferOffset = 0;
+		/* the beginning offset (aligned bytes) of the image buffer to be mapped of, in the device memory */
+		VkDeviceSize m_stagedBufferOffset = 0;
 
 		/* the staging image buff for uploading image pixels data*/
 		VulkanImageBufferData m_stagebuff{};
 
-		/* the main image buffer to communicate with when drawing */
-		VulkanImageBufferData m_imagebuff{};
-
-		/* handle image view */
-		VkImageView m_imageview = VK_NULL_HANDLE;
-
 		/* handle image sampler */
 		VkSampler m_imagesampler = VK_NULL_HANDLE;
-
-		/* handle for the logical device */
-		VkDevice m_logicaldevice = VK_NULL_HANDLE;
 	};
 }
 

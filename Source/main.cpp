@@ -27,7 +27,7 @@ static void luna_main()
 
 
 	// command buffer record how it is going to render
-	renderer->RenderSetup();
+	renderer->Record();
 	
 	using clock = std::chrono::steady_clock;
 	std::chrono::nanoseconds lag(0);

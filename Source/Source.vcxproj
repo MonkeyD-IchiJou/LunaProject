@@ -94,6 +94,7 @@
   <ItemGroup>
     <ClCompile Include="BaseFBO.cpp" />
     <ClCompile Include="BasicImage.cpp" />
+    <ClCompile Include="BasicImageAttachment.cpp" />
     <ClCompile Include="BasicShader.cpp" />
     <ClCompile Include="BasicUBO.cpp" />
     <ClCompile Include="DebugLog.cpp" />
@@ -106,6 +107,7 @@
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="VulkanBufferObject.cpp" />
+    <ClCompile Include="VulkanImageBufferObject.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
@@ -116,6 +118,7 @@
   <ItemGroup>
     <ClInclude Include="BaseFBO.h" />
     <ClInclude Include="BasicImage.h" />
+    <ClInclude Include="BasicImageAttachment.h" />
     <ClInclude Include="BasicShader.h" />
     <ClInclude Include="BasicUBO.h" />
     <ClInclude Include="DebugLog.h" />
@@ -131,6 +134,7 @@
     <ClInclude Include="UBOData.h" />
     <ClInclude Include="VulkanBufferData.h" />
     <ClInclude Include="VulkanBufferObject.h" />
+    <ClInclude Include="VulkanImageBufferObject.h" />
     <ClInclude Include="VulkanRenderer.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Vertex.h" />

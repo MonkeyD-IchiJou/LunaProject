@@ -9,7 +9,8 @@
 #include "ResourceManager.h"
 #include "Model.h"
 #include "Texture2D.h"
-
+#include "BasicImage.h"
+#include "BasicImageAttachment.h"
 #include "BasicUBO.h"
 
 #define GLM_FORCE_RADIANS
@@ -25,25 +26,27 @@ namespace luna
 		// vulkan instance and logical device will be created in the parents constructor
 	}
 
-	Renderer::~Renderer()
-	{
-	}
-
 	void Renderer::CreateResources()
 	{
 		// all the resources will be init 
 		ResourceManager* resource = ResourceManager::getInstance();
 		m_quad = resource->Models[eMODELS::QUAD_MODEL];
 		m_ubo = resource->UBO;
+		BasicImageAttachment* att = resource->Textures[eTEXTURES::DEPTH32_TEXTURE_ATT]->getImage<BasicImageAttachment*>();
 
 		if (m_swapchain == nullptr)
 		{
-			uint32_t width = WinNative::getInstance()->getWinSizeX();
-			uint32_t height = WinNative::getInstance()->getWinSizeY();
+			uint32_t width = 0, height = 0;
 
-			// create the swap chain for presenting images
-			m_swapchain = new VulkanSwapchain();
-			m_swapchain->CreateResources(width, height);
+			// swap chain creation
+			{
+				width = WinNative::getInstance()->getWinSizeX();
+				height = WinNative::getInstance()->getWinSizeY();
+
+				// create the swap chain for presenting images
+				m_swapchain = new VulkanSwapchain();
+				m_swapchain->CreateResources(width, height);
+			}
 
 			// create the render pass with the info from swap chain images
 			InitFinalRenderPass_();
@@ -53,22 +56,48 @@ namespace luna
 			for (int i = 0; i < m_fbos.size(); i++)
 			{
 				m_fbos[i] = new BaseFBO();
-				m_fbos[i]->AddColorAttachment(m_swapchain->m_buffers[i].imageview, m_swapchain->getColorFormat());
-				m_fbos[i]->AddRenderPass(m_renderpass);
+				m_fbos[i]->SetColorAttachment(m_swapchain->m_buffers[i].imageview, m_swapchain->getColorFormat());
+				m_fbos[i]->SetDepthAttachment(att->GetImageView(), att->GetMainBufferData().format);
+				m_fbos[i]->SetRenderPass(m_renderpass);
 				m_fbos[i]->Init({width, height});
 			}
 
-			// shader 
-			m_shader = new BasicShader();
-			m_shader->SetUBO(resource->UBO);
-			m_shader->SetTexture(resource->Textures[eTEXTURES::CHALET_TEXTURE]->getImage());
-			m_shader->Init(m_renderpass);
+			// create the command pool first
+			{
+				VkCommandPoolCreateInfo commandPool_createinfo{};
+				commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+				commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+				commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+
+				DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+			}
+
+			// command buffer creation
+			{
+				m_commandbuffers.resize(m_fbos.size());
+
+				VkCommandBufferAllocateInfo buffer_allocateInfo{};
+				buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				buffer_allocateInfo.commandPool = m_commandPool;
+				buffer_allocateInfo.commandBufferCount = (uint32_t)m_commandbuffers.size();
+				buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+				DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_commandbuffers.data()));
+			}
+
+			// shader creation
+			{
+				m_shader = new BasicShader();
+				m_shader->SetUBO(resource->UBO);
+				m_shader->SetTexture(resource->Textures[eTEXTURES::BASIC_TEXTURE]->getImage<BasicImage*>());
+				m_shader->Init(m_renderpass);
+			}
 		}
 	}
 
 	void Renderer::InitFinalRenderPass_()
 	{
-		std::array<VkAttachmentDescription, 1> attachments;
+		std::array<VkAttachmentDescription, 2> attachments;
 		{
 			VkAttachmentDescription colorAttachment{};
 			colorAttachment.format								= m_swapchain->getColorFormat();
@@ -80,18 +109,33 @@ namespace luna
 			colorAttachment.initialLayout						= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			colorAttachment.finalLayout							= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // images to be presented in the swap chain
 
-			attachments = { colorAttachment };
+			VkAttachmentDescription depthAttachment{};
+			depthAttachment.format								= VK_FORMAT_D32_SFLOAT;
+			depthAttachment.samples								= VK_SAMPLE_COUNT_1_BIT;
+			depthAttachment.loadOp								= VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.storeOp								= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.stencilLoadOp						= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			depthAttachment.stencilStoreOp						= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.initialLayout						= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			depthAttachment.finalLayout							= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // images as a depth
+
+			attachments = { colorAttachment, depthAttachment };
 		}
 
 		VkSubpassDescription subPass{};
 		VkAttachmentReference colorAttachmentRef{};
+		VkAttachmentReference depthAttachmentRef{};
 		{
 			colorAttachmentRef.attachment						= 0; // index ref colorAttachment (above) 
 			colorAttachmentRef.layout							= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // images used as color attachment
 
+			depthAttachmentRef.attachment						= 1; // index ref depthAttachment (above) 
+			depthAttachmentRef.layout							= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // images used as depth attachment
+
 			subPass.pipelineBindPoint							= VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subPass.colorAttachmentCount						= 1;
 			subPass.pColorAttachments							= &colorAttachmentRef;
+			subPass.pDepthStencilAttachment						= &depthAttachmentRef;
 		}
 
 		VkSubpassDependency dependency{};
@@ -116,97 +160,8 @@ namespace luna
 		DebugLog::EC(vkCreateRenderPass(m_logicaldevice, &renderpass_create_info, nullptr, &m_renderpass));
 	}
 
-	void Renderer::CleanUpResources()
+	void Renderer::Record()
 	{
-		// wait until gpu finish pls
-		if (m_logicaldevice != VK_NULL_HANDLE)
-		{
-			vkDeviceWaitIdle(m_logicaldevice);
-		}
-
-		ResourceManager::getInstance()->Destroy();
-		
-		if (m_imageAvailableSemaphore != VK_NULL_HANDLE)
-		{
-			vkDestroySemaphore(m_logicaldevice, m_imageAvailableSemaphore, nullptr);
-			m_imageAvailableSemaphore = VK_NULL_HANDLE;
-		}
-		if (m_renderFinishSemaphore != VK_NULL_HANDLE)
-		{
-			vkDestroySemaphore(m_logicaldevice, m_renderFinishSemaphore, nullptr);
-			m_renderFinishSemaphore = VK_NULL_HANDLE;
-		}
-
-		if (m_commandPool != VK_NULL_HANDLE)
-		{
-			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
-			m_commandPool = VK_NULL_HANDLE;
-		}
-
-		if (m_shader != nullptr)
-		{
-			m_shader->Destroy();
-			delete m_shader;
-			m_shader = nullptr;
-		}
-
-		for (auto &fbo : m_fbos)
-		{
-			if (fbo != nullptr)
-			{
-				fbo->Destroy();
-				delete fbo;
-				fbo = nullptr;
-			}
-		}
-
-		m_fbos.clear();
-
-		if (m_renderpass != VK_NULL_HANDLE)
-		{
-			vkDestroyRenderPass(m_logicaldevice, m_renderpass, nullptr);
-			m_renderpass = VK_NULL_HANDLE;
-		}
-		
-		if (m_swapchain != nullptr)
-		{
-			m_swapchain->Destroy();
-			delete m_swapchain;
-			m_swapchain = nullptr;
-		}
-	}
-
-	void Renderer::RenderSetup()
-	{
-		/* create the command pool first */
-		{
-			VkCommandPoolCreateInfo commandPool_createinfo{};
-			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-
-			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
-		}
-
-		// if the commandbuffers is not empty, free it
-		if (m_commandbuffers.size() > 0)
-		{
-			vkFreeCommandBuffers(m_logicaldevice, m_commandPool,(uint32_t) m_commandbuffers.size(), m_commandbuffers.data());
-		}
-
-		// command buffer creation
-		{
-			m_commandbuffers.resize(m_fbos.size());
-
-			VkCommandBufferAllocateInfo buffer_allocateInfo{};
-			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			buffer_allocateInfo.commandPool = m_commandPool;
-			buffer_allocateInfo.commandBufferCount = (uint32_t)m_commandbuffers.size();
-			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_commandbuffers.data()));
-		}
-
 		// can record the command buffer liao
 		// these command buffer is for the final rendering and final presentation on the screen 
 		for (size_t i = 0; i < m_commandbuffers.size(); ++i)
@@ -259,8 +214,8 @@ namespace luna
 			ResourceManager::getInstance()->Models[eMODELS::TYRA_MODEL]->Draw(m_commandbuffers[i]);
 			m_quad->Draw(m_commandbuffers[i]);
 			ResourceManager::getInstance()->Models[eMODELS::CHALET_MODEL]->Draw(m_commandbuffers[i]);
-			
-			
+
+
 			// unbind the fbo
 			m_fbos[i]->UnBind(m_commandbuffers[i]);
 
@@ -279,18 +234,18 @@ namespace luna
 
 	void Renderer::Render()
 	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
+		{
+			static auto startTime = std::chrono::high_resolution_clock::now();
+			auto currentTime = std::chrono::high_resolution_clock::now();
+			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
 
-		UBOData data{};
-		data.model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0.f, 1.f, 0.f));
-		data.view = glm::lookAt(glm::vec3(0.f, 1.f, 3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-		data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
-		m_ubo->Update(data);
+			UBOData data{};
+			data.model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0.f, 1.f, 0.f));
+			data.view = glm::lookAt(glm::vec3(0.f, 1.f, 3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+			data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
+			m_ubo->Update(data);
+		}
 
-
-		VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		uint32_t imageindex = 0;
 		m_swapchain->AcquireNextImage(m_imageAvailableSemaphore, &imageindex);
 
@@ -302,10 +257,72 @@ namespace luna
 		submitInfo.pSignalSemaphores = &m_renderFinishSemaphore;
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = &m_imageAvailableSemaphore;
+		VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.pWaitDstStageMask = waitStages; // wait until draw finish
 		vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
-		
+
 		// present it on the screen pls
 		m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_renderFinishSemaphore);
+	}
+
+	void Renderer::CleanUpResources()
+	{
+		// wait until gpu finish pls
+		if (m_logicaldevice != VK_NULL_HANDLE)
+		{
+			vkDeviceWaitIdle(m_logicaldevice);
+		}
+
+		// destroy all the resources
+		ResourceManager::getInstance()->Destroy();
+		
+		if (m_shader != nullptr)
+		{
+			m_shader->Destroy();
+			delete m_shader;
+			m_shader = nullptr;
+		}
+
+		for (auto &fbo : m_fbos)
+		{
+			if (fbo != nullptr)
+			{
+				fbo->Destroy();
+				delete fbo;
+				fbo = nullptr;
+			}
+		}
+
+		m_fbos.clear();
+
+		if (m_renderpass != VK_NULL_HANDLE)
+		{
+			vkDestroyRenderPass(m_logicaldevice, m_renderpass, nullptr);
+			m_renderpass = VK_NULL_HANDLE;
+		}
+
+		if (m_swapchain != nullptr)
+		{
+			m_swapchain->Destroy();
+			delete m_swapchain;
+			m_swapchain = nullptr;
+		}
+
+		if (m_imageAvailableSemaphore != VK_NULL_HANDLE)
+		{
+			vkDestroySemaphore(m_logicaldevice, m_imageAvailableSemaphore, nullptr);
+			m_imageAvailableSemaphore = VK_NULL_HANDLE;
+		}
+		if (m_renderFinishSemaphore != VK_NULL_HANDLE)
+		{
+			vkDestroySemaphore(m_logicaldevice, m_renderFinishSemaphore, nullptr);
+			m_renderFinishSemaphore = VK_NULL_HANDLE;
+		}
+
+		if (m_commandPool != VK_NULL_HANDLE)
+		{
+			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
+			m_commandPool = VK_NULL_HANDLE;
+		}
 	}
 }

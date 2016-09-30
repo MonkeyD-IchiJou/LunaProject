@@ -1,5 +1,6 @@
 #include "Texture2D.h"
 #include "BasicImage.h"
+#include "BasicImageAttachment.h"
 #include "DebugLog.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -20,7 +21,27 @@ namespace luna
 
 		// create the image and image view for it
 		m_image2D = new BasicImage(pixels, texWidth, texHeight, texChannels);
-		m_image2D->SetImageSampler(sampler);
+		BasicImage* image = dynamic_cast<BasicImage*>(m_image2D);
+		image->SetImageSampler(sampler);
+	}
+
+	Texture2D::Texture2D(const eATTACHMENT_CREATE_TYPE & type, const uint32_t& texwidth, const uint32_t& texheight, const VkImageAspectFlags & aspectFlags)
+	{
+		m_image2D = new BasicImageAttachment(texwidth, texheight, aspectFlags);
+		auto* image = dynamic_cast<BasicImageAttachment*>(m_image2D);
+
+		switch (type)
+		{
+		case DEPTH_32_ATTACHMENT:
+			// create the image buffer for it
+			image->CreateImageBuffer(VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+			break;
+
+		default:
+			DebugLog::throwEx("no such attachment");
+			break;
+		}
 	}
 
 	Texture2D::~Texture2D()

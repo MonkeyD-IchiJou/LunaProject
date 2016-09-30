@@ -25,14 +25,7 @@ namespace luna
 
 		m_resolution = extent;
 
-		// get the image views from swap chain pls
-		if (m_attachments.size() == 0)
-		{
-			DebugLog::throwEx("no attachments available");
-			return;
-		}
-
-		VkImageView imageviews[] = {m_attachments[COLOR_ATTACHMENT].view};
+		VkImageView imageviews[] = {m_attachments[COLOR_ATTACHMENT].view, m_attachments[DEPTH_ATTACHMENT].view};
 
 		// get the render pass from renderer pls
 		if (m_renderpass == VK_NULL_HANDLE)
@@ -53,7 +46,7 @@ namespace luna
 		DebugLog::EC(vkCreateFramebuffer(m_logicaldevice, &framebuffer_createinfo, nullptr, &m_framebuffer));
 	}
 
-	void BaseFBO::AddColorAttachment(const VkImageView & view, const VkFormat & format)
+	void BaseFBO::SetColorAttachment(const VkImageView & view, const VkFormat & format)
 	{
 		FramebufferAttachment att{};
 		att.format = format;
@@ -62,7 +55,16 @@ namespace luna
 		m_attachments[COLOR_ATTACHMENT] = att;
 	}
 
-	void BaseFBO::AddRenderPass(const VkRenderPass & renderpass)
+	void BaseFBO::SetDepthAttachment(const VkImageView & view, const VkFormat & format)
+	{
+		FramebufferAttachment att{};
+		att.format = format;
+		att.view = view;
+
+		m_attachments[DEPTH_ATTACHMENT] = att;
+	}
+
+	void BaseFBO::SetRenderPass(const VkRenderPass & renderpass)
 	{
 		this->m_renderpass = renderpass;
 	}

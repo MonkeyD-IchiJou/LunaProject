@@ -12,6 +12,7 @@ namespace luna
 		enum E_ATTACHMENTS
 		{
 			COLOR_ATTACHMENT = 0,
+			DEPTH_ATTACHMENT,
 			ALL_ATTACHMENTS
 		};
 
@@ -22,10 +23,13 @@ namespace luna
 		void Destroy() override;
 
 		/* get the image view from the swap chain */
-		void AddColorAttachment(const VkImageView& view, const VkFormat& format);
+		void SetColorAttachment(const VkImageView& view, const VkFormat& format);
+
+		/* get the depth image view from resources */
+		void SetDepthAttachment(const VkImageView& view, const VkFormat& format);
 
 		/* get the render pass from renderer */
-		void AddRenderPass(const VkRenderPass& renderpass);
+		void SetRenderPass(const VkRenderPass& renderpass);
 	};
 }
 

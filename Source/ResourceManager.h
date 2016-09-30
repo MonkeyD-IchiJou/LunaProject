@@ -11,7 +11,6 @@ namespace luna
 	class Texture2D;
 	class BasicUBO;
 
-
 	enum eMODELS
 	{
 		QUAD_MODEL = 0,
@@ -24,11 +23,14 @@ namespace luna
 
 	enum eTEXTURES
 	{
-		CHALET_TEXTURE = 0,
+		CHALET_TEXTURE = 0, // begining of basic texture
 		DEFAULT_TEXTURE,
 		BASIC_TEXTURE,
 		HILL_TEXTURE,
-		MAX_TEXTURE
+		MAX_TEXTURE,
+
+		DEPTH32_TEXTURE_ATT = MAX_TEXTURE, // beggining of the attachment texture
+		MAX_TEXTURE_ATT
 	};
 
 	enum eIMAGESAMPLING
@@ -72,7 +74,9 @@ namespace luna
 		void Init_();
 		void LoadToDevice_();
 		void StagingBufferInit_();
+		void StagingBufferBinding_();
 		void DeviceBufferInit_();
+		void DeviceBufferBinding_();
 		void CopyBufferToDevice_();
 		void CreateAllSamplers_();
 
