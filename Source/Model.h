@@ -14,6 +14,7 @@ namespace luna
 	{
 		PRIMITIVE_QUAD = 0,
 		PRIMITIVE_TRIANGLE = 1,
+		PRIMITIVE_BOX = 2,
 		MAX_PRIMITIVE_MESH
 	};
 

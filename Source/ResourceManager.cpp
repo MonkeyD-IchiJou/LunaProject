@@ -43,20 +43,21 @@ namespace luna
 
 		// init all the mesh
 		Models.resize(MAX_MODELS);
+		
 		Models[eMODELS::QUAD_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_QUAD);
 		Models[eMODELS::BOXES_MODEL] = new Model("./../Assets/Models/boxes.lrl");
 		Models[eMODELS::BUNNY_MODEL] = new Model("./../Assets/Models/bunny.lrl");
 		Models[eMODELS::TYRA_MODEL] = new Model("./../Assets/Models/tyra.lrl");
 		Models[eMODELS::CHALET_MODEL] = new Model("./../Assets/Models/boxes.lrl");
 
-		// init all images
+		// init all images and its image buffers too
 		Textures.resize(MAX_TEXTURE_ATT);
 		Textures[eTEXTURES::CHALET_TEXTURE] = new Texture2D("./../Assets/Textures/chalet.jpg", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
 		Textures[eTEXTURES::DEFAULT_TEXTURE] = new Texture2D("./../Assets/Textures/default.tga", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
 		Textures[eTEXTURES::BASIC_TEXTURE] = new Texture2D("./../Assets/Textures/texture.jpg", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
 		Textures[eTEXTURES::HILL_TEXTURE] = new Texture2D("./../Assets/Textures/hills.tga", ImageSamplers[eIMAGESAMPLING::BASIC_SAMPLER]);
 
-		// init all image attachments
+		// init all image attachments and its image buffers too
 		Textures[eTEXTURES::DEPTH32_TEXTURE_ATT] = new Texture2D(eATTACHMENT_CREATE_TYPE::DEPTH_32_ATTACHMENT, 1080, 720, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 		// after retrieved all the models datas 
@@ -69,21 +70,22 @@ namespace luna
 		StagingBufferInit_();
 		StagingBufferBinding_();
 
-		/* main buffer creation based on all the resources sizes (except image), then allocate the device memory to it */
-		DeviceBufferInit_();
-		DeviceBufferBinding_();
-
 		/* map all the data to the staged device memory */
 		UBO->MapToDeviceMemory(m_devicememory_staged);
 		for (auto &model : Models)
 			model->MapToDeviceMemory(m_logicaldevice, m_devicememory_staged);
 		for (int i = 0; i < MAX_TEXTURE; ++i)
 		{
-			Textures[i]->getImage<BasicImage*>()->MapToDeviceMemory(m_devicememory_staged);
-			Textures[i]->getImage<BasicImage*>()->TransitionStagedAndMainImageLayout(); // transition the image layout before copying
+			auto image = Textures[i]->getImage<BasicImage*>();
+			image->MapToDeviceMemory(m_devicememory_staged);
+			image->TransitionStagedAndMainImageLayout(); // transition the image layout before copying
 		}
 		
-		/* copy the buffer datas to the real buffer */
+		/* main buffer creation based on all the resources sizes (except image), then allocate the device memory to it */
+		DeviceBufferInit_();
+		DeviceBufferBinding_();
+
+		/* copy the buffer datas to the real main buffer */
 		CopyBufferToDevice_();
 
 		/* last setup */
@@ -219,6 +221,8 @@ namespace luna
 				}
 				else
 					image->SetImageBufferOffset( m_mainBuffer.RequirementSizeInDeviceMem );
+
+				
 
 				// bind the image buffer with the offsets in device memory
 				vkBindImageMemory(m_logicaldevice, imagebuffer.buffer, m_devicememory_main, image->GetBufferOffset());

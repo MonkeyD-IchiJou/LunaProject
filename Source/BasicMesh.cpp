@@ -27,9 +27,7 @@ namespace luna
 
 	void BasicMesh::Draw(const VkCommandBuffer & commandbuffer)
 	{
-		VkDeviceSize offset[] = { m_vertexOffset };
-		VkBuffer pbuffer[] = { m_MainBuffer };
-		vkCmdBindVertexBuffers(commandbuffer, 0, 1, pbuffer, offset);
+		vkCmdBindVertexBuffers(commandbuffer, 0, 1, &m_MainBuffer, &m_vertexOffset);
 		vkCmdBindIndexBuffer(commandbuffer, m_MainBuffer, m_indexOffset, VK_INDEX_TYPE_UINT32);
 		vkCmdDrawIndexed(commandbuffer, (uint32_t) m_indices.size(), 1, 0, 0, 0);
 	}

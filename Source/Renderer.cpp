@@ -15,6 +15,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm\glm.hpp>
 
 namespace luna
 {
@@ -210,10 +211,7 @@ namespace luna
 			m_shader->LoadColor(m_commandbuffers[i], glm::vec4(1.f, 1.f, 0.f, 1.f));
 
 			// Drawing start
-			ResourceManager::getInstance()->Models[eMODELS::BUNNY_MODEL]->Draw(m_commandbuffers[i]);
-			ResourceManager::getInstance()->Models[eMODELS::TYRA_MODEL]->Draw(m_commandbuffers[i]);
 			m_quad->Draw(m_commandbuffers[i]);
-			ResourceManager::getInstance()->Models[eMODELS::CHALET_MODEL]->Draw(m_commandbuffers[i]);
 
 
 			// unbind the fbo
@@ -241,8 +239,20 @@ namespace luna
 
 			UBOData data{};
 			data.model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0.f, 1.f, 0.f));
-			data.view = glm::lookAt(glm::vec3(0.f, 1.f, 3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+			//data.model = glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.f));
+			data.view = glm::lookAt(glm::vec3(0.f, 0.f, 9.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
 			data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
+			
+			// Vulkan clip space has inverted Y and half Z.
+			glm::mat4 Clip = glm::mat4(
+				1.0f,  0.0f, 0.0f, 0.0f,
+				0.0f, -1.0f, 0.0f, 0.0f,
+				0.0f,  0.0f, 0.5f, 0.0f,
+				0.0f,  0.0f, 0.5f, 1.0f
+			);
+
+			data.proj = Clip * data.proj;
+
 			m_ubo->Update(data);
 		}
 

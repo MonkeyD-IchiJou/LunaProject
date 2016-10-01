@@ -138,7 +138,6 @@
     <ClInclude Include="VulkanRenderer.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Vertex.h" />
-    <ClInclude Include="vk_glm.h" />
     <ClInclude Include="VulkanSwapchain.h" />
     <ClInclude Include="WinNative.h" />
   </ItemGroup>

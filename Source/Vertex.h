@@ -4,7 +4,7 @@
 #include "Platform.h"
 #include <array>
 
-#include "vk_glm.h"
+#include <glm\glm.hpp>
 
 namespace luna
 { 

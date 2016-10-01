@@ -1,7 +1,7 @@
 #ifndef UBO_DATA_H
 #define UBO_DATA_H
 
-#include "vk_glm.h"
+#include <glm\glm.hpp>
 
 namespace luna
 {

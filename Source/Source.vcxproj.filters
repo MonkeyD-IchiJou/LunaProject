@@ -167,9 +167,6 @@
     <ClInclude Include="Vertex.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="vk_glm.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="BasicShader.h">
       <Filter>Header Files\Shaders</Filter>
     </ClInclude>

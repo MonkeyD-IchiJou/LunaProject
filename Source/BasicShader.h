@@ -2,7 +2,7 @@
 #define BASIC_SHADER_H
 
 #include "ShaderProgram.h"
-#include "vk_glm.h"
+#include <glm\glm.hpp>
 
 namespace luna
 {
