@@ -8,11 +8,13 @@ namespace luna
 {
 	Model::Model(ePRIMITIVE_MESH meshid)
 	{
+		m_totalmeshes = 1;
+
 		switch (meshid)
 		{
 		case PRIMITIVE_QUAD:
 			{
-				m_meshes.resize(1);
+				m_meshes.resize(m_totalmeshes);
 
 				const std::vector<Vertex> vertices = {
 					// front face
@@ -31,17 +33,17 @@ namespace luna
 
 			break;
 
-		case PRIMITIVE_BOX:
+		case PRIMITIVE_CUBE:
 			{
-				m_meshes.resize(1);
+				m_meshes.resize(m_totalmeshes);
 
 				const std::vector<Vertex> vertices = {
 
 					// front face
-					{ { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
-					{ { -0.5f, -0.5f, 0.5f },	{ 0.0f, 0.0f, 1.0f },  { 0.0f, 1.0f } },
-					{ { 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
-					{ { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f },{ 1.0f, 0.0f } },
+					{ { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f },	{ 0.0f, 0.0f } },
+					{ { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+					{ { 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f },	{ 1.0f, 1.0f } },
+					{ { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f },	{ 1.0f, 0.0f } },
 
 					// right face
 					{ { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f },   { 0.0f, 0.0f } },
@@ -174,6 +176,7 @@ namespace luna
 			indices[totalIndices - 1] = ((uint32_t)getInteger_(data, currentLine, '\n'));
 
 			this->m_meshes.push_back(new BasicMesh(vertices, indices));
+			m_totalmeshes++;
 		}
 
 #endif
@@ -184,6 +187,14 @@ namespace luna
 		for (auto &mesh : m_meshes)
 		{
 			mesh->Draw(commandbuffer);
+		}
+	}
+
+	void Model::DrawInstanced(const VkCommandBuffer & commandbuffer, const uint32_t& instancecount)
+	{
+		for (auto &mesh : m_meshes)
+		{
+			mesh->DrawInstanced(commandbuffer, instancecount);
 		}
 	}
 

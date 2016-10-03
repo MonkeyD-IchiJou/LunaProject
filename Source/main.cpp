@@ -9,7 +9,6 @@
 // we use a fixed timestep of 1 / (60 fps) = 16 milliseconds
 constexpr std::chrono::nanoseconds timestep(16666666);
 
-
 /* all the game code is here */
 static void luna_main()
 {

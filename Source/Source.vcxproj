@@ -58,9 +58,9 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\stb-master;..\Libraries\VulkanSDK\1.0.26.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\stb-master;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -78,9 +78,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\stb-master;..\Libraries\VulkanSDK\1.0.26.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\stb-master;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -93,10 +93,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BaseFBO.cpp" />
-    <ClCompile Include="BasicImage.cpp" />
-    <ClCompile Include="BasicImageAttachment.cpp" />
     <ClCompile Include="BasicShader.cpp" />
-    <ClCompile Include="BasicUBO.cpp" />
+    <ClCompile Include="SimpleShader.cpp" />
+    <ClCompile Include="SSBO.cpp" />
+    <ClCompile Include="TextureResources.cpp" />
+    <ClCompile Include="UBO.cpp" />
     <ClCompile Include="DebugLog.cpp" />
     <ClCompile Include="FixedPipelineCreationInfo.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
@@ -104,23 +105,26 @@
     <ClCompile Include="BasicMesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="ResourceManager.cpp" />
-    <ClCompile Include="Texture2D.cpp" />
+    <ClCompile Include="ModelResources.cpp" />
     <ClCompile Include="VulkanBufferObject.cpp" />
     <ClCompile Include="VulkanImageBufferObject.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="VulkanSwapchain.cpp" />
+    <ClCompile Include="VulkanTexture2D.cpp" />
+    <ClCompile Include="VulkanTextureArray2D.cpp" />
+    <ClCompile Include="VulkanTextureCube.cpp" />
     <ClCompile Include="Win32.cpp" />
     <ClCompile Include="WinNative.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseFBO.h" />
-    <ClInclude Include="BasicImage.h" />
-    <ClInclude Include="BasicImageAttachment.h" />
     <ClInclude Include="BasicShader.h" />
-    <ClInclude Include="BasicUBO.h" />
+    <ClInclude Include="SimpleShader.h" />
+    <ClInclude Include="SSBO.h" />
+    <ClInclude Include="TextureResources.h" />
+    <ClInclude Include="UBO.h" />
     <ClInclude Include="DebugLog.h" />
     <ClInclude Include="FixedPipelineCreationInfo.h" />
     <ClInclude Include="Framebuffer.h" />
@@ -129,9 +133,8 @@
     <ClInclude Include="platform.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="ResourceManager.h" />
-    <ClInclude Include="Texture2D.h" />
-    <ClInclude Include="UBOData.h" />
+    <ClInclude Include="ModelResources.h" />
+    <ClInclude Include="StorageData.h" />
     <ClInclude Include="VulkanBufferData.h" />
     <ClInclude Include="VulkanBufferObject.h" />
     <ClInclude Include="VulkanImageBufferObject.h" />
@@ -139,6 +142,9 @@
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VulkanSwapchain.h" />
+    <ClInclude Include="VulkanTexture2D.h" />
+    <ClInclude Include="VulkanTextureArray2D.h" />
+    <ClInclude Include="VulkanTextureCube.h" />
     <ClInclude Include="WinNative.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

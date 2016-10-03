@@ -52,17 +52,11 @@
     <Filter Include="Header Files\Resources\Textures">
       <UniqueIdentifier>{fafcb1fb-4d44-44a7-821c-85c5d742179c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Resources\UBOs">
-      <UniqueIdentifier>{b34158ce-0ef0-46d4-b2d2-f46e09eaecc1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Resources\Models">
       <UniqueIdentifier>{478fd0d9-579e-4f36-8c47-89489c5182d7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Resources\Textures">
       <UniqueIdentifier>{2552436a-af8e-43d2-89ec-a1c40454af31}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Resources\UBOs">
-      <UniqueIdentifier>{7a1ef215-ac06-4255-babe-bfba7770641a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Renderer\FBOs">
       <UniqueIdentifier>{70504fde-1ebe-49a3-98b0-34e7ae0d9d6c}</UniqueIdentifier>
@@ -75,6 +69,12 @@
     </Filter>
     <Filter Include="Header Files\Renderer\SwapChain">
       <UniqueIdentifier>{b45cfe79-dab1-4dd8-9086-d6ea1acc9326}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\StorageObjs">
+      <UniqueIdentifier>{7a1ef215-ac06-4255-babe-bfba7770641a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\StorageObjs">
+      <UniqueIdentifier>{b34158ce-0ef0-46d4-b2d2-f46e09eaecc1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -108,32 +108,11 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="VulkanBufferObject.cpp">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="ResourceManager.cpp">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanImageBufferObject.cpp">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="BasicImage.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
     <ClCompile Include="BasicMesh.cpp">
       <Filter>Source Files\Resources\Models</Filter>
     </ClCompile>
-    <ClCompile Include="BasicUBO.cpp">
-      <Filter>Source Files\Resources\UBOs</Filter>
-    </ClCompile>
     <ClCompile Include="Model.cpp">
       <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture2D.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="BasicImageAttachment.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
     </ClCompile>
     <ClCompile Include="BaseFBO.cpp">
       <Filter>Source Files\Renderer\FBOs</Filter>
@@ -143,6 +122,36 @@
     </ClCompile>
     <ClCompile Include="VulkanSwapchain.cpp">
       <Filter>Source Files\Renderer\SwapChain</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanBufferObject.cpp">
+      <Filter>Source Files\Resources\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelResources.cpp">
+      <Filter>Source Files\Resources\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanImageBufferObject.cpp">
+      <Filter>Source Files\Resources\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="UBO.cpp">
+      <Filter>Source Files\Resources\StorageObjs</Filter>
+    </ClCompile>
+    <ClCompile Include="SSBO.cpp">
+      <Filter>Source Files\Resources\StorageObjs</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleShader.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanTexture2D.cpp">
+      <Filter>Source Files\Resources\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanTextureArray2D.cpp">
+      <Filter>Source Files\Resources\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanTextureCube.cpp">
+      <Filter>Source Files\Resources\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureResources.cpp">
+      <Filter>Source Files\Resources\Textures</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -176,38 +185,14 @@
     <ClInclude Include="Renderer.h">
       <Filter>Header Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="VulkanBufferObject.h">
-      <Filter>Header Files\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceManager.h">
-      <Filter>Header Files\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="UBOData.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanBufferData.h">
       <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="VulkanImageBufferObject.h">
-      <Filter>Header Files\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="BasicImage.h">
-      <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
     <ClInclude Include="BasicMesh.h">
       <Filter>Header Files\Resources\Models</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>Header Files\Resources\Models</Filter>
-    </ClInclude>
-    <ClInclude Include="Texture2D.h">
-      <Filter>Header Files\Resources\Textures</Filter>
-    </ClInclude>
-    <ClInclude Include="BasicUBO.h">
-      <Filter>Header Files\Resources\UBOs</Filter>
-    </ClInclude>
-    <ClInclude Include="BasicImageAttachment.h">
-      <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
     <ClInclude Include="BaseFBO.h">
       <Filter>Header Files\Renderer\FBOs</Filter>
@@ -217,6 +202,39 @@
     </ClInclude>
     <ClInclude Include="Framebuffer.h">
       <Filter>Header Files\Renderer\FBOs</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanBufferObject.h">
+      <Filter>Header Files\Resources\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelResources.h">
+      <Filter>Header Files\Resources\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanImageBufferObject.h">
+      <Filter>Header Files\Resources\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="StorageData.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="UBO.h">
+      <Filter>Header Files\Resources\StorageObjs</Filter>
+    </ClInclude>
+    <ClInclude Include="SSBO.h">
+      <Filter>Header Files\Resources\StorageObjs</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleShader.h">
+      <Filter>Header Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanTexture2D.h">
+      <Filter>Header Files\Resources\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanTextureArray2D.h">
+      <Filter>Header Files\Resources\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanTextureCube.h">
+      <Filter>Header Files\Resources\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureResources.h">
+      <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

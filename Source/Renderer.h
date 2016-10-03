@@ -8,9 +8,10 @@ namespace luna
 {
 	class VulkanSwapchain;
 	class BaseFBO;
-	class BasicShader;
+	class SimpleShader;
 	class Model;
-	class BasicUBO;
+	class UBO;
+	class SSBO;
 
 	class Renderer :
 		public VulkanRenderer
@@ -64,7 +65,7 @@ namespace luna
 		std::vector<BaseFBO*> m_fbos;
 
 		/* final shader to compute the result of pixels */
-		BasicShader* m_shader = nullptr;
+		SimpleShader* m_shader = nullptr;
 
 		/* description of how to render with the images */
 		VkRenderPass m_renderpass = VK_NULL_HANDLE;
@@ -77,11 +78,14 @@ namespace luna
 		VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
 		VkSemaphore m_renderFinishSemaphore = VK_NULL_HANDLE;
 
-		/* a quad mesh to render */
-		Model* m_quad = nullptr;
+		/* a model with mesh to render */
+		Model* m_model = nullptr;
 
 		/* a universal UBO */
-		BasicUBO* m_ubo = nullptr;
+		UBO* m_ubo = nullptr;
+
+		/* ssbo for instancing data */
+		SSBO* m_instance_ssbo = nullptr;
 
 		static std::once_flag m_sflag;
 		static Renderer* m_instance;

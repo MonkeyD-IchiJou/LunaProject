@@ -4,18 +4,21 @@
 
 #include "VulkanSwapchain.h"
 #include "BaseFBO.h"
-#include "BasicShader.h"
+#include "SimpleShader.h"
 #include "WinNative.h"
-#include "ResourceManager.h"
 #include "Model.h"
-#include "Texture2D.h"
-#include "BasicImage.h"
-#include "BasicImageAttachment.h"
-#include "BasicUBO.h"
+#include "SSBO.h"
+#include "UBO.h"
+
+#include "ModelResources.h"
+#include "TextureResources.h"
+#include "VulkanImageBufferObject.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm\glm.hpp>
+
+#define INSTANCE_COUNT 2
 
 namespace luna
 {
@@ -29,14 +32,25 @@ namespace luna
 
 	void Renderer::CreateResources()
 	{
-		// all the resources will be init 
-		ResourceManager* resource = ResourceManager::getInstance();
-		m_quad = resource->Models[eMODELS::QUAD_MODEL];
-		m_ubo = resource->UBO;
-		BasicImageAttachment* att = resource->Textures[eTEXTURES::DEPTH32_TEXTURE_ATT]->getImage<BasicImageAttachment*>();
-
 		if (m_swapchain == nullptr)
 		{
+			// all the models resources will be init 
+			ModelResources* models = ModelResources::getInstance();
+			m_model = models->Models[eMODELS::CUBE_MODEL];
+
+			// all the textures resources will be init
+			TextureResources* textures = TextureResources::getInstance();
+
+			// ubo and ssbo that are unique to this renderer
+			m_ubo = new UBO();
+			m_instance_ssbo = new SSBO();
+
+			/* initial update for ssbo instancedata */
+			std::vector<InstanceData> instancedata(INSTANCE_COUNT);
+			instancedata[0].model = glm::mat4();
+			instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0));
+			m_instance_ssbo->Update(instancedata);
+
 			uint32_t width = 0, height = 0;
 
 			// swap chain creation
@@ -54,11 +68,12 @@ namespace luna
 
 			// create framebuffer for each swapchain images
 			m_fbos.resize(m_swapchain->getImageCount());
+			
 			for (int i = 0; i < m_fbos.size(); i++)
 			{
 				m_fbos[i] = new BaseFBO();
 				m_fbos[i]->SetColorAttachment(m_swapchain->m_buffers[i].imageview, m_swapchain->getColorFormat());
-				m_fbos[i]->SetDepthAttachment(att->GetImageView(), att->GetMainBufferData().format);
+				m_fbos[i]->SetDepthAttachment(textures->Textures[DEPTH_2D_ATTACHMENT]->getImageView(), textures->Textures[DEPTH_2D_ATTACHMENT]->getFormat());
 				m_fbos[i]->SetRenderPass(m_renderpass);
 				m_fbos[i]->Init({width, height});
 			}
@@ -88,10 +103,18 @@ namespace luna
 
 			// shader creation
 			{
-				m_shader = new BasicShader();
-				m_shader->SetUBO(resource->UBO);
-				m_shader->SetTexture(resource->Textures[eTEXTURES::BASIC_TEXTURE]->getImage<BasicImage*>());
+				m_shader = new SimpleShader();
+				m_shader->setUBO(m_ubo);
+				m_shader->setSSBO(m_instance_ssbo);
 				m_shader->Init(m_renderpass);
+			}
+
+			// create semaphores for presetation and rendering synchronisation
+			{
+				VkSemaphoreCreateInfo semaphore_createInfo{};
+				semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+				DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_imageAvailableSemaphore));
+				DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderFinishSemaphore));
 			}
 		}
 	}
@@ -111,7 +134,7 @@ namespace luna
 			colorAttachment.finalLayout							= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // images to be presented in the swap chain
 
 			VkAttachmentDescription depthAttachment{};
-			depthAttachment.format								= VK_FORMAT_D32_SFLOAT;
+			depthAttachment.format								= TextureResources::getInstance()->Textures[DEPTH_2D_ATTACHMENT]->getFormat();
 			depthAttachment.samples								= VK_SAMPLE_COUNT_1_BIT;
 			depthAttachment.loadOp								= VK_ATTACHMENT_LOAD_OP_CLEAR;
 			depthAttachment.storeOp								= VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -163,6 +186,21 @@ namespace luna
 
 	void Renderer::Record()
 	{
+		// make sure it is optimal for the swap chain images
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer	= 0;
+		barrier.subresourceRange.layerCount = 1;
+
 		// can record the command buffer liao
 		// these command buffer is for the final rendering and final presentation on the screen 
 		for (size_t i = 0; i < m_commandbuffers.size(); ++i)
@@ -174,22 +212,8 @@ namespace luna
 
 			vkBeginCommandBuffer(m_commandbuffers[i], &beginInfo);
 
-			// make sure it is optimal for the swap chain images
-			VkImageMemoryBarrier barrier{};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			// transition the image layout for the swapchain image 
 			barrier.image = m_swapchain->m_buffers[i].image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer	= 0;
-			barrier.subresourceRange.layerCount = 1;
-
 			vkCmdPipelineBarrier(
 				m_commandbuffers[i],
 				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -207,26 +231,16 @@ namespace luna
 			m_shader->Bind(m_commandbuffers[i]);
 
 			// push the constant
-			m_shader->LoadModelMatrix(m_commandbuffers[i], glm::mat4());
-			m_shader->LoadColor(m_commandbuffers[i], glm::vec4(1.f, 1.f, 0.f, 1.f));
+			m_shader->LoadOffset(m_commandbuffers[i], 0);
 
 			// Drawing start
-			m_quad->Draw(m_commandbuffers[i]);
-
+			m_model->DrawInstanced(m_commandbuffers[i], INSTANCE_COUNT);
 
 			// unbind the fbo
 			m_fbos[i]->UnBind(m_commandbuffers[i]);
 
 			// finish recording
 			DebugLog::EC(vkEndCommandBuffer(m_commandbuffers[i]));
-		}
-
-		// create semaphores for presetation and rendering synchronisation
-		{
-			VkSemaphoreCreateInfo semaphore_createInfo{};
-			semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_imageAvailableSemaphore));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderFinishSemaphore));
 		}
 	}
 
@@ -237,9 +251,14 @@ namespace luna
 			auto currentTime = std::chrono::high_resolution_clock::now();
 			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
 
+			/*{
+				std::vector<InstanceData> instancedata(INSTANCE_COUNT);
+				instancedata[0].model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0.f, 1.f, 0.f));;
+				instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f));
+				m_instance_ssbo->Update(instancedata);
+			}*/
+
 			UBOData data{};
-			data.model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0.f, 1.f, 0.f));
-			//data.model = glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.f));
 			data.view = glm::lookAt(glm::vec3(0.f, 0.f, 9.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
 			data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
 			
@@ -284,7 +303,20 @@ namespace luna
 		}
 
 		// destroy all the resources
-		ResourceManager::getInstance()->Destroy();
+		ModelResources::getInstance()->Destroy();
+		TextureResources::getInstance()->Destroy();
+
+		if (m_ubo != nullptr)
+		{
+			delete m_ubo;
+			m_ubo = nullptr;
+		}
+
+		if (m_instance_ssbo != nullptr)
+		{
+			delete m_instance_ssbo;
+			m_instance_ssbo = nullptr;
+		}
 		
 		if (m_shader != nullptr)
 		{
@@ -302,7 +334,6 @@ namespace luna
 				fbo = nullptr;
 			}
 		}
-
 		m_fbos.clear();
 
 		if (m_renderpass != VK_NULL_HANDLE)

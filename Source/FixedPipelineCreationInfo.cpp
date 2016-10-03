@@ -41,7 +41,7 @@ namespace luna
 		viewport.maxDepth = 1.0f;
 
 		scissor.offset = { 0, 0 };
-		scissor.extent = {WinNative::getInstance()->getWinSizeX(), WinNative::getInstance()->getWinSizeY()};
+		scissor.extent = {(uint32_t)viewport.width, (uint32_t)viewport.height};
 
 		viewportState.sType	= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.viewportCount	= 1;

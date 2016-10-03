@@ -1,7 +1,5 @@
 #include "BasicShader.h"
 #include "DebugLog.h"
-#include "BasicUBO.h"
-#include "BasicImage.h"
 
 namespace luna
 {
@@ -170,15 +168,15 @@ namespace luna
 
 		// descriptor info for Uniform Buffer 
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_ubo->getMainBuffer();
+		bufferInfo.buffer = VK_NULL_HANDLE;
 		bufferInfo.offset = 0;
-		bufferInfo.range = m_ubo->getUboTotalSize();
+		bufferInfo.range = 0;
 
 		// descriptor info for Image Sampler 
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_image->GetImageView();
-		imageInfo.sampler = m_image->GetImageSampler();
+		imageInfo.imageView = 0;
+		imageInfo.sampler = 0;
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

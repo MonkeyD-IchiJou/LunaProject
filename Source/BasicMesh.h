@@ -14,13 +14,14 @@ namespace luna
 		virtual ~BasicMesh();
 
 		void Draw(const VkCommandBuffer& commandbuffer);
+		void DrawInstanced(const VkCommandBuffer& commandbuffer, const uint32_t& instancecount);
 		void MapToDeviceMemory(const VkDevice& logicaldevice, const VkDeviceMemory& devicememory);
 
 		inline auto getVertexTotalSize() const { return m_vertexTotalSize; }
 		inline auto getIndexTotalSize() const { return m_indexTotalSize; }
 		inline auto getVertexOffset() const { return m_vertexOffset; }
 		inline auto getIndexOffset() const { return m_indexOffset; }
-		inline void setMainBuffer(VkBuffer buffer) { this->m_MainBuffer = buffer; }
+		inline void setMainBuffer(VkBuffer buffer) { this->m_main_buffer = buffer; }
 
 	protected:
 		/* all the vertice is here */
@@ -42,7 +43,7 @@ namespace luna
 		VkDeviceSize m_indexOffset = 0;
 
 		/* the main buffer to communicate with when drawing */
-		VkBuffer m_MainBuffer = VK_NULL_HANDLE;
+		VkBuffer m_main_buffer = VK_NULL_HANDLE;
 	};
 }
 
