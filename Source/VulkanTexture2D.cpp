@@ -88,6 +88,19 @@ namespace luna
 
 		// copy buffers data into image buffer
 		CopyBufferToImageBuffer_(bufferCopyRegions, m_image, stagingBuffer, stagingMemory, subresourceRange);
+	
+		// image view creation
+		// create the image view
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = m_image;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_format;
+		viewInfo.subresourceRange = subresourceRange;
+		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
+	
+		CreateSampler();
 	}
 
 	VulkanTexture2D::VulkanTexture2D(const uint32_t& width, const uint32_t& height, 
@@ -160,7 +173,11 @@ namespace luna
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewInfo.format = m_format;
 		viewInfo.subresourceRange = subresourceRange;
+		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
+	
+		// sampler creation for attachment
+		CreateSampler(false, false);
 	}
 
 	VulkanTexture2D::~VulkanTexture2D()
@@ -175,6 +192,12 @@ namespace luna
 		{
 			vkDestroyImageView(m_logicaldevice, m_imageview, nullptr);
 			m_imageview = VK_NULL_HANDLE;
+		}
+
+		if (m_sampler != VK_NULL_HANDLE)
+		{
+			vkDestroySampler(m_logicaldevice, m_sampler, nullptr);
+			m_sampler = VK_NULL_HANDLE;
 		}
 
 		if (m_devicememory != VK_NULL_HANDLE)

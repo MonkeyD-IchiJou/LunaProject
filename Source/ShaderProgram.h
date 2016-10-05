@@ -23,9 +23,12 @@ namespace luna
 		/* bind the descriptor layout and descriptor sets if have any */
 		virtual void Bind(const VkCommandBuffer& commandbuffer) = 0;
 
+		/* set the dynamic view port */
+		void SetViewPort(const VkCommandBuffer& commandbuffer, const uint32_t & width, const uint32_t & height);
+
 	protected:
 		virtual void CreatePipelineLayout_() = 0;
-		virtual void SetUpFixedPipeline(FixedPipelineCreationInfo& fixedpipeline);
+		virtual void SetUpFixedPipeline_(FixedPipelineCreationTool& fixedpipeline);
 		VkPipelineShaderStageCreateInfo CreateShaders_(const std::string& shaderFileName);
 		
 	protected:

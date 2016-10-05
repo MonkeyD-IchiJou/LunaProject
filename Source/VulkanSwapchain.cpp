@@ -21,7 +21,7 @@ namespace luna
 	{
 	}
 
-	void VulkanSwapchain::CreateResources(uint32_t width, uint32_t height)
+	void VulkanSwapchain::Init()
 	{
 		/* check for surface available or not */
 		if (m_surface == VK_NULL_HANDLE)
@@ -67,20 +67,21 @@ namespace luna
 		/* get the surface capabilities and adjust the width and height */
 		VkSurfaceCapabilitiesKHR surface_capabilities{};
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_gpu, m_surface, &surface_capabilities);
-		VkExtent2D swapchainExtent = {};
-
+		
 		// If width (and height) equals the special value 0xFFFFFFFF, the size of the surface will be set by the swapchain
 		if (surface_capabilities.currentExtent.width == (uint32_t)-1)
 		{
 			// If the surface size is undefined, the size is set to
 			// the size of the images requested.
-			swapchainExtent.width = width;
-			swapchainExtent.height = height;
+			m_swapchainExtent.width = WinNative::getInstance()->getWinSizeX();
+			m_swapchainExtent.height = WinNative::getInstance()->getWinSizeY();
 		}
 		else
 		{
 			// If the surface size is defined, the swap chain size must match
-			swapchainExtent = surface_capabilities.currentExtent;
+			m_swapchainExtent = surface_capabilities.currentExtent;
+
+			// window size recreate ??
 			//*width = surface_capabilities.currentExtent.width;
 			//*height = surface_capabilities.currentExtent.height;
 		}
@@ -122,7 +123,7 @@ namespace luna
 		swapchain_create_info.minImageCount = m_imagecount;
 		swapchain_create_info.imageFormat = m_colorformat;
 		swapchain_create_info.imageColorSpace = m_colorspace;
-		swapchain_create_info.imageExtent = swapchainExtent;
+		swapchain_create_info.imageExtent = m_swapchainExtent;
 		swapchain_create_info.imageArrayLayers = 1; // how many layer does the images have (vr need 2)
 		swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		swapchain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;

@@ -34,12 +34,6 @@
     <Filter Include="Header Files\Utils">
       <UniqueIdentifier>{4fa069fb-2e72-4518-9849-f4328cfd2871}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Shaders">
-      <UniqueIdentifier>{88ffdb5e-812e-4a15-9035-c56ba0d4cbb7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Shaders">
-      <UniqueIdentifier>{84f7a665-434f-45e8-aae1-491893550261}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Resources">
       <UniqueIdentifier>{31e4e121-09ff-411c-9808-f92d4b652465}</UniqueIdentifier>
     </Filter>
@@ -76,6 +70,18 @@
     <Filter Include="Header Files\Resources\StorageObjs">
       <UniqueIdentifier>{b34158ce-0ef0-46d4-b2d2-f46e09eaecc1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\GraphicsPipelines">
+      <UniqueIdentifier>{88ffdb5e-812e-4a15-9035-c56ba0d4cbb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GraphicsPipelines">
+      <UniqueIdentifier>{84f7a665-434f-45e8-aae1-491893550261}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GraphicsPipelines\Shaders">
+      <UniqueIdentifier>{17bb7055-5ac0-4c6b-905e-124158940b55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GraphicsPipelines\Shaders">
+      <UniqueIdentifier>{d0875417-b9dc-4982-893e-aa4dc02b21df}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -94,13 +100,10 @@
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="ShaderProgram.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\GraphicsPipelines</Filter>
     </ClCompile>
     <ClCompile Include="FixedPipelineCreationInfo.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BasicShader.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\GraphicsPipelines</Filter>
     </ClCompile>
     <ClCompile Include="VulkanRenderer.cpp">
       <Filter>Source Files\Renderer</Filter>
@@ -113,9 +116,6 @@
     </ClCompile>
     <ClCompile Include="Model.cpp">
       <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseFBO.cpp">
-      <Filter>Source Files\Renderer\FBOs</Filter>
     </ClCompile>
     <ClCompile Include="Framebuffer.cpp">
       <Filter>Source Files\Renderer\FBOs</Filter>
@@ -138,9 +138,6 @@
     <ClCompile Include="SSBO.cpp">
       <Filter>Source Files\Resources\StorageObjs</Filter>
     </ClCompile>
-    <ClCompile Include="SimpleShader.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanTexture2D.cpp">
       <Filter>Source Files\Resources\Textures</Filter>
     </ClCompile>
@@ -152,6 +149,21 @@
     </ClCompile>
     <ClCompile Include="TextureResources.cpp">
       <Filter>Source Files\Resources\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="DirLightPassShader.cpp">
+      <Filter>Source Files\GraphicsPipelines\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="MRTShader.cpp">
+      <Filter>Source Files\GraphicsPipelines\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="FinalPassShader.cpp">
+      <Filter>Source Files\GraphicsPipelines\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="FinalFBO.cpp">
+      <Filter>Source Files\Renderer\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="MrtFBO.cpp">
+      <Filter>Source Files\Renderer\FBOs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -168,16 +180,13 @@
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="ShaderProgram.h">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\GraphicsPipelines</Filter>
     </ClInclude>
     <ClInclude Include="FixedPipelineCreationInfo.h">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\GraphicsPipelines</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
       <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="BasicShader.h">
-      <Filter>Header Files\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="VulkanRenderer.h">
       <Filter>Header Files\Renderer</Filter>
@@ -193,9 +202,6 @@
     </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>Header Files\Resources\Models</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseFBO.h">
-      <Filter>Header Files\Renderer\FBOs</Filter>
     </ClInclude>
     <ClInclude Include="VulkanSwapchain.h">
       <Filter>Header Files\Renderer\SwapChain</Filter>
@@ -221,9 +227,6 @@
     <ClInclude Include="SSBO.h">
       <Filter>Header Files\Resources\StorageObjs</Filter>
     </ClInclude>
-    <ClInclude Include="SimpleShader.h">
-      <Filter>Header Files\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanTexture2D.h">
       <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
@@ -235,6 +238,21 @@
     </ClInclude>
     <ClInclude Include="TextureResources.h">
       <Filter>Header Files\Resources\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="MRTShader.h">
+      <Filter>Header Files\GraphicsPipelines\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="DirLightPassShader.h">
+      <Filter>Header Files\GraphicsPipelines\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="FinalPassShader.h">
+      <Filter>Header Files\GraphicsPipelines\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="FinalFBO.h">
+      <Filter>Header Files\Renderer\FBOs</Filter>
+    </ClInclude>
+    <ClInclude Include="MrtFBO.h">
+      <Filter>Header Files\Renderer\FBOs</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

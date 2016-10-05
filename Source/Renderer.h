@@ -7,11 +7,15 @@
 namespace luna
 {
 	class VulkanSwapchain;
-	class BaseFBO;
-	class SimpleShader;
 	class Model;
 	class UBO;
 	class SSBO;
+
+	class MrtFBO;
+	class FinalFBO;
+
+	class MRTShader;
+	class FinalPassShader;
 
 	class Renderer :
 		public VulkanRenderer
@@ -51,8 +55,9 @@ namespace luna
 		inline void Destroy() { CleanUpResources(); DeInit_(); }
 
 	private:
-		/* render pass to tell the fbo how to use the image views for presenting and rendering */
-		void InitFinalRenderPass_();
+		void FramebuffersCreation_();
+		void RecordMRTOffscreen_();
+		void RecordFinalFrame_();
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -62,21 +67,22 @@ namespace luna
 		VulkanSwapchain* m_swapchain = nullptr;
 
 		/* fbos for gpu to read/write */
-		std::vector<BaseFBO*> m_fbos;
+		MrtFBO* m_mrtfbo = nullptr;
+		std::vector<FinalFBO*> m_fbos;
 
-		/* final shader to compute the result of pixels */
-		SimpleShader* m_shader = nullptr;
-
-		/* description of how to render with the images */
-		VkRenderPass m_renderpass = VK_NULL_HANDLE;
+		/* shader to compute the result of pixels */
+		FinalPassShader* m_finalpassshader = nullptr;
+		MRTShader* m_mrtshader = nullptr;
 
 		/* recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_commandbuffers;
+		VkCommandBuffer m_offscreen_cmdbuffer;
 
 		// semaphores for synchronizing read/write images in gpu 
-		VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
-		VkSemaphore m_renderFinishSemaphore = VK_NULL_HANDLE;
+		VkSemaphore m_presentComplete = VK_NULL_HANDLE;
+		VkSemaphore m_renderComplete = VK_NULL_HANDLE;
+		VkSemaphore m_offscreenComplete = VK_NULL_HANDLE;
 
 		/* a model with mesh to render */
 		Model* m_model = nullptr;

@@ -92,6 +92,11 @@ namespace luna
 			// depth image read and write
 			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			break;
+
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			// color image read and write
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
 		}
 
 		vkCmdPipelineBarrier(
@@ -186,5 +191,47 @@ namespace luna
 
 		DebugLog::EC(vkQueueSubmit(queue, 1, &submitinfo, VK_NULL_HANDLE));
 		DebugLog::EC(vkQueueWaitIdle(queue));
+	}
+
+	void VulkanImageBufferObject::CreateSampler(bool mipmap, bool anisotrophy)
+	{
+		// image sampler creation
+		VkSamplerCreateInfo sampler{};
+		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler.magFilter = VK_FILTER_LINEAR;
+		sampler.minFilter = VK_FILTER_LINEAR;
+		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		sampler.compareEnable = VK_FALSE;
+		sampler.compareOp = VK_COMPARE_OP_NEVER; // used for percentage-closer filtering on shadow maps
+		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+		if (mipmap)
+		{
+			sampler.mipLodBias = 0.0f;
+			sampler.minLod = 0.0f;
+			sampler.maxLod = (float)m_mipLevels; // mipmapping lod
+		}
+		else
+		{
+			sampler.mipLodBias = 0.0f;
+			sampler.minLod = 0.0f;
+			sampler.maxLod = 0.f; // mipmapping lod
+		}
+
+		if (anisotrophy)
+		{
+			sampler.maxAnisotropy = 16.f; // check with gpu pls
+			sampler.anisotropyEnable = VK_TRUE;
+		}
+		else
+		{
+			sampler.maxAnisotropy = 0.f; // check with gpu pls
+			sampler.anisotropyEnable = VK_FALSE;
+		}
+
+		DebugLog::EC(vkCreateSampler(m_logicaldevice, &sampler, nullptr, &m_sampler));
 	}
 }

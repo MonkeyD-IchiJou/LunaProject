@@ -16,12 +16,13 @@ namespace luna
 			{
 				m_meshes.resize(m_totalmeshes);
 
+				// in vulkan space pls .. upside down de
 				const std::vector<Vertex> vertices = {
 					// front face
-					{ { -1.f, 1.f, 0.f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
-					{ { -1.f, -1.f, 0.f },	{ 0.0f, 0.0f, 1.0f },  { 0.0f, 1.0f } },
-					{ { 1.f, -1.f, 0.f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
-					{ { 1.f, 1.f, 0.f }, { 0.0f, 0.0f, 1.0f },{ 1.0f, 0.0f } }
+					{ { -1.f, -1.f, 0.f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
+					{ { -1.f, 1.f, 0.f },	{ 0.0f, 0.0f, 1.0f },  { 0.0f, 1.0f } },
+					{ { 1.f, 1.f, 0.f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+					{ { 1.f, -1.f, 0.f }, { 0.0f, 0.0f, 1.0f },{ 1.0f, 0.0f } }
 				};
 
 				const std::vector<uint32_t> indices = {

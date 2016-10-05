@@ -13,6 +13,7 @@ namespace luna
 	struct InstanceData
 	{
 		glm::mat4 model;
+		glm::mat4 transpose_inverse_model;
 	};
 }
 

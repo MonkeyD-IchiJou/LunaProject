@@ -15,9 +15,25 @@ namespace luna
 	{
 	}
 
-	void ShaderProgram::SetUpFixedPipeline(FixedPipelineCreationInfo & fixedpipeline)
+	void ShaderProgram::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
 	{
 		// do nothing
+	}
+
+	void ShaderProgram::SetViewPort(const VkCommandBuffer& commandbuffer, const uint32_t & width, const uint32_t & height)
+	{
+		VkViewport viewport{};
+		viewport.width = (float)width;
+		viewport.height = (float)height;
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+
+		VkRect2D scissor{};
+		scissor.extent = { width, height };
+		scissor.offset = { 0, 0 };
+
+		vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandbuffer, 0, 1, &scissor);
 	}
 
 	VkPipelineShaderStageCreateInfo ShaderProgram::CreateShaders_(const std::string & shaderFileName)

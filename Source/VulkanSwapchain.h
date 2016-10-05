@@ -23,7 +23,7 @@ namespace luna
 		* @param width Pointer to the width of the swapchain (may be adjusted to fit the requirements of the swapchain)
 		* @param height Pointer to the height of the swapchain (may be adjusted to fit the requirements of the swapchain)
 		*/
-		void CreateResources(uint32_t width, uint32_t height);
+		void Init();
 
 		/* Acquires the next image in the swap chain */
 		/* The function will always wait until the next image has been acquired by setting timeout to UINT64_MAX */
@@ -39,6 +39,7 @@ namespace luna
 		auto getColorFormat() const { return m_colorformat; }
 		auto getColorSpace() const { return m_colorspace; }
 		auto getImageCount() const { return m_imagecount; }
+		auto getExtent() const { return m_swapchainExtent; }
 
 		std::vector<SwapChainBuffer> m_buffers;
 
@@ -57,6 +58,7 @@ namespace luna
 		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 		uint32_t m_imagecount = 0;
 		std::vector<VkImage> m_images;
+		VkExtent2D m_swapchainExtent = {};
 
 		uint32_t m_queueIndex = 0;
 	};

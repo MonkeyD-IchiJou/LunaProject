@@ -5,16 +5,15 @@
 
 #include <vector>
 #include <string>
-#include <array>
 
 namespace luna
 {
 	/* all the fixed pipeline info is here, will be preinitialised */
-	struct FixedPipelineCreationInfo
+	struct FixedPipelineCreationTool
 	{
 	public:
 		VkVertexInputBindingDescription bindingDescription{};
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescription{};
+		std::vector<VkVertexInputAttributeDescription> attributeDescription{};
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		VkViewport viewport{};
@@ -22,14 +21,14 @@ namespace luna
 		VkPipelineViewportStateCreateInfo viewportState{};
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		VkPipelineMultisampleStateCreateInfo multisampling{};
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments{}; // various fbo various color blend option
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
 		std::vector<VkDynamicState> dynamicState;
 
-		FixedPipelineCreationInfo();
-		~FixedPipelineCreationInfo();
+		FixedPipelineCreationTool();
+		~FixedPipelineCreationTool();
 	};
 }
 

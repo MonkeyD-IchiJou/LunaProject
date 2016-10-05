@@ -111,6 +111,9 @@ namespace luna
 		viewInfo.subresourceRange = subresourceRange;
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
+	
+		// create sampler for this cube map.. take note of mipmap
+		CreateSampler();
 	}
 
 	VulkanTextureCube::~VulkanTextureCube()
@@ -125,6 +128,12 @@ namespace luna
 		{
 			vkDestroyImageView(m_logicaldevice, m_imageview, nullptr);
 			m_imageview = VK_NULL_HANDLE;
+		}
+
+		if (m_sampler != VK_NULL_HANDLE)
+		{
+			vkDestroySampler(m_logicaldevice, m_sampler, nullptr);
+			m_sampler = VK_NULL_HANDLE;
 		}
 
 		if (m_devicememory != VK_NULL_HANDLE)

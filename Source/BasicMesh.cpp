@@ -21,10 +21,6 @@ namespace luna
 		CurrentBufferTotalSize += m_indexTotalSize; /* increase the current buffer size for the next offset */
 	}
 
-	BasicMesh::~BasicMesh()
-	{
-	}
-
 	void BasicMesh::Draw(const VkCommandBuffer & commandbuffer)
 	{
 		vkCmdBindVertexBuffers(commandbuffer, 0, 1, &m_main_buffer, &m_vertexOffset);
@@ -63,5 +59,9 @@ namespace luna
 			memcpy(data, m_indices.data(), (size_t) m_indexTotalSize);
 			vkUnmapMemory(logicaldevice, devicememory);
 		}
+	}
+
+	BasicMesh::~BasicMesh()
+	{
 	}
 }

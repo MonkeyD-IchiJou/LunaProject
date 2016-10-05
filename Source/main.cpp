@@ -2,8 +2,6 @@
 #include "Renderer.h"
 #include "WinNative.h"
 #include "VulkanSwapchain.h"
-#include "BaseFBO.h"
-#include "BasicShader.h"
 
 #include <chrono>
 // we use a fixed timestep of 1 / (60 fps) = 16 milliseconds
