@@ -95,9 +95,13 @@
     <ClCompile Include="FinalFBO.cpp" />
     <ClCompile Include="DirLightPassShader.cpp" />
     <ClCompile Include="FinalPassShader.cpp" />
+    <ClCompile Include="FontMesh.cpp" />
+    <ClCompile Include="LightPassFBO.cpp" />
     <ClCompile Include="MrtFBO.cpp" />
     <ClCompile Include="MRTShader.cpp" />
+    <ClCompile Include="ScreenQuadMesh.cpp" />
     <ClCompile Include="SSBO.cpp" />
+    <ClCompile Include="TextShader.cpp" />
     <ClCompile Include="TextureResources.cpp" />
     <ClCompile Include="UBO.cpp" />
     <ClCompile Include="DebugLog.cpp" />
@@ -124,9 +128,13 @@
     <ClInclude Include="FinalFBO.h" />
     <ClInclude Include="DirLightPassShader.h" />
     <ClInclude Include="FinalPassShader.h" />
+    <ClInclude Include="FontMesh.h" />
+    <ClInclude Include="LightPassFBO.h" />
     <ClInclude Include="MrtFBO.h" />
     <ClInclude Include="MRTShader.h" />
+    <ClInclude Include="ScreenQuadMesh.h" />
     <ClInclude Include="SSBO.h" />
+    <ClInclude Include="TextShader.h" />
     <ClInclude Include="TextureResources.h" />
     <ClInclude Include="UBO.h" />
     <ClInclude Include="DebugLog.h" />

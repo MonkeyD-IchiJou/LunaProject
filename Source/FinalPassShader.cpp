@@ -5,7 +5,6 @@
 
 namespace luna
 {
-
 	FinalPassShader::FinalPassShader()
 	{
 	}
@@ -28,11 +27,10 @@ namespace luna
 	{
 		// Update Descriptor set
 
-		// descriptor info for samplerpos
-		VkDescriptorImageInfo samplerposinfo{};
-		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // make sure layout to be shader read only optimal 
-		samplerposinfo.imageView = finalimage->getImageView();
-		samplerposinfo.sampler = finalimage->getSampler();
+		VkDescriptorImageInfo image{};
+		image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // make sure layout to be shader read only optimal 
+		image.imageView = finalimage->getImageView();
+		image.sampler = finalimage->getSampler();
 
 		VkWriteDescriptorSet descriptorWrites{};
 		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -41,7 +39,7 @@ namespace luna
 		descriptorWrites.dstArrayElement = 0;
 		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptorWrites.descriptorCount = 1;
-		descriptorWrites.pImageInfo = &samplerposinfo;
+		descriptorWrites.pImageInfo = &image;
 
 		vkUpdateDescriptorSets(m_logicaldevice, 1, &descriptorWrites, 0, nullptr);
 	}
@@ -107,27 +105,36 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
+
+		// vertex attributes for screen quad
+		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
+		fixedpipeline.attributeDescription.resize(ScreenQuadVertex::getAttributeDescriptions().size());
+		for (int i = 0; i < fixedpipeline.attributeDescription.size(); ++i)
+		{
+			fixedpipeline.attributeDescription[i] = ScreenQuadVertex::getAttributeDescriptions()[i];
+		}
+
+		auto& vertexInputInfo = fixedpipeline.vertexInputInfo;
+		vertexInputInfo.pVertexBindingDescriptions = &fixedpipeline.bindingDescription;
+		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)fixedpipeline.attributeDescription.size();
+		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
 	}
 
 	void FinalPassShader::CreatePipelineLayout_()
 	{
 		// Descriptor layout
-		// From here ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-		VkDescriptorSetLayoutBinding samplerPosLayoutBinding{};
-		samplerPosLayoutBinding.binding = 0; // binding at 0 for finalcolor texture
-		samplerPosLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerPosLayoutBinding.descriptorCount = 1;
-		samplerPosLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerPosLayoutBinding.pImmutableSamplers = nullptr; // related to image sampling
+		VkDescriptorSetLayoutBinding LayoutBinding{};
+		LayoutBinding.binding = 0; // binding at 0 for finalcolor texture
+		LayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		LayoutBinding.descriptorCount = 1;
+		LayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		LayoutBinding.pImmutableSamplers = nullptr; // related to image sampling
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayout_createinfo{};
 		descriptorSetLayout_createinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		descriptorSetLayout_createinfo.bindingCount = 1;
-		descriptorSetLayout_createinfo.pBindings = &samplerPosLayoutBinding;
-
+		descriptorSetLayout_createinfo.pBindings = &LayoutBinding;
 		DebugLog::EC(vkCreateDescriptorSetLayout(m_logicaldevice, &descriptorSetLayout_createinfo, nullptr, &m_descriptorSetLayout));
-
-		// Till here ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		/* lastly pipeline layout creation */
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -135,7 +142,6 @@ namespace luna
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
-
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 

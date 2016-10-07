@@ -57,8 +57,8 @@ namespace luna
 		/* swapchain datas */
 		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 		uint32_t m_imagecount = 0;
-		std::vector<VkImage> m_images;
 		VkExtent2D m_swapchainExtent = {};
+		std::vector<VkImage> m_images;
 
 		uint32_t m_queueIndex = 0;
 	};

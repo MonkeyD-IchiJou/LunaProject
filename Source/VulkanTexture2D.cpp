@@ -100,7 +100,7 @@ namespace luna
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
 	
-		CreateSampler();
+		m_sampler = CreateSampler_(true,  static_cast<float>(m_mipLevels), true, 16.f);
 	}
 
 	VulkanTexture2D::VulkanTexture2D(const uint32_t& width, const uint32_t& height, 
@@ -176,8 +176,7 @@ namespace luna
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
 	
-		// sampler creation for attachment
-		CreateSampler(false, false);
+		m_sampler = CreateSampler_();
 	}
 
 	VulkanTexture2D::~VulkanTexture2D()

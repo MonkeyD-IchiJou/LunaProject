@@ -1,5 +1,5 @@
-#ifndef MRT_FBO_H
-#define MRT_FBO_H
+#ifndef LIGHT_PASS_FBO_H
+#define LIGHT_PASS_FBO_H
 
 #include "Framebuffer.h"
 #include <mutex>
@@ -8,24 +8,21 @@ namespace luna
 {
 	class VulkanImageBufferObject;
 
-	namespace MRT_FBOATTs
+	namespace LIGHTPASS_FBOATTs
 	{
 		enum eATTS
 		{
-			WORLDPOS_ATTACHMENT = 0,
-			WORLDNORM_ATTACHMENT,
-			ALBEDO_ATTACHMENT,
-			DEPTH_ATTACHMENT,
+			COLOR_ATTACHMENT = 0,
 			ALL_ATTACHMENTS
 		};
 	}
 
-	class MrtFBO :
+	class LightPassFBO :
 		public Framebuffer
 	{
 	public:
-		MrtFBO();
-		virtual ~MrtFBO();
+		LightPassFBO();
+		virtual ~LightPassFBO();
 
 		void Init(const VkExtent2D& extent) override;
 		void Destroy() override;
@@ -41,10 +38,9 @@ namespace luna
 	private:
 		/* make sure only one renderpass throughout the whole fbo */
 		static std::once_flag m_sflag;
-		/* every framebuffer must have only one renderpass to associates with */
+		/* every framebuffer must have only renderpass to associates with */
 		static VkRenderPass m_renderpass;
 	};
-
 }
 
 #endif

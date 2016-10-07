@@ -1,22 +1,23 @@
-#ifndef BASIC_MESH_H
-#define BASIC_MESH_H
+#ifndef SCREEN_QUAD_MESH_H
+#define SCREEN_QUAD_MESH_H
 
 #include "VulkanBufferObject.h"
 #include "Vertex.h"
 
 namespace luna
 {
-	class BasicMesh : public VulkanBufferObject
+	class ScreenQuadMesh :
+		public VulkanBufferObject
 	{
 	public:
-		BasicMesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-		virtual ~BasicMesh();
+		ScreenQuadMesh();
+		virtual ~ScreenQuadMesh();
 
 		void MapToDeviceMemory(const VkDevice& logicaldevice, const VkDeviceMemory& devicememory) override;
 
 	private:
 		/* all the vertice is here */
-		std::vector<Vertex> m_vertices;
+		std::vector<ScreenQuadVertex> m_vertices;
 	};
 }
 

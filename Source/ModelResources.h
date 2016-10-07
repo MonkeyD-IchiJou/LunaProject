@@ -12,10 +12,11 @@ namespace luna
 	enum eMODELS
 	{
 		QUAD_MODEL = 0,
-		BOXES_MODEL = 1,
-		BUNNY_MODEL = 2,
-		TYRA_MODEL = 3,
-		CUBE_MODEL = 4,
+		FONT_MODEL,
+		BOXES_MODEL,
+		BUNNY_MODEL,
+		TYRA_MODEL,
+		CUBE_MODEL,
 		MAX_MODELS
 	};
 
@@ -23,7 +24,7 @@ namespace luna
 	class ModelResources
 	{
 	public:
-		/* all the basic mesh resources is here */
+		/* all the meshes is here */
 		std::vector<Model*> Models;
 
 	public:

@@ -8,7 +8,7 @@
 
 namespace luna
 {
-	class BasicMesh;
+	class VulkanBufferObject;
 	class ModelResources;
 
 	enum ePRIMITIVE_MESH
@@ -16,6 +16,7 @@ namespace luna
 		PRIMITIVE_QUAD = 0,
 		PRIMITIVE_TRIANGLE = 1,
 		PRIMITIVE_CUBE = 2,
+		PRIMITIVE_FONT = 3,
 		MAX_PRIMITIVE_MESH
 	};
 
@@ -45,7 +46,7 @@ namespace luna
 		void setMainBuffer(const VkBuffer& buffer);
 
 		uint32_t m_totalmeshes = 0;
-		std::vector<BasicMesh*> m_meshes;
+		std::vector<VulkanBufferObject*> m_meshes;
 	};
 }
 

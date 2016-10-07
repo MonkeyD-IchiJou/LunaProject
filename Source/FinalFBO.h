@@ -6,28 +6,25 @@
 
 namespace luna
 {
-	class FinalFBO :
-		public Framebuffer
+	namespace FINAL_FBOATTs
 	{
-	public:
-		enum E_ATTACHMENTS
+		enum eATTS
 		{
 			COLOR_ATTACHMENT = 0,
 			ALL_ATTACHMENTS
 		};
+	}
 
+	class FinalFBO :
+		public Framebuffer
+	{
+	public:
 		FinalFBO();
 		virtual ~FinalFBO();
 
 		void Init(const VkExtent2D& extent) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer & commandbuffer, VkSubpassContents subpasscontent = VK_SUBPASS_CONTENTS_INLINE) override;
-
-		/* get the image view from the swap chain */
-		void SetColorAttachment(const VkImage& image, const VkImageView& view, const VkFormat& format);
-
-		/* clear color value begining of the frame */
-		void ClearColor(const VkClearColorValue& clearvalue);
 
 		static inline VkRenderPass getRenderPass() { return m_renderpass; }
 

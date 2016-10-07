@@ -88,8 +88,7 @@ namespace luna
 		uint32_t m_win_pos_x = 0;
 		uint32_t m_win_pos_y = 0;
 		std::string	m_win_name = " ";
-		bool m_close = false;
-
+		
 #if VK_USE_PLATFORM_WIN32_KHR
 		HINSTANCE m_win32_instance= NULL;
 		HWND m_win32_handle = NULL;
@@ -97,6 +96,8 @@ namespace luna
 
 		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 		VkInstance m_vulkanInstance = VK_NULL_HANDLE;
+
+		bool m_close = false;
 
 		static std::once_flag m_sflag;
 		static WinNative* m_instance;

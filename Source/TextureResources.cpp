@@ -25,11 +25,16 @@ namespace luna
 		auto winwidth = WinNative::getInstance()->getWinSizeX();
 		auto winheight = WinNative::getInstance()->getWinSizeY();
 
-		Textures[BASIC_2D_RGBA8] = new VulkanTexture2D("./../Assets/Textures/NewTex_rgba.ktx");
+		Textures[BASIC_2D_RGBA8] = new VulkanTexture2D("./../Assets/Textures/font_sdf_rgba.ktx");
 		Textures[BASIC_2D_BC2] = new VulkanTexture2D("./../Assets/Textures/pattern_02_bc2.ktx");
 		Textures[TERRAIN_2DARRAY_BC3] = new VulkanTextureArray2D("./../Assets/Textures/terrain_texturearray_bc3.ktx");
 		Textures[BASIC_2DARRAY_BC3] = new VulkanTextureArray2D("./../Assets/Textures/texturearray_bc3.ktx");
 		Textures[YOKOHOMO_CUBEMAP_BC3] = new VulkanTextureCube("./../Assets/Textures/cubemap_yokohama.ktx");
+		Textures[WORLDPOS_2D_RGBA16FLOAT] = nullptr;
+		Textures[WORLDNORMAL_2D_RGBA16FLOAT] = nullptr;
+		Textures[ALBEDO_2D_RGBA8UNORM] = nullptr;
+		Textures[DEPTH_2D_32FLOAT] = nullptr;
+		Textures[LIGHTPROCESS_2D_RGBA8UNORM] = nullptr;
 	}
 
 	void TextureResources::Destroy()

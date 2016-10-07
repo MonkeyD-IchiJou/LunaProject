@@ -154,7 +154,7 @@ namespace luna
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
 	
 		// create the sampler for this image
-		CreateSampler();
+		m_sampler = CreateSampler_(true,  static_cast<float>(m_mipLevels), true, 16.f);
 	}
 
 	VulkanTextureArray2D::~VulkanTextureArray2D()

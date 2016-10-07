@@ -12,20 +12,20 @@ namespace luna
 	struct FixedPipelineCreationTool
 	{
 	public:
-		VkVertexInputBindingDescription bindingDescription{};
-		std::vector<VkVertexInputAttributeDescription> attributeDescription{};
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		VkViewport viewport{};
 		VkRect2D scissor{};
+		VkVertexInputBindingDescription bindingDescription{};
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		VkPipelineViewportStateCreateInfo viewportState{};
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		VkPipelineMultisampleStateCreateInfo multisampling{};
-		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments{}; // various fbo various color blend option
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
 		std::vector<VkDynamicState> dynamicState;
+		std::vector<VkVertexInputAttributeDescription> attributeDescription{};
+		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments{}; // various fbo various color blend option
 
 		FixedPipelineCreationTool();
 		~FixedPipelineCreationTool();

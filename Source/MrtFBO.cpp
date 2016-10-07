@@ -11,8 +11,8 @@ namespace luna
 
 	MrtFBO::MrtFBO()
 	{
-		m_attachments.resize(ALL_ATTACHMENTS);
-		m_clearvalues.resize(ALL_ATTACHMENTS);
+		m_attachments.resize(MRT_FBOATTs::ALL_ATTACHMENTS);
+		m_clearvalues.resize(MRT_FBOATTs::ALL_ATTACHMENTS);
 	}
 
 	MrtFBO::~MrtFBO()
@@ -40,7 +40,7 @@ namespace luna
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
-		SetAttachment_(*imageattachment, WORLDPOS_ATTACHMENT); // world pos color attachment
+		SetAttachment(*imageattachment, MRT_FBOATTs::WORLDPOS_ATTACHMENT); // world pos color attachment
 
 		imageattachment = &texrsc->Textures[eTEXTURES::WORLDNORMAL_2D_RGBA16FLOAT];
 		*imageattachment = new VulkanTexture2D(
@@ -49,7 +49,7 @@ namespace luna
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
-		SetAttachment_(*imageattachment, WORLDNORM_ATTACHMENT); // world normal color attachment
+		SetAttachment(*imageattachment, MRT_FBOATTs::WORLDNORM_ATTACHMENT); // world normal color attachment
 
 		imageattachment = &texrsc->Textures[eTEXTURES::ALBEDO_2D_RGBA8UNORM];
 		*imageattachment = new VulkanTexture2D(
@@ -58,7 +58,7 @@ namespace luna
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
-		SetAttachment_(*imageattachment, ALBEDO_ATTACHMENT); // albedo color attachment
+		SetAttachment(*imageattachment, MRT_FBOATTs::ALBEDO_ATTACHMENT); // albedo color attachment
 
 		imageattachment = &texrsc->Textures[eTEXTURES::DEPTH_2D_32FLOAT];
 		*imageattachment = new VulkanTexture2D(
@@ -66,13 +66,13 @@ namespace luna
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
 			VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);
-		SetAttachment_(*imageattachment, DEPTH_ATTACHMENT); // depth stencil attachment
+		SetAttachment(*imageattachment, MRT_FBOATTs::DEPTH_ATTACHMENT); // depth stencil attachment
 
 		VkImageView imageviews[] = { 
-			m_attachments[WORLDPOS_ATTACHMENT].view, 
-			m_attachments[WORLDNORM_ATTACHMENT].view, 
-			m_attachments[ALBEDO_ATTACHMENT].view, 
-			m_attachments[DEPTH_ATTACHMENT].view
+			m_attachments[MRT_FBOATTs::WORLDPOS_ATTACHMENT].view, 
+			m_attachments[MRT_FBOATTs::WORLDNORM_ATTACHMENT].view, 
+			m_attachments[MRT_FBOATTs::ALBEDO_ATTACHMENT].view, 
+			m_attachments[MRT_FBOATTs::DEPTH_ATTACHMENT].view
 		};
 
 		// must create the render pass 
@@ -120,36 +120,24 @@ namespace luna
 		// make sure the image layout is suitable for any usage later 
 		VulkanImageBufferObject::TransitionImageLayout_(
 			commandbuffer,
-			m_attachments[WORLDPOS_ATTACHMENT].image,
+			m_attachments[MRT_FBOATTs::WORLDPOS_ATTACHMENT].image,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			subresourceRange
 		);
 
 		VulkanImageBufferObject::TransitionImageLayout_(
 			commandbuffer,
-			m_attachments[WORLDNORM_ATTACHMENT].image,
+			m_attachments[MRT_FBOATTs::WORLDNORM_ATTACHMENT].image,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			subresourceRange
 		);
 
 		VulkanImageBufferObject::TransitionImageLayout_(
 			commandbuffer,
-			m_attachments[ALBEDO_ATTACHMENT].image,
+			m_attachments[MRT_FBOATTs::ALBEDO_ATTACHMENT].image,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			subresourceRange
 		);
-	}
-
-	void MrtFBO::ClearColor(const VkClearColorValue & worldpos_clearvalue, const VkClearColorValue & worldnorm_clearvalue, const VkClearColorValue & albedo_clearvalue)
-	{
-		m_clearvalues[WORLDPOS_ATTACHMENT].color = worldpos_clearvalue;
-		m_clearvalues[WORLDNORM_ATTACHMENT].color = worldnorm_clearvalue;
-		m_clearvalues[ALBEDO_ATTACHMENT].color = albedo_clearvalue;
-	}
-
-	void MrtFBO::ClearDepthStencil(VkClearDepthStencilValue & cleardepthstencil)
-	{
-		m_clearvalues[DEPTH_ATTACHMENT].depthStencil = cleardepthstencil;
 	}
 
 	void MrtFBO::CreateRenderPass_()
@@ -160,7 +148,7 @@ namespace luna
 			std::array<VkAttachmentDescription, 4> attachmentDescs = {};
 
 			// Init attachment properties
-			for(uint32_t i = 0; i < ALL_ATTACHMENTS; ++i)
+			for(uint32_t i = 0; i < MRT_FBOATTs::ALL_ATTACHMENTS; ++i)
 			{
 				attachmentDescs[i].samples			= VK_SAMPLE_COUNT_1_BIT;
 				attachmentDescs[i].loadOp			= VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -168,7 +156,7 @@ namespace luna
 				attachmentDescs[i].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachmentDescs[i].stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-				if (i == DEPTH_ATTACHMENT)
+				if (i == MRT_FBOATTs::DEPTH_ATTACHMENT)
 				{
 					attachmentDescs[i].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 					attachmentDescs[i].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // images as a depth
@@ -233,15 +221,6 @@ namespace luna
 			DebugLog::throwEx("render pass is not available");
 			return;
 		}
-	}
-
-	void MrtFBO::SetAttachment_(const VulkanImageBufferObject * image, E_ATTACHMENTS att)
-	{
-		FramebufferAttachment attach{};
-		attach.image = image->getImage();
-		attach.format = image->getFormat();
-		attach.view = image->getImageView();
-		m_attachments[att] = attach;
 	}
 
 	void MrtFBO::Destroy()

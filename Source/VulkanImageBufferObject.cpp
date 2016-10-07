@@ -193,45 +193,47 @@ namespace luna
 		DebugLog::EC(vkQueueWaitIdle(queue));
 	}
 
-	void VulkanImageBufferObject::CreateSampler(bool mipmap, bool anisotrophy)
+	VkSampler VulkanImageBufferObject::CreateSampler_(bool mipmap , float miplevel, bool anisotropy, float anisotropylevel)
 	{
 		// image sampler creation
-		VkSamplerCreateInfo sampler{};
-		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		sampler.magFilter = VK_FILTER_LINEAR;
-		sampler.minFilter = VK_FILTER_LINEAR;
-		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-		sampler.compareEnable = VK_FALSE;
-		sampler.compareOp = VK_COMPARE_OP_NEVER; // used for percentage-closer filtering on shadow maps
-		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		VkSamplerCreateInfo samplerinfo{};
+		samplerinfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerinfo.magFilter = VK_FILTER_LINEAR;
+		samplerinfo.minFilter = VK_FILTER_LINEAR;
+		samplerinfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerinfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		samplerinfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		samplerinfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		samplerinfo.compareEnable = VK_FALSE;
+		samplerinfo.compareOp = VK_COMPARE_OP_NEVER; // used for percentage-closer filtering on shadow maps
+		samplerinfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
 		if (mipmap)
 		{
-			sampler.mipLodBias = 0.0f;
-			sampler.minLod = 0.0f;
-			sampler.maxLod = (float)m_mipLevels; // mipmapping lod
+			samplerinfo.mipLodBias = 0.0f;
+			samplerinfo.minLod = 0.0f;
+			samplerinfo.maxLod = miplevel; // mipmapping lod
 		}
 		else
 		{
-			sampler.mipLodBias = 0.0f;
-			sampler.minLod = 0.0f;
-			sampler.maxLod = 0.f; // mipmapping lod
+			samplerinfo.mipLodBias = 0.0f;
+			samplerinfo.minLod = 0.0f;
+			samplerinfo.maxLod = 0.f; // mipmapping lod
 		}
 
-		if (anisotrophy)
+		if (anisotropy)
 		{
-			sampler.maxAnisotropy = 16.f; // check with gpu pls
-			sampler.anisotropyEnable = VK_TRUE;
+			samplerinfo.maxAnisotropy = anisotropylevel; // check with gpu pls
+			samplerinfo.anisotropyEnable = VK_TRUE;
 		}
 		else
 		{
-			sampler.maxAnisotropy = 0.f; // check with gpu pls
-			sampler.anisotropyEnable = VK_FALSE;
+			samplerinfo.maxAnisotropy = 0.f; // check with gpu pls
+			samplerinfo.anisotropyEnable = VK_FALSE;
 		}
 
-		DebugLog::EC(vkCreateSampler(m_logicaldevice, &sampler, nullptr, &m_sampler));
+		VkSampler sampler = VK_NULL_HANDLE;
+		DebugLog::EC(vkCreateSampler(m_logicaldevice, &samplerinfo, nullptr, &sampler));
+		return sampler;
 	}
 }

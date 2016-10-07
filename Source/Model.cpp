@@ -1,5 +1,7 @@
 #include "Model.h"
 #include "BasicMesh.h"
+#include "FontMesh.h"
+#include "ScreenQuadMesh.h"
 #include "DebugLog.h"
 
 #include <fstream>
@@ -15,21 +17,7 @@ namespace luna
 		case PRIMITIVE_QUAD:
 			{
 				m_meshes.resize(m_totalmeshes);
-
-				// in vulkan space pls .. upside down de
-				const std::vector<Vertex> vertices = {
-					// front face
-					{ { -1.f, -1.f, 0.f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } },
-					{ { -1.f, 1.f, 0.f },	{ 0.0f, 0.0f, 1.0f },  { 0.0f, 1.0f } },
-					{ { 1.f, 1.f, 0.f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
-					{ { 1.f, -1.f, 0.f }, { 0.0f, 0.0f, 1.0f },{ 1.0f, 0.0f } }
-				};
-
-				const std::vector<uint32_t> indices = {
-					0, 1, 2, 2, 3, 0
-				};
-
-				m_meshes[0] = new BasicMesh(vertices, indices);
+				m_meshes[0] = new ScreenQuadMesh();
 			}
 
 			break;
@@ -91,6 +79,11 @@ namespace luna
 
 				m_meshes[0] = new BasicMesh(vertices, indices);
 			}
+			break;
+
+		case PRIMITIVE_FONT:
+			m_meshes.resize(m_totalmeshes);
+			m_meshes[0] = new FontMesh();
 			break;
 
 		default:

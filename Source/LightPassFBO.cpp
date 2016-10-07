@@ -1,23 +1,24 @@
-#include "FinalFBO.h"
+#include "LightPassFBO.h"
+#include "TextureResources.h"
+#include "VulkanTexture2D.h"
 #include "DebugLog.h"
-#include <array>
 
 namespace luna
 {
-	std::once_flag FinalFBO::m_sflag{};
-	VkRenderPass FinalFBO::m_renderpass = VK_NULL_HANDLE;
+	std::once_flag LightPassFBO::m_sflag{};
+	VkRenderPass LightPassFBO::m_renderpass = VK_NULL_HANDLE;
 
-	FinalFBO::FinalFBO()
+	LightPassFBO::LightPassFBO()
 	{
-		m_attachments.resize(FINAL_FBOATTs::ALL_ATTACHMENTS);
-		m_clearvalues.resize(FINAL_FBOATTs::ALL_ATTACHMENTS);
+		m_attachments.resize(LIGHTPASS_FBOATTs::ALL_ATTACHMENTS);
+		m_clearvalues.resize(LIGHTPASS_FBOATTs::ALL_ATTACHMENTS);
 	}
 
-	FinalFBO::~FinalFBO()
+	LightPassFBO::~LightPassFBO()
 	{
 	}
 
-	void FinalFBO::Init(const VkExtent2D & extent)
+	void LightPassFBO::Init(const VkExtent2D & extent)
 	{
 		/* check valid extent mah */
 		if (extent.height <= 0 || extent.width <= 0)
@@ -28,8 +29,24 @@ namespace luna
 
 		m_resolution = extent;
 
-		VkImageView imageviews[] = {m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].view};
+		TextureResources* texrsc = TextureResources::getInstance();
+		VulkanImageBufferObject** imageattachment = nullptr; // image attachment mapping
 
+		// create the attachment ourself
+		imageattachment = &texrsc->Textures[eTEXTURES::LIGHTPROCESS_2D_RGBA8UNORM];
+		*imageattachment = new VulkanTexture2D(
+			m_resolution.width, m_resolution.height, 
+			VK_FORMAT_R8G8B8A8_UNORM, 
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		);
+		SetAttachment(*imageattachment, LIGHTPASS_FBOATTs::COLOR_ATTACHMENT);
+
+		VkImageView imageviews[] = { 
+			m_attachments[LIGHTPASS_FBOATTs::COLOR_ATTACHMENT].view
+		};
+
+		// must create the render pass 
 		CreateRenderPass_();
 
 		// create the framebuffer
@@ -44,9 +61,9 @@ namespace luna
 		DebugLog::EC(vkCreateFramebuffer(m_logicaldevice, &framebuffer_createinfo, nullptr, &m_framebuffer));
 	}
 
-	void FinalFBO::Bind(const VkCommandBuffer & commandbuffer, VkSubpassContents subpasscontent)
+	void LightPassFBO::Bind(const VkCommandBuffer & commandbuffer, VkSubpassContents subpasscontent)
 	{
-		// transition the image layout for the swapchain image
+		// must make sure the images are optimal layout
 		TransitionAttachmentImagesLayout_(commandbuffer);
 
 		// starting a render pass
@@ -62,48 +79,37 @@ namespace luna
 		vkCmdBeginRenderPass(commandbuffer, &renderPassInfo, subpasscontent);
 	}
 
-	void FinalFBO::TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer)
+	void LightPassFBO::TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer)
 	{
-		// make sure it is optimal for the swap chain images
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer	= 0;
-		barrier.subresourceRange.layerCount = 1;
-		// transition the image layout for the swapchain image 
-		barrier.image = m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].image;
+		VkImageSubresourceRange subresourceRange{};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; 
+		subresourceRange.baseMipLevel = 0; // Start at first mip level
+		subresourceRange.levelCount = 1; // We will transition on all mip levels
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1; // The 2D texture only has one layer
 
-		vkCmdPipelineBarrier(
+										 // make sure the image layout is suitable for any usage later 
+		VulkanImageBufferObject::TransitionImageLayout_(
 			commandbuffer,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
+			m_attachments[LIGHTPASS_FBOATTs::COLOR_ATTACHMENT].image,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			subresourceRange
 		);
 	}
 
-	void FinalFBO::CreateRenderPass_()
+	void LightPassFBO::CreateRenderPass_()
 	{
 		auto lambda = [&]() {
 			VkAttachmentDescription attachmentDesc{};
 			{
-				attachmentDesc.format = m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].format;
+				attachmentDesc.format = m_attachments[LIGHTPASS_FBOATTs::COLOR_ATTACHMENT].format;
 				attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 				attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 				attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-				attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // images to be presented in the swap chain
+				attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // images to be used for other shaders
 			}
 
 			VkSubpassDescription subPass{};
@@ -148,7 +154,7 @@ namespace luna
 		}
 	}
 
-	void FinalFBO::Destroy()
+	void LightPassFBO::Destroy()
 	{
 		// only fbo destroy here
 		if (m_framebuffer != VK_NULL_HANDLE)

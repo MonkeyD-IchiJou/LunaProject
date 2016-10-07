@@ -21,8 +21,6 @@ static void luna_main()
 	renderer->CreateResources();
 	/* TILL HERE */
 
-
-
 	// command buffer record how it is going to render
 	renderer->Record();
 	
@@ -52,8 +50,6 @@ static void luna_main()
 		}
 		//luna::DebugLog::printL(std::chrono::duration_cast<std::chrono::milliseconds>(lag).count());
 	}
-
-
 
 	/* Major Clean Up*/
 	renderer->CleanUpResources();

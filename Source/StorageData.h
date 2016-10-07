@@ -15,6 +15,12 @@ namespace luna
 		glm::mat4 model;
 		glm::mat4 transpose_inverse_model;
 	};
+
+	struct FontInstanceData
+	{
+		glm::mat4 transformation;
+		glm::vec2 uv[4];
+	};
 }
 
 #endif

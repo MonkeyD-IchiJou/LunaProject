@@ -8,9 +8,9 @@ namespace luna
 	struct VulkanBufferData
 	{
 		VkDeviceSize BufferTotalSize = 0;
-		uint32_t MemoryTypeIndex = 0;
 		VkDeviceSize RequirementSizeInDeviceMem = 0;
 		VkDeviceSize RequirementAlignmentInDeviceMem = 0;
+		uint32_t MemoryTypeIndex = 0;
 		VkBuffer buffer = VK_NULL_HANDLE;
 	};
 }

@@ -12,9 +12,12 @@ namespace luna
 	class SSBO;
 
 	class MrtFBO;
+	class LightPassFBO;
 	class FinalFBO;
+	class TextShader;
 
 	class MRTShader;
+	class DirLightPassShader;
 	class FinalPassShader;
 
 	class Renderer :
@@ -55,8 +58,8 @@ namespace luna
 		inline void Destroy() { CleanUpResources(); DeInit_(); }
 
 	private:
-		void FramebuffersCreation_();
 		void RecordMRTOffscreen_();
+		void RecordLightPassOffscreen_();
 		void RecordFinalFrame_();
 
 		Renderer();
@@ -67,22 +70,27 @@ namespace luna
 		VulkanSwapchain* m_swapchain = nullptr;
 
 		/* fbos for gpu to read/write */
-		MrtFBO* m_mrtfbo = nullptr;
-		std::vector<FinalFBO*> m_fbos;
+		MrtFBO* m_mrt_fbo = nullptr;
+		LightPassFBO* m_lightpass_fbo = nullptr;
+		std::vector<FinalFBO*> m_finalpass_fbos;
 
 		/* shader to compute the result of pixels */
-		FinalPassShader* m_finalpassshader = nullptr;
-		MRTShader* m_mrtshader = nullptr;
+		MRTShader* m_mrt_shader = nullptr;
+		DirLightPassShader* m_dirlightpass_shader = nullptr;
+		FinalPassShader* m_finalpass_shader = nullptr;
+		TextShader* m_text_shader = nullptr;
 
 		/* recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
-		std::vector<VkCommandBuffer> m_commandbuffers;
-		VkCommandBuffer m_offscreen_cmdbuffer;
+		std::vector<VkCommandBuffer> m_finalpass_cmdbuffers;
+		VkCommandBuffer m_mrt_cmdbuffer = VK_NULL_HANDLE;
+		VkCommandBuffer m_lightpass_cmdbuffer = VK_NULL_HANDLE;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;
 		VkSemaphore m_renderComplete = VK_NULL_HANDLE;
-		VkSemaphore m_offscreenComplete = VK_NULL_HANDLE;
+		VkSemaphore m_mrtComplete = VK_NULL_HANDLE;
+		VkSemaphore m_lightpassComplete = VK_NULL_HANDLE;
 
 		/* a model with mesh to render */
 		Model* m_model = nullptr;
@@ -92,6 +100,7 @@ namespace luna
 
 		/* ssbo for instancing data */
 		SSBO* m_instance_ssbo = nullptr;
+		SSBO* m_fontinstance_ssbo = nullptr;
 
 		static std::once_flag m_sflag;
 		static Renderer* m_instance;

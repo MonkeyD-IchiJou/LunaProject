@@ -20,16 +20,16 @@ namespace luna
 		// do nothing
 	}
 
-	void ShaderProgram::SetViewPort(const VkCommandBuffer& commandbuffer, const uint32_t & width, const uint32_t & height)
+	void ShaderProgram::SetViewPort(const VkCommandBuffer& commandbuffer, const VkExtent2D& size)
 	{
 		VkViewport viewport{};
-		viewport.width = (float)width;
-		viewport.height = (float)height;
+		viewport.width = static_cast<float>(size.width);
+		viewport.height = static_cast<float>(size.height);
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
 
 		VkRect2D scissor{};
-		scissor.extent = { width, height };
+		scissor.extent = size;
 		scissor.offset = { 0, 0 };
 
 		vkCmdSetViewport(commandbuffer, 0, 1, &viewport);

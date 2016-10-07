@@ -15,7 +15,8 @@ namespace luna
 
 		// update the ubodata into device memory
 		void Update(const std::vector<InstanceData>& ssbo);
-		
+		void Update(const std::vector<FontInstanceData>& ssbo);
+
 		inline auto getSSBOTotalSize() const { return m_ssboTotalSize; }
 		inline auto getMainBuffer() const { return m_main_buffer; }
 

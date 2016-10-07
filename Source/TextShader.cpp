@@ -1,79 +1,31 @@
-#include "DirLightPassShader.h"
+#include "TextShader.h"
 #include "DebugLog.h"
 #include "VulkanImageBufferObject.h"
 #include "Vertex.h"
+#include "SSBO.h"
 
 namespace luna
 {
-	DirLightPassShader::DirLightPassShader()
+	TextShader::TextShader()
 	{
 	}
 
-	DirLightPassShader::~DirLightPassShader()
+	TextShader::~TextShader()
 	{
 		Destroy();
 	}
 
-	void DirLightPassShader::Bind(const VkCommandBuffer & commandbuffer)
-	{
-		// Graphics Pipeline Binding (shaders binding)
-		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
-
-		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
-	}
-
-	void DirLightPassShader::UpdateDescriptorSets(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, const VulkanImageBufferObject * samplerAlbedo)
-	{
-		// Update Descriptor set
-
-		// descriptor info for samplerpos
-		VkDescriptorImageInfo samplerposinfo{};
-		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		samplerposinfo.imageView = samplerPos->getImageView();
-		samplerposinfo.sampler = samplerPos->getSampler();
-
-		// descriptor info for samplernormal
-		VkDescriptorImageInfo samplernorminfo{};
-		samplernorminfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		samplernorminfo.imageView = samplerNormal->getImageView();
-		samplernorminfo.sampler = samplerNormal->getSampler();
-
-		// descriptor info for albedo
-		VkDescriptorImageInfo albedoinfo{};
-		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		albedoinfo.imageView = samplerAlbedo->getImageView();
-		albedoinfo.sampler = samplerAlbedo->getSampler();
-
-		auto ImageDescriptorWriteTool = [&](VkWriteDescriptorSet& descriptorwrite, const uint32_t& binding, const VkDescriptorImageInfo* pImageInfo) {
-			descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorwrite.dstSet = m_descriptorSet;
-			descriptorwrite.dstBinding = binding;
-			descriptorwrite.dstArrayElement = 0;
-			descriptorwrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorwrite.descriptorCount = 1;
-			descriptorwrite.pImageInfo = pImageInfo;
-		};
-
-		std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-		ImageDescriptorWriteTool(descriptorWrites[0], 0, &samplerposinfo);
-		ImageDescriptorWriteTool(descriptorWrites[1], 1, &samplernorminfo);
-		ImageDescriptorWriteTool(descriptorWrites[2], 2, &albedoinfo);
-
-		vkUpdateDescriptorSets(m_logicaldevice, (uint32_t) descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-	}
-
-	void DirLightPassShader::Init(const VkRenderPass & renderpass)
+	void TextShader::Init(const VkRenderPass & renderpass)
 	{
 		// only when it has not created
 		if (m_graphicPipeline == VK_NULL_HANDLE)
 		{
 			/* create the shaders first */
-			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_("./../Assets/Shaders/screenquad_vert.spv");
+			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_("./../Assets/Shaders/text_vert.spv");
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_("./../Assets/Shaders/dirlightpass_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_("./../Assets/Shaders/text_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -88,7 +40,7 @@ namespace luna
 
 			/* create the descriptor sets */
 			CreateDescriptorSets_();
-			
+
 			/* create the graphics pipeline */
 			VkGraphicsPipelineCreateInfo graphicspipeline_createinfo{};
 			graphicspipeline_createinfo.sType					= VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -116,49 +68,113 @@ namespace luna
 		}
 	}
 
-	void DirLightPassShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
+	void TextShader::Bind(const VkCommandBuffer & commandbuffer)
 	{
-		// no depth test
-		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
-		depthStencil.depthTestEnable = VK_FALSE;
-		depthStencil.depthWriteEnable = VK_FALSE;
-		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
-		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		// Graphics Pipeline Binding (shaders binding)
+		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
 
-		// vertex attributes for screen quad
-		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
-		fixedpipeline.attributeDescription.resize(ScreenQuadVertex::getAttributeDescriptions().size());
+		// bind the descriptor sets using 
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+	}
+
+	void TextShader::UpdateDescriptorSets(const SSBO * ssbo, const VulkanImageBufferObject * font_image)
+	{
+		// Update Descriptor set
+
+		// descriptor info for ssbo
+		VkDescriptorBufferInfo ssboinfo{};
+		ssboinfo.buffer = ssbo->getMainBuffer().buffer;
+		ssboinfo.offset = 0;
+		ssboinfo.range = ssbo->getSSBOTotalSize();
+
+		// font image 
+		VkDescriptorImageInfo fontimage{};
+		fontimage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // make sure layout to be shader read only optimal 
+		fontimage.imageView = font_image->getImageView();
+		fontimage.sampler = font_image->getSampler();
+
+		// helper tools to set up descriptor
+		auto DescriptorWriteTool = [&](VkWriteDescriptorSet& descriptorwrite, const uint32_t& binding, const VkDescriptorBufferInfo* pBufferInfo, 
+			const VkDescriptorImageInfo* pImageInfo, const VkDescriptorType& descriptorType) {
+			descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorwrite.dstSet = m_descriptorSet;
+			descriptorwrite.dstBinding = binding;
+			descriptorwrite.dstArrayElement = 0;
+			descriptorwrite.descriptorType = descriptorType;
+			descriptorwrite.descriptorCount = 1;
+			descriptorwrite.pImageInfo = pImageInfo;
+			descriptorwrite.pBufferInfo = pBufferInfo;
+		};
+
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+		DescriptorWriteTool(descriptorWrites[0], 0, &ssboinfo, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		DescriptorWriteTool(descriptorWrites[1], 1, nullptr, &fontimage, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		vkUpdateDescriptorSets(m_logicaldevice, (uint32_t) descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	}
+
+	void TextShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
+	{
+		// blending enable for fonts
+		fixedpipeline.colorBlendAttachments.clear();
+		fixedpipeline.colorBlendAttachments.resize(1);
+		auto& blendAttachmentState = fixedpipeline.colorBlendAttachments[0];
+		blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+		blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+		blendAttachmentState.blendEnable = VK_TRUE;
+		blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		auto& colorblending = fixedpipeline.colorBlending;
+		colorblending.attachmentCount = (uint32_t)fixedpipeline.colorBlendAttachments.size();
+		colorblending.pAttachments = fixedpipeline.colorBlendAttachments.data();
+		colorblending.logicOpEnable = VK_FALSE;
+		colorblending.logicOp = VK_LOGIC_OP_COPY;
+
+		// vertex attributes for fonts
+		fixedpipeline.bindingDescription = FontVertex::getBindingDescription();
+		fixedpipeline.attributeDescription.resize(FontVertex::getAttributeDescriptions().size());
 		for (int i = 0; i < fixedpipeline.attributeDescription.size(); ++i)
 		{
-			fixedpipeline.attributeDescription[i] = ScreenQuadVertex::getAttributeDescriptions()[i];
+			fixedpipeline.attributeDescription[i] = FontVertex::getAttributeDescriptions()[i];
 		}
 
 		auto& vertexInputInfo = fixedpipeline.vertexInputInfo;
 		vertexInputInfo.pVertexBindingDescriptions = &fixedpipeline.bindingDescription;
 		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)fixedpipeline.attributeDescription.size();
 		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
+
+		// no depth test
+		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
+		depthStencil.depthTestEnable = VK_FALSE;
+		depthStencil.depthWriteEnable = VK_FALSE;
+		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
+		depthStencil.depthBoundsTestEnable = VK_FALSE;
 	}
 
-	void DirLightPassShader::CreatePipelineLayout_()
+	void TextShader::CreatePipelineLayout_()
 	{
 		// helper lambda for creating descriptorsetlayout
-		auto DescriptorSetLayoutCreateTool = [](VkDescriptorSetLayoutBinding& layoutbinding, const uint32_t& binding) {
+		auto DescriptorSetLayoutCreateTool = [](VkDescriptorSetLayoutBinding& layoutbinding, const uint32_t& binding, const VkDescriptorType& descriptorType, 
+			const VkShaderStageFlags& shaderstageflag) {
 			layoutbinding.binding = binding;
-			layoutbinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layoutbinding.descriptorType = descriptorType;
 			layoutbinding.descriptorCount = 1;
-			layoutbinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			layoutbinding.stageFlags = shaderstageflag;
 			layoutbinding.pImmutableSamplers = nullptr; // related to image sampling
 		};
 
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings{};
-		DescriptorSetLayoutCreateTool(bindings[0], 0); // binding at 0 for worldpos texture
-		DescriptorSetLayoutCreateTool(bindings[1], 1); // binding at 1 for worldnormal texture
-		DescriptorSetLayoutCreateTool(bindings[2], 2); // binding at 2 for albedo texture
+		// Descriptor layouts
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {};
+		DescriptorSetLayoutCreateTool(bindings[0], 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT); // binding at 0 for ssbo
+		DescriptorSetLayoutCreateTool(bindings[1], 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT); // binding at 1 for font image
 
-		/* descriptor set layout creation */
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayout_createinfo{};
 		descriptorSetLayout_createinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayout_createinfo.bindingCount = (uint32_t) bindings.size();
+		descriptorSetLayout_createinfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		descriptorSetLayout_createinfo.pBindings = bindings.data();
 		DebugLog::EC(vkCreateDescriptorSetLayout(m_logicaldevice, &descriptorSetLayout_createinfo, nullptr, &m_descriptorSetLayout));
 
@@ -168,26 +184,23 @@ namespace luna
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
-
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void DirLightPassShader::CreateDescriptorSets_()
+	void TextShader::CreateDescriptorSets_()
 	{
 		// Descriptor Sets
 
 		// create the descriptor pool first
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		poolSizes[0].descriptorCount = 1;
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = 1;
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[2].descriptorCount = 1;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = (uint32_t) poolSizes.size();
+		poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = 1;
 		DebugLog::EC(vkCreateDescriptorPool(m_logicaldevice, &poolInfo, nullptr, &m_descriptorPool));
@@ -201,7 +214,7 @@ namespace luna
 		vkAllocateDescriptorSets(m_logicaldevice, &allocinfo, &m_descriptorSet);
 	}
 
-	void DirLightPassShader::Destroy()
+	void TextShader::Destroy()
 	{
 		if (m_descriptorSetLayout != VK_NULL_HANDLE)
 		{

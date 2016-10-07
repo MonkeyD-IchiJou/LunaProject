@@ -39,6 +39,33 @@ namespace luna
 		CopyToDeviceMemory_();
 	}
 
+	void SSBO::Update(const std::vector<FontInstanceData>& ssbo)
+	{
+		VkDeviceSize prevsize = m_ssboTotalSize;
+
+		// get the total size in bytes
+		m_ssboTotalSize = ssbo.size() * sizeof(FontInstanceData);
+
+		// if the prevsize is not equal to current size.. means something has changed 
+		if (prevsize != m_ssboTotalSize)
+		{
+			// reinit the buffer again because size has changed
+			BufferDeInit_();
+			BufferInit_();
+
+			// IMPORTANT: need to rewrite the descriptor sets for SSBO before calling vkCmdBindDescriptorSets
+		}
+
+		/* begin to record the latest ubo info into the staged device memory */
+		void* data = nullptr;
+		vkMapMemory(m_logicaldevice, m_staging_mem, 0, m_staging_buffer.RequirementSizeInDeviceMem, 0, &data);
+		memcpy(data, ssbo.data(), (size_t)m_ssboTotalSize);
+		vkUnmapMemory(m_logicaldevice, m_staging_mem);
+
+		/* then copy into the main buffer */
+		CopyToDeviceMemory_();
+	}
+
 	void SSBO::BufferInit_()
 	{
 		// staging buffer create

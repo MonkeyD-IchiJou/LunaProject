@@ -1,15 +1,24 @@
-#include "BasicMesh.h"
+#include "ScreenQuadMesh.h"
 #include "DebugLog.h"
 
 namespace luna
 {
 
-	BasicMesh::BasicMesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+	ScreenQuadMesh::ScreenQuadMesh()
 	{
-		m_vertices = vertices;
-		m_indices = indices;
+		// in vulkan space pls .. upside down de
+		m_vertices = {
+			{ { -1.f, -1.f, 0.0f, 0.0f } },
+			{ { -1.f, 1.f, 0.0f, 1.0f } },
+			{ { 1.f, 1.f, 1.0f, 1.0f } },
+			{ { 1.f, -1.f, 1.0f, 0.0f } }
+		};
 
-		// store the total size for it
+		m_indices = {
+			0, 1, 2, 2, 3, 0
+		};
+
+		// store the total size for it in bytes
 		m_vertexTotalSize = sizeof(m_vertices[0]) * m_vertices.size();
 		m_indexTotalSize = sizeof(m_indices[0]) * m_indices.size();
 
@@ -21,11 +30,11 @@ namespace luna
 		CurrentBufferTotalSize += m_indexTotalSize; /* increase the current buffer size for the next offset */
 	}
 
-	BasicMesh::~BasicMesh()
+	ScreenQuadMesh::~ScreenQuadMesh()
 	{
 	}
 
-	void BasicMesh::MapToDeviceMemory(const VkDevice & logicaldevice, const VkDeviceMemory & devicememory)
+	void ScreenQuadMesh::MapToDeviceMemory(const VkDevice & logicaldevice, const VkDeviceMemory & devicememory)
 	{
 		if (devicememory == VK_NULL_HANDLE)
 		{
@@ -49,4 +58,5 @@ namespace luna
 			vkUnmapMemory(logicaldevice, devicememory);
 		}
 	}
+
 }

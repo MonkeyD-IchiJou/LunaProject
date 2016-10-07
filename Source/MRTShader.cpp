@@ -47,30 +47,23 @@ namespace luna
 		albedoinfo.imageView = image->getImageView();
 		albedoinfo.sampler = image->getSampler();
 
+		// helper tools to set up descriptor
+		auto DescriptorWriteTool = [&](VkWriteDescriptorSet& descriptorwrite, const uint32_t& binding, const VkDescriptorBufferInfo* pBufferInfo, 
+			const VkDescriptorImageInfo* pImageInfo, const VkDescriptorType& descriptorType) {
+			descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorwrite.dstSet = m_descriptorSet;
+			descriptorwrite.dstBinding = binding;
+			descriptorwrite.dstArrayElement = 0;
+			descriptorwrite.descriptorType = descriptorType;
+			descriptorwrite.descriptorCount = 1;
+			descriptorwrite.pImageInfo = pImageInfo;
+			descriptorwrite.pBufferInfo = pBufferInfo;
+		};
+
 		std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = m_descriptorSet;
-		descriptorWrites[0].dstBinding = 0; // we gave it at 0 binding
-		descriptorWrites[0].dstArrayElement = 0;
-		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &uboinfo;
-
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = m_descriptorSet;
-		descriptorWrites[1].dstBinding = 1; // we gave it at 1 binding
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pBufferInfo = &ssboinfo;
-
-		descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[2].dstSet = m_descriptorSet;
-		descriptorWrites[2].dstBinding = 2; // we gave it at 2 binding
-		descriptorWrites[2].dstArrayElement = 0;
-		descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[2].descriptorCount = 1;
-		descriptorWrites[2].pImageInfo = &albedoinfo;
+		DescriptorWriteTool(descriptorWrites[0], 0, &uboinfo, nullptr, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		DescriptorWriteTool(descriptorWrites[1], 1, &ssboinfo, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		DescriptorWriteTool(descriptorWrites[2], 2, nullptr, &albedoinfo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 		vkUpdateDescriptorSets(m_logicaldevice, (uint32_t) descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
@@ -176,40 +169,28 @@ namespace luna
 
 	void MRTShader::CreatePipelineLayout_()
 	{
-		// Descriptor layout
-		// From here ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-		VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0; // binding at 0 for uniform buffer
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr; // related to image sampling
+		// helper lambda for creating descriptorsetlayout
+		auto DescriptorSetLayoutCreateTool = [](VkDescriptorSetLayoutBinding& layoutbinding, const uint32_t& binding, const VkDescriptorType& descriptorType, 
+			const VkShaderStageFlags& shaderstageflag) {
+			layoutbinding.binding = binding;
+			layoutbinding.descriptorType = descriptorType;
+			layoutbinding.descriptorCount = 1;
+			layoutbinding.stageFlags = shaderstageflag;
+			layoutbinding.pImmutableSamplers = nullptr; // related to image sampling
+		};
 
-		VkDescriptorSetLayoutBinding ssboLayoutBinding{};
-		ssboLayoutBinding.binding = 1; // binding at 1 for storage buffer
-		ssboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		ssboLayoutBinding.descriptorCount = 1;
-		ssboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		ssboLayoutBinding.pImmutableSamplers = nullptr; // related to image sampling
-
-		VkDescriptorSetLayoutBinding albedotexLayoutBinding{};
-		albedotexLayoutBinding.binding = 2; // binding at 2 for albedo texture
-		albedotexLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		albedotexLayoutBinding.descriptorCount = 1;
-		albedotexLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		albedotexLayoutBinding.pImmutableSamplers = nullptr; // related to image sampling
-
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, ssboLayoutBinding, albedotexLayoutBinding };
-
+		std::array<VkDescriptorSetLayoutBinding, 3> bindings = {};
+		DescriptorSetLayoutCreateTool(bindings[0], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT); // binding at 0 for uniform buffer
+		DescriptorSetLayoutCreateTool(bindings[1], 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT); // binding at 1 for storage buffer
+		DescriptorSetLayoutCreateTool(bindings[2], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT); // binding at 2 for albedo texture
+		
+		/* descriptor set layout creation */
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayout_createinfo{};
 		descriptorSetLayout_createinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		descriptorSetLayout_createinfo.bindingCount = (uint32_t) bindings.size();
 		descriptorSetLayout_createinfo.pBindings = bindings.data();
-
 		DebugLog::EC(vkCreateDescriptorSetLayout(m_logicaldevice, &descriptorSetLayout_createinfo, nullptr, &m_descriptorSetLayout));
 
-		// Till here ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	
 		/* push constant info */
 		VkPushConstantRange pushconstant{};
 		pushconstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -229,9 +210,6 @@ namespace luna
 
 	void MRTShader::CreateDescriptorSets_()
 	{
-		// Descriptor Sets
-		// From here ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 		// create the descriptor pool first
 		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -255,8 +233,6 @@ namespace luna
 		allocinfo.descriptorSetCount = 1;
 		allocinfo.pSetLayouts = &m_descriptorSetLayout;
 		vkAllocateDescriptorSets(m_logicaldevice, &allocinfo, &m_descriptorSet);
-
-		// Till here ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	}
 
 	void MRTShader::Destroy()
