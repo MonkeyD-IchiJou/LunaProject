@@ -21,7 +21,6 @@ void main()
 	
 	// do some lighting calculation
 	
-	
 	// output the final color
-	outFragcolor = albedo;
+	outFragcolor = vec4(albedo.rgb, 1.0);
 }
