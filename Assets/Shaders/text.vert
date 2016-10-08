@@ -4,8 +4,12 @@
 
 layout(location = 0) in vec2 inPosition;
 
-// output uv to fragment
-layout (location = 0) out vec2 outUV;
+// output datas to fragment
+layout (location = 0) out vec4 fontcolor;
+layout (location = 1) out vec4 fontproperties;
+layout (location = 2) out vec3 outlineColor;
+layout (location = 3) out vec2 offset;
+layout (location = 4) out vec2 outUV;
 
 out gl_PerVertex
 {
@@ -16,6 +20,7 @@ out gl_PerVertex
 struct InstanceData
 {
 	mat4 transformation;
+	mat4 fontMaterials;
 	vec2 uv[4];
 };
 
@@ -33,5 +38,10 @@ void main()
 	
 	// uv output to fragment
 	outUV = instance[gl_InstanceIndex].uv[gl_VertexIndex];
-	//outUV = vec2(1.0, 0.0);
+	
+	mat4 materials = instance[gl_InstanceIndex].fontMaterials;
+	fontcolor = materials[0];
+	fontproperties = materials[1];
+	outlineColor = materials[2].xyz;
+	offset = materials[3].xy;
 }
