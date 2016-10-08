@@ -60,7 +60,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\stb-master;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -80,7 +80,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\stb-master;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -95,6 +95,7 @@
     <ClCompile Include="FinalFBO.cpp" />
     <ClCompile Include="DirLightPassShader.cpp" />
     <ClCompile Include="FinalPassShader.cpp" />
+    <ClCompile Include="Font.cpp" />
     <ClCompile Include="FontMesh.cpp" />
     <ClCompile Include="LightPassFBO.cpp" />
     <ClCompile Include="MrtFBO.cpp" />
@@ -128,6 +129,7 @@
     <ClInclude Include="FinalFBO.h" />
     <ClInclude Include="DirLightPassShader.h" />
     <ClInclude Include="FinalPassShader.h" />
+    <ClInclude Include="Font.h" />
     <ClInclude Include="FontMesh.h" />
     <ClInclude Include="LightPassFBO.h" />
     <ClInclude Include="MrtFBO.h" />

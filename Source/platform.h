@@ -22,4 +22,15 @@
 // include the vulkan header 
 #include <vulkan\vulkan.h>
 
+#include <string>
+
+inline const std::string getAssetPath()
+{
+#if defined(__ANDROID__)
+	return "";
+#else
+	return "./../Assets/";
+#endif
+}
+
 #endif //PLATFORM_H

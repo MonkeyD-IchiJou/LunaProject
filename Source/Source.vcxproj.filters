@@ -183,6 +183,9 @@
     <ClCompile Include="ScreenQuadMesh.cpp">
       <Filter>Source Files\Resources\Models</Filter>
     </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files\Resources\Fonts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="platform.h">
@@ -283,6 +286,9 @@
     </ClInclude>
     <ClInclude Include="ScreenQuadMesh.h">
       <Filter>Header Files\Resources\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="Font.h">
+      <Filter>Header Files\Resources\Fonts</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

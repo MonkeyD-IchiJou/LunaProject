@@ -18,12 +18,15 @@
 #include "ModelResources.h"
 #include "Model.h"
 #include "TextureResources.h"
+#include "VulkanImageBufferObject.h"
+#include "Font.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm\glm.hpp>
 
 #define INSTANCE_COUNT 3
+static uint32_t totaltext = 0;
 
 namespace luna
 {
@@ -66,36 +69,55 @@ namespace luna
 			instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
 			m_instance_ssbo->Update(instancedata);
 
+			Font* font = new Font();
+			font->LoadFonts(getAssetPath() + "Fonts/eva.fnt", (float)texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]->getWidth(), (float)texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]->getHeight());
 
 			{
-				std::vector<FontInstanceData> fontinstancedata(2);
+				glm::mat4 proj = glm::ortho(0.f, 1080.f, 720.f, 0.f); // scale with screen size
+				glm::mat4 parentT = glm::translate(glm::mat4(), glm::vec3(500.f, 720.f / 2.f, 0.f));
+				glm::mat4 parentR = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 0, 1.f));
+				glm::mat4 parentS = glm::scale(glm::mat4(), glm::vec3(400.f, 400.f, 1.f));
 
+				std::string str = "!@#$%^&*()?><:'{}[];'./, ";
+				glm::vec2 cursor = {0.f, 0.0f};
+
+				totaltext = static_cast<uint32_t>(str.size());
+				std::vector<FontInstanceData> fontinstancedata(totaltext);
+
+				for(uint32_t i = 0; i < totaltext; ++i)
 				{
-					glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(300.f, 720.f / 2.f, 0.f));
-					glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(300.f, 300.f, 1.f));
-					glm::mat4 proj = glm::ortho(0.f, 1080.f, 720.f, 0.f); // scale with screen size
+					FontInstanceData& fid = fontinstancedata[i];
+					const vulkanchar& vc = font->vulkanChars[str[i]];
 
-					fontinstancedata[0].transformation = proj * t * s;
-					fontinstancedata[0].uv[0] = glm::vec2(0.f, 0.f); 
-					fontinstancedata[0].uv[1] = glm::vec2(0.f, 1.f);
-					fontinstancedata[0].uv[2] = glm::vec2(1.f, 1.f);
-					fontinstancedata[0].uv[3] = glm::vec2(1.f, 0.f);
-				}
+					// calc the top left hand corner position
+					glm::vec2 toplefthandcorner = glm::vec2(cursor.x + vc.xoffset, cursor.y + vc.yoffset);
 
-				{
-					glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(1080.f / 2.f, 720.f / 2.f, 0.f));
-					glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(300.f, 300.f, 1.f));
-					glm::mat4 proj = glm::ortho(0.f, 1080.f, 720.f, 0.f); // scale with screen size
+					// then find the correct position relative with the left hand corner
+					glm::vec2 position = { toplefthandcorner.x + vc.halfsize.x, toplefthandcorner.y - vc.halfsize.y };
 
-					fontinstancedata[1].transformation = proj * t * s;
-					fontinstancedata[1].uv[0] = glm::vec2(0.f, 0.f); 
-					fontinstancedata[1].uv[1] = glm::vec2(0.f, 1.f);
-					fontinstancedata[1].uv[2] = glm::vec2(1.f, 1.f); 
-					fontinstancedata[1].uv[3] = glm::vec2(1.f, 0.f);
+					glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(position, 0.f));
+					glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(vc.size, 1.f));
+					
+					fid.transformation = proj * parentT * parentR * parentS * t * s;
+					fid.uv[0] = vc.uv[0];
+					fid.uv[1] = vc.uv[1];
+					fid.uv[2] = vc.uv[2];
+					fid.uv[3] = vc.uv[3];
+
+					// next cursor pointing at
+					cursor.x += vc.xadvance;
+
+					// materials set up 
+					fid.fontMaterials[0] = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f); // color
+					fid.fontMaterials[1] = glm::vec4(0.45f, 0.15f, 0.5f, 0.15f); // properties
+					fid.fontMaterials[2] = glm::vec4(0.55f, 0.23f, 0.1f, 0.f); // outline color
+					fid.fontMaterials[3] = glm::vec4(0.0015f, 0.000f, 0.f, 0.f); // border offset
 				}
 
 				m_fontinstance_ssbo->Update(fontinstancedata);
 			}
+
+			delete font;
 
 			VkClearValue clearvalue{};
 			clearvalue.color = {0.f, 0.f, 0.f, 1.f};
@@ -143,7 +165,7 @@ namespace luna
 
 			m_text_shader = new TextShader();
 			m_text_shader->Init(FinalFBO::getRenderPass());
-			m_text_shader->UpdateDescriptorSets(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::BASIC_2D_RGBA8]);
+			m_text_shader->UpdateDescriptorSets(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
 
 			// create the command pool first
 			VkCommandPoolCreateInfo commandPool_createinfo{};
@@ -258,7 +280,7 @@ namespace luna
 			m_text_shader->Bind(commandbuffer);
 			m_text_shader->SetViewPort(commandbuffer, finalfbo->getResolution());
 
-			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(commandbuffer, 2);
+			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(commandbuffer, totaltext);
 
 			// unbind the fbo
 			finalfbo->UnBind(commandbuffer);

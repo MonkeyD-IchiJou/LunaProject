@@ -21,11 +21,11 @@ namespace luna
 		if (m_graphicPipeline == VK_NULL_HANDLE)
 		{
 			/* create the shaders first */
-			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_("./../Assets/Shaders/text_vert.spv");
+			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/text_vert.spv");
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_("./../Assets/Shaders/text_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/text_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -153,6 +153,9 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
+
+		//fixedpipeline.rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+
 	}
 
 	void TextShader::CreatePipelineLayout_()

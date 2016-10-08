@@ -19,6 +19,7 @@ namespace luna
 	struct FontInstanceData
 	{
 		glm::mat4 transformation;
+		glm::mat4 fontMaterials;
 		glm::vec2 uv[4];
 	};
 }

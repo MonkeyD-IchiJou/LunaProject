@@ -17,13 +17,14 @@ namespace luna
 		inline auto getImageView() const { return m_imageview; }
 		inline auto getFormat() const { return m_format; }
 		inline auto getSampler() const { return m_sampler; }
+		inline auto getWidth() const { return m_texwidth; }
+		inline auto getHeight() const { return m_texheight; }
 
 		/* get the sampler from the implementor (e.g attachments shared sampler with each other) */
 		inline void setSampler(VkSampler sampler) { this->m_sampler = sampler; }
 
 		static void TransitionImageLayout_(const VkCommandBuffer& buffer, VkImage srcimage, const VkImageLayout& oldLayout, const VkImageLayout& newLayout, const VkImageSubresourceRange& subresourceRange);
-		static VkSampler CreateSampler_(bool mipmap = false, float miplevel = 0.0f, bool anisotropy = false, float anisotropylevel = 0.0f);
-
+		
 	protected:
 		static VkDevice m_logicaldevice;
 
@@ -32,7 +33,7 @@ namespace luna
 			const VkImage& srcImage, VkBuffer& stagingbuffer, VkDeviceMemory& stagingmemory, const VkImageSubresourceRange& subresourceRange);
 		static VkCommandBuffer BeginSingleTimeCommands_(VkCommandPool& commandPool);
 		static void EndSingleTimeCommands_(VkCommandBuffer commandBuffer, VkQueue queue);
-		
+		static VkSampler CreateSampler_(bool mipmap = false, float miplevel = 0.0f, bool anisotropy = false, float anisotropylevel = 0.0f);
 
 		VkFormat m_format = VK_FORMAT_UNDEFINED;
 		size_t m_texsize = 0;

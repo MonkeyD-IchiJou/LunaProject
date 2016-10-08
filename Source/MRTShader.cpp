@@ -99,11 +99,11 @@ namespace luna
 		if (m_graphicPipeline == VK_NULL_HANDLE)
 		{
 			/* create the shaders first */
-			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_("./../Assets/Shaders/mrt_vert.spv");
+			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/mrt_vert.spv");
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_("./../Assets/Shaders/mrt_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/mrt_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 

@@ -35,9 +35,9 @@ namespace luna
 		
 		Models[eMODELS::QUAD_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_QUAD);
 		Models[eMODELS::FONT_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_FONT);
-		Models[eMODELS::BOXES_MODEL] = new Model("./../Assets/Models/boxes.lrl");
-		Models[eMODELS::BUNNY_MODEL] = new Model("./../Assets/Models/bunny.lrl");
-		Models[eMODELS::TYRA_MODEL] = new Model("./../Assets/Models/tyra.lrl");
+		Models[eMODELS::BOXES_MODEL] = new Model(getAssetPath() + "Models/boxes.lrl");
+		Models[eMODELS::BUNNY_MODEL] = new Model(getAssetPath() + "Models/bunny.lrl");
+		Models[eMODELS::TYRA_MODEL] = new Model(getAssetPath() + "Models/tyra.lrl");
 		Models[eMODELS::CUBE_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_CUBE);
 		
 		// after retrieved all the models datas, load all the datas into the device memory
