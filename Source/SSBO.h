@@ -10,12 +10,38 @@ namespace luna
 	class SSBO
 	{
 	public:
-		SSBO();
+		SSBO(const VkDeviceSize& reservesize);
 		~SSBO();
 
 		// update the ubodata into device memory
-		void Update(const std::vector<InstanceData>& ssbo);
-		void Update(const std::vector<FontInstanceData>& ssbo);
+		template<typename T>
+		void Update(const std::vector<T>& ssbo)
+		{
+			// get the total size in bytes
+			m_currentSize = ssbo.size() * sizeof(T);
+
+			// if the current size is more than the total reserve size,
+			// resize it
+			if (m_currentSize >= m_ssboTotalSize)
+			{
+				// reinit the buffer again because size has changed
+				m_ssboTotalSize = m_ssboTotalSize * 2; // double amount the size
+
+				BufferDeInit_();
+				BufferInit_();
+
+				// IMPORTANT: need to rewrite the descriptor sets for SSBO before calling vkCmdBindDescriptorSets
+			}
+
+			/* begin to record the latest ubo info into the staged device memory */
+			void* data = nullptr;
+			vkMapMemory(m_logicaldevice, m_staging_mem, 0, static_cast<size_t>(m_currentSize), 0, &data);
+			memcpy(data, ssbo.data(), static_cast<size_t>(m_currentSize));
+			vkUnmapMemory(m_logicaldevice, m_staging_mem);
+
+			/* then copy into the main buffer */
+			CopyToDeviceMemory_();
+		}
 
 		inline auto getSSBOTotalSize() const { return m_ssboTotalSize; }
 		inline auto getMainBuffer() const { return m_main_buffer; }
@@ -29,6 +55,7 @@ namespace luna
 	protected:
 		/* total ubo size in bytes */
 		VkDeviceSize m_ssboTotalSize = 0;
+		VkDeviceSize m_currentSize = 0;
 
 		/* the main buffer to communicate with when updating */
 		VulkanBufferData m_main_buffer{};
@@ -42,8 +69,13 @@ namespace luna
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		VkCommandBuffer m_commandbuffer = VK_NULL_HANDLE;
 
+		VkCommandBufferBeginInfo m_beginInfo{};
+		VkBufferCopy m_copyregion{};
+		VkSubmitInfo m_submitinfo{};
+
 		// logical device handle
 		VkDevice m_logicaldevice = VK_NULL_HANDLE;
+		VkQueue m_queue = VK_NULL_HANDLE;
 	};
 }
 

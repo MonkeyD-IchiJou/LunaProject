@@ -186,6 +186,18 @@
     <ClCompile Include="Font.cpp">
       <Filter>Source Files\Resources\Fonts</Filter>
     </ClCompile>
+    <ClCompile Include="DescriptorTool.cpp">
+      <Filter>Source Files\Renderer\GraphicsPipelines</Filter>
+    </ClCompile>
+    <ClCompile Include="TestFBO.cpp">
+      <Filter>Source Files\Renderer\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="SubPassShader.cpp">
+      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="SimplePassShader.cpp">
+      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="platform.h">
@@ -289,6 +301,18 @@
     </ClInclude>
     <ClInclude Include="Font.h">
       <Filter>Header Files\Resources\Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorTool.h">
+      <Filter>Header Files\Renderer\GraphicsPipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="TestFBO.h">
+      <Filter>Header Files\Renderer\FBOs</Filter>
+    </ClInclude>
+    <ClInclude Include="SubPassShader.h">
+      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="SimplePassShader.h">
+      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

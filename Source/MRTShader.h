@@ -2,6 +2,7 @@
 #define SIMPLE_SHADER_H
 
 #include "ShaderProgram.h"
+#include "DescriptorTool.h"
 
 namespace luna
 {
@@ -19,10 +20,11 @@ namespace luna
 		void Init(const VkRenderPass& renderpass) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
-		void UpdateDescriptorSets(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image);
+
+		void SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image);
 
 		// if ssbo size is different, update the descriptor sets about it before binding 
-		void RewriteSSBODescriptorSets(const SSBO* ssbo);
+		void UpdateDescriptor(const SSBO* ssbo);
 
 		// load push constant offset
 		void LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int& offset);
@@ -30,12 +32,9 @@ namespace luna
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline) override;
 		void CreatePipelineLayout_() override;
-		void CreateDescriptorSets_();
 
 	private:
-		VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
-		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
+		DescriptorTool m_descriptorTool{};
 	};
 }
 

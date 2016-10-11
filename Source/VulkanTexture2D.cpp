@@ -107,7 +107,7 @@ namespace luna
 		const VkFormat& format, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspectMask, const VkImageLayout& imagelayout)
 	{
 		m_format = format; 
-		m_texsize = -1; // determined by memReqs;
+		m_texsize = 0; // determined by memReqs;
 		m_texwidth = width;
 		m_texheight = height;
 		m_mipLevels = 1;

@@ -92,6 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DescriptorTool.cpp" />
     <ClCompile Include="FinalFBO.cpp" />
     <ClCompile Include="DirLightPassShader.cpp" />
     <ClCompile Include="FinalPassShader.cpp" />
@@ -101,7 +102,10 @@
     <ClCompile Include="MrtFBO.cpp" />
     <ClCompile Include="MRTShader.cpp" />
     <ClCompile Include="ScreenQuadMesh.cpp" />
+    <ClCompile Include="SimplePassShader.cpp" />
     <ClCompile Include="SSBO.cpp" />
+    <ClCompile Include="SubPassShader.cpp" />
+    <ClCompile Include="TestFBO.cpp" />
     <ClCompile Include="TextShader.cpp" />
     <ClCompile Include="TextureResources.cpp" />
     <ClCompile Include="UBO.cpp" />
@@ -126,6 +130,7 @@
     <ClCompile Include="WinNative.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DescriptorTool.h" />
     <ClInclude Include="FinalFBO.h" />
     <ClInclude Include="DirLightPassShader.h" />
     <ClInclude Include="FinalPassShader.h" />
@@ -135,7 +140,10 @@
     <ClInclude Include="MrtFBO.h" />
     <ClInclude Include="MRTShader.h" />
     <ClInclude Include="ScreenQuadMesh.h" />
+    <ClInclude Include="SimplePassShader.h" />
     <ClInclude Include="SSBO.h" />
+    <ClInclude Include="SubPassShader.h" />
+    <ClInclude Include="TestFBO.h" />
     <ClInclude Include="TextShader.h" />
     <ClInclude Include="TextureResources.h" />
     <ClInclude Include="UBO.h" />

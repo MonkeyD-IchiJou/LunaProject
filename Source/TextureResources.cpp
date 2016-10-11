@@ -32,6 +32,8 @@ namespace luna
 		Textures[ALBEDO_2D_RGBA8UNORM] = nullptr;
 		Textures[DEPTH_2D_32FLOAT] = nullptr;
 		Textures[LIGHTPROCESS_2D_RGBA8UNORM] = nullptr;
+		Textures[SUBPASSFIRST_2D_RGBA8UNORM] = nullptr;
+		Textures[SUBPASSSECOND_2D_RGBA8UNORM] = nullptr;
 	}
 
 	void TextureResources::Destroy()

@@ -22,12 +22,12 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
 	}
 
-	void MRTShader::UpdateDescriptorSets(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image)
+	void MRTShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image)
 	{
-		// Update Descriptor set
+		m_descriptorTool.Destroy(m_logicaldevice);
 
 		// descriptor info for Uniform Buffer
 		VkDescriptorBufferInfo uboinfo{};
@@ -47,28 +47,35 @@ namespace luna
 		albedoinfo.imageView = image->getImageView();
 		albedoinfo.sampler = image->getSampler();
 
-		// helper tools to set up descriptor
-		auto DescriptorWriteTool = [&](VkWriteDescriptorSet& descriptorwrite, const uint32_t& binding, const VkDescriptorBufferInfo* pBufferInfo, 
-			const VkDescriptorImageInfo* pImageInfo, const VkDescriptorType& descriptorType) {
-			descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorwrite.dstSet = m_descriptorSet;
-			descriptorwrite.dstBinding = binding;
-			descriptorwrite.dstArrayElement = 0;
-			descriptorwrite.descriptorType = descriptorType;
-			descriptorwrite.descriptorCount = 1;
-			descriptorwrite.pImageInfo = pImageInfo;
-			descriptorwrite.pBufferInfo = pBufferInfo;
-		};
+		m_descriptorTool.descriptors.resize(3);
 
-		std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-		DescriptorWriteTool(descriptorWrites[0], 0, &uboinfo, nullptr, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		DescriptorWriteTool(descriptorWrites[1], 1, &ssboinfo, nullptr, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		DescriptorWriteTool(descriptorWrites[2], 2, nullptr, &albedoinfo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		auto& ubodescriptor = m_descriptorTool.descriptors[0];
+		ubodescriptor.binding = 0;
+		ubodescriptor.bufferinfo = uboinfo;
+		ubodescriptor.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		ubodescriptor.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		ubodescriptor.typeflags = 0;
 
-		vkUpdateDescriptorSets(m_logicaldevice, (uint32_t) descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		auto& ssbodescriptor = m_descriptorTool.descriptors[1];
+		ssbodescriptor.binding = 1;
+		ssbodescriptor.bufferinfo = ssboinfo;
+		ssbodescriptor.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		ssbodescriptor.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		ssbodescriptor.typeflags = 0;
+
+		auto& albedoimagedescriptor = m_descriptorTool.descriptors[2];
+		albedoimagedescriptor.binding = 2;
+		albedoimagedescriptor.imageinfo = albedoinfo;
+		albedoimagedescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		albedoimagedescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedoimagedescriptor.typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
+		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
 	}
 
-	void MRTShader::RewriteSSBODescriptorSets(const SSBO* ssbo)
+	void MRTShader::UpdateDescriptor(const SSBO* ssbo)
 	{
 		// descriptor info for ssbo
 		VkDescriptorBufferInfo ssboinfo{};
@@ -76,16 +83,11 @@ namespace luna
 		ssboinfo.offset = 0;
 		ssboinfo.range = ssbo->getSSBOTotalSize();
 
-		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = m_descriptorSet;
-		descriptorWrite.dstBinding = 1; // we gave it at 1 binding
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &ssboinfo;
+		auto& ssbodescriptor = m_descriptorTool.descriptors[1];
+		ssbodescriptor.bufferinfo = ssboinfo;
 
-		vkUpdateDescriptorSets(m_logicaldevice, 1, &descriptorWrite, 0, nullptr);
+		// update the ssbo buffer
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 1);
 	}
 
 	void MRTShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
@@ -115,9 +117,6 @@ namespace luna
 
 			/* set up the pipeline layout if have any */
 			CreatePipelineLayout_();
-
-			/* create the descriptor sets */
-			CreateDescriptorSets_();
 
 			/* create the graphics pipeline */
 			VkGraphicsPipelineCreateInfo graphicspipeline_createinfo{};
@@ -169,27 +168,10 @@ namespace luna
 
 	void MRTShader::CreatePipelineLayout_()
 	{
-		// helper lambda for creating descriptorsetlayout
-		auto DescriptorSetLayoutCreateTool = [](VkDescriptorSetLayoutBinding& layoutbinding, const uint32_t& binding, const VkDescriptorType& descriptorType, 
-			const VkShaderStageFlags& shaderstageflag) {
-			layoutbinding.binding = binding;
-			layoutbinding.descriptorType = descriptorType;
-			layoutbinding.descriptorCount = 1;
-			layoutbinding.stageFlags = shaderstageflag;
-			layoutbinding.pImmutableSamplers = nullptr; // related to image sampling
-		};
-
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings = {};
-		DescriptorSetLayoutCreateTool(bindings[0], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT); // binding at 0 for uniform buffer
-		DescriptorSetLayoutCreateTool(bindings[1], 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT); // binding at 1 for storage buffer
-		DescriptorSetLayoutCreateTool(bindings[2], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT); // binding at 2 for albedo texture
-		
-		/* descriptor set layout creation */
-		VkDescriptorSetLayoutCreateInfo descriptorSetLayout_createinfo{};
-		descriptorSetLayout_createinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayout_createinfo.bindingCount = (uint32_t) bindings.size();
-		descriptorSetLayout_createinfo.pBindings = bindings.data();
-		DebugLog::EC(vkCreateDescriptorSetLayout(m_logicaldevice, &descriptorSetLayout_createinfo, nullptr, &m_descriptorSetLayout));
+		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
+		{
+			DebugLog::throwEx("descriptor set layout not init");
+		}
 
 		/* push constant info */
 		VkPushConstantRange pushconstant{};
@@ -201,53 +183,16 @@ namespace luna
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &m_descriptorTool.descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 1; 
 		pipelineLayoutInfo.pPushConstantRanges = &pushconstant;
 
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void MRTShader::CreateDescriptorSets_()
-	{
-		// create the descriptor pool first
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 1;
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		poolSizes[1].descriptorCount = 1;
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[2].descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = (uint32_t) poolSizes.size();
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = 1;
-		DebugLog::EC(vkCreateDescriptorPool(m_logicaldevice, &poolInfo, nullptr, &m_descriptorPool));
-
-		// then allocate the descriptor set
-		VkDescriptorSetAllocateInfo allocinfo{};
-		allocinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocinfo.descriptorPool = m_descriptorPool;
-		allocinfo.descriptorSetCount = 1;
-		allocinfo.pSetLayouts = &m_descriptorSetLayout;
-		vkAllocateDescriptorSets(m_logicaldevice, &allocinfo, &m_descriptorSet);
-	}
-
 	void MRTShader::Destroy()
 	{
-		if (m_descriptorSetLayout != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorSetLayout(m_logicaldevice, m_descriptorSetLayout, nullptr);
-			m_descriptorSetLayout = VK_NULL_HANDLE;
-		}
-
-		if (m_descriptorPool != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorPool(m_logicaldevice, m_descriptorPool, nullptr);
-			m_descriptorPool = VK_NULL_HANDLE;
-		}
+		m_descriptorTool.Destroy(m_logicaldevice);
 
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 		{

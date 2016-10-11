@@ -13,12 +13,15 @@ namespace luna
 
 	class MrtFBO;
 	class LightPassFBO;
+	class TestFBO;
 	class FinalFBO;
-	class TextShader;
 
+	class TextShader;
 	class MRTShader;
 	class DirLightPassShader;
 	class FinalPassShader;
+	class SimplePassShader;
+	class SubPassShader;
 
 	class Renderer :
 		public VulkanRenderer
@@ -72,6 +75,7 @@ namespace luna
 		/* fbos for gpu to read/write */
 		MrtFBO* m_mrt_fbo = nullptr;
 		LightPassFBO* m_lightpass_fbo = nullptr;
+		TestFBO* m_test_fbo = nullptr;
 		std::vector<FinalFBO*> m_finalpass_fbos;
 
 		/* shader to compute the result of pixels */
@@ -80,17 +84,22 @@ namespace luna
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 
+		SimplePassShader* m_simple_shader = nullptr;
+		SubPassShader* m_subpass_shader = nullptr;
+
 		/* recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_finalpass_cmdbuffers;
 		VkCommandBuffer m_mrt_cmdbuffer = VK_NULL_HANDLE;
 		VkCommandBuffer m_lightpass_cmdbuffer = VK_NULL_HANDLE;
+		VkCommandBuffer m_test_cmdbuffer = VK_NULL_HANDLE;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;
 		VkSemaphore m_renderComplete = VK_NULL_HANDLE;
 		VkSemaphore m_mrtComplete = VK_NULL_HANDLE;
 		VkSemaphore m_lightpassComplete = VK_NULL_HANDLE;
+		VkSemaphore m_subpassComplete = VK_NULL_HANDLE;
 
 		/* a model with mesh to render */
 		Model* m_model = nullptr;

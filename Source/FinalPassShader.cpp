@@ -20,28 +20,30 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
 	}
 
-	void FinalPassShader::UpdateDescriptorSets(const VulkanImageBufferObject * finalimage)
+	void FinalPassShader::SetDescriptors(const VulkanImageBufferObject * finalimage)
 	{
-		// Update Descriptor set
+		m_descriptorTool.Destroy(m_logicaldevice);
 
 		VkDescriptorImageInfo image{};
 		image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // make sure layout to be shader read only optimal 
 		image.imageView = finalimage->getImageView();
 		image.sampler = finalimage->getSampler();
 
-		VkWriteDescriptorSet descriptorWrites{};
-		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites.dstSet = m_descriptorSet;
-		descriptorWrites.dstBinding = 0; // we gave it at 0 binding
-		descriptorWrites.dstArrayElement = 0;
-		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites.descriptorCount = 1;
-		descriptorWrites.pImageInfo = &image;
+		m_descriptorTool.descriptors.resize(1);
 
-		vkUpdateDescriptorSets(m_logicaldevice, 1, &descriptorWrites, 0, nullptr);
+		auto& imagedescriptor = m_descriptorTool.descriptors[0];
+		imagedescriptor.binding = 0;
+		imagedescriptor.imageinfo = image;
+		imagedescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		imagedescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		imagedescriptor.typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
+		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
 	}
 
 	void FinalPassShader::Init(const VkRenderPass & renderpass)
@@ -66,9 +68,6 @@ namespace luna
 
 			/* set up the pipeline layout if have any */
 			CreatePipelineLayout_();
-
-			/* create the descriptor sets */
-			CreateDescriptorSets_();
 
 			/* create the graphics pipeline */
 			VkGraphicsPipelineCreateInfo graphicspipeline_createinfo{};
@@ -122,67 +121,22 @@ namespace luna
 
 	void FinalPassShader::CreatePipelineLayout_()
 	{
-		// Descriptor layout
-		VkDescriptorSetLayoutBinding LayoutBinding{};
-		LayoutBinding.binding = 0; // binding at 0 for finalcolor texture
-		LayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		LayoutBinding.descriptorCount = 1;
-		LayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		LayoutBinding.pImmutableSamplers = nullptr; // related to image sampling
+		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
+		{
+			DebugLog::throwEx("descriptor set layout not init");
+		}
 
-		VkDescriptorSetLayoutCreateInfo descriptorSetLayout_createinfo{};
-		descriptorSetLayout_createinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayout_createinfo.bindingCount = 1;
-		descriptorSetLayout_createinfo.pBindings = &LayoutBinding;
-		DebugLog::EC(vkCreateDescriptorSetLayout(m_logicaldevice, &descriptorSetLayout_createinfo, nullptr, &m_descriptorSetLayout));
-
-		/* lastly pipeline layout creation */
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &m_descriptorTool.descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void FinalPassShader::CreateDescriptorSets_()
-	{
-		// Descriptor Sets
-
-		// create the descriptor pool first
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
-		poolInfo.maxSets = 1;
-		DebugLog::EC(vkCreateDescriptorPool(m_logicaldevice, &poolInfo, nullptr, &m_descriptorPool));
-
-		// then allocate the descriptor set
-		VkDescriptorSetAllocateInfo allocinfo{};
-		allocinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocinfo.descriptorPool = m_descriptorPool;
-		allocinfo.descriptorSetCount = 1;
-		allocinfo.pSetLayouts = &m_descriptorSetLayout;
-		vkAllocateDescriptorSets(m_logicaldevice, &allocinfo, &m_descriptorSet);
-	}
-
 	void FinalPassShader::Destroy()
 	{
-		if (m_descriptorSetLayout != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorSetLayout(m_logicaldevice, m_descriptorSetLayout, nullptr);
-			m_descriptorSetLayout = VK_NULL_HANDLE;
-		}
-
-		if (m_descriptorPool != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorPool(m_logicaldevice, m_descriptorPool, nullptr);
-			m_descriptorPool = VK_NULL_HANDLE;
-		}
+		m_descriptorTool.Destroy(m_logicaldevice);
 
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 		{

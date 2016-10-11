@@ -20,13 +20,11 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
 	}
 
-	void DirLightPassShader::UpdateDescriptorSets(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, const VulkanImageBufferObject * samplerAlbedo)
+	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, const VulkanImageBufferObject * samplerAlbedo)
 	{
-		// Update Descriptor set
-
 		// descriptor info for samplerpos
 		VkDescriptorImageInfo samplerposinfo{};
 		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -45,22 +43,32 @@ namespace luna
 		albedoinfo.imageView = samplerAlbedo->getImageView();
 		albedoinfo.sampler = samplerAlbedo->getSampler();
 
-		auto ImageDescriptorWriteTool = [&](VkWriteDescriptorSet& descriptorwrite, const uint32_t& binding, const VkDescriptorImageInfo* pImageInfo) {
-			descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorwrite.dstSet = m_descriptorSet;
-			descriptorwrite.dstBinding = binding;
-			descriptorwrite.dstArrayElement = 0;
-			descriptorwrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorwrite.descriptorCount = 1;
-			descriptorwrite.pImageInfo = pImageInfo;
-		};
+		m_descriptorTool.descriptors.resize(3);
 
-		std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-		ImageDescriptorWriteTool(descriptorWrites[0], 0, &samplerposinfo);
-		ImageDescriptorWriteTool(descriptorWrites[1], 1, &samplernorminfo);
-		ImageDescriptorWriteTool(descriptorWrites[2], 2, &albedoinfo);
+		auto& samplerposdescriptor = m_descriptorTool.descriptors[0];
+		samplerposdescriptor.binding = 0;
+		samplerposdescriptor.imageinfo = samplerposinfo;
+		samplerposdescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		samplerposdescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerposdescriptor.typeflags = 1; // an image
 
-		vkUpdateDescriptorSets(m_logicaldevice, (uint32_t) descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		auto& samplernormdescriptor = m_descriptorTool.descriptors[1];
+		samplernormdescriptor.binding = 1;
+		samplernormdescriptor.imageinfo = samplernorminfo;
+		samplernormdescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		samplernormdescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplernormdescriptor.typeflags = 1; // an image
+
+		auto& albedodescriptor = m_descriptorTool.descriptors[2];
+		albedodescriptor.binding = 2;
+		albedodescriptor.imageinfo = albedoinfo;
+		albedodescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		albedodescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedodescriptor.typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
+		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
 	}
 
 	void DirLightPassShader::Init(const VkRenderPass & renderpass)
@@ -85,9 +93,6 @@ namespace luna
 
 			/* set up the pipeline layout if have any */
 			CreatePipelineLayout_();
-
-			/* create the descriptor sets */
-			CreateDescriptorSets_();
 			
 			/* create the graphics pipeline */
 			VkGraphicsPipelineCreateInfo graphicspipeline_createinfo{};
@@ -141,79 +146,24 @@ namespace luna
 
 	void DirLightPassShader::CreatePipelineLayout_()
 	{
-		// helper lambda for creating descriptorsetlayout
-		auto DescriptorSetLayoutCreateTool = [](VkDescriptorSetLayoutBinding& layoutbinding, const uint32_t& binding) {
-			layoutbinding.binding = binding;
-			layoutbinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			layoutbinding.descriptorCount = 1;
-			layoutbinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			layoutbinding.pImmutableSamplers = nullptr; // related to image sampling
-		};
-
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings{};
-		DescriptorSetLayoutCreateTool(bindings[0], 0); // binding at 0 for worldpos texture
-		DescriptorSetLayoutCreateTool(bindings[1], 1); // binding at 1 for worldnormal texture
-		DescriptorSetLayoutCreateTool(bindings[2], 2); // binding at 2 for albedo texture
-
-		/* descriptor set layout creation */
-		VkDescriptorSetLayoutCreateInfo descriptorSetLayout_createinfo{};
-		descriptorSetLayout_createinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayout_createinfo.bindingCount = (uint32_t) bindings.size();
-		descriptorSetLayout_createinfo.pBindings = bindings.data();
-		DebugLog::EC(vkCreateDescriptorSetLayout(m_logicaldevice, &descriptorSetLayout_createinfo, nullptr, &m_descriptorSetLayout));
+		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
+		{
+			DebugLog::throwEx("descriptor set layout not init");
+		}
 
 		/* lastly pipeline layout creation */
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &m_descriptorTool.descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void DirLightPassShader::CreateDescriptorSets_()
-	{
-		// Descriptor Sets
-
-		// create the descriptor pool first
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[0].descriptorCount = 1;
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = 1;
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[2].descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = (uint32_t) poolSizes.size();
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = 1;
-		DebugLog::EC(vkCreateDescriptorPool(m_logicaldevice, &poolInfo, nullptr, &m_descriptorPool));
-
-		// then allocate the descriptor set
-		VkDescriptorSetAllocateInfo allocinfo{};
-		allocinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocinfo.descriptorPool = m_descriptorPool;
-		allocinfo.descriptorSetCount = 1;
-		allocinfo.pSetLayouts = &m_descriptorSetLayout;
-		vkAllocateDescriptorSets(m_logicaldevice, &allocinfo, &m_descriptorSet);
-	}
-
 	void DirLightPassShader::Destroy()
 	{
-		if (m_descriptorSetLayout != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorSetLayout(m_logicaldevice, m_descriptorSetLayout, nullptr);
-			m_descriptorSetLayout = VK_NULL_HANDLE;
-		}
-
-		if (m_descriptorPool != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorPool(m_logicaldevice, m_descriptorPool, nullptr);
-			m_descriptorPool = VK_NULL_HANDLE;
-		}
+		m_descriptorTool.Destroy(m_logicaldevice);
 
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 		{

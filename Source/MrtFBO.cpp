@@ -184,21 +184,35 @@ namespace luna
 				depthAttachmentRef.layout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // images used as depth attachment
 
 				subPass.pipelineBindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
+				
+				// writing attachment
 				subPass.colorAttachmentCount	= static_cast<uint32_t>(colorReferences.size());
 				subPass.pColorAttachments		= colorReferences.data();
 				subPass.pDepthStencilAttachment	= &depthAttachmentRef;
+				
+				//// reading attachment
+				//subPass.inputAttachmentCount = ; // for reading de
+				//subPass.pInputAttachments = ;
+
+				//subPass.preserveAttachmentCount = ;
+				//subPass.pPreserveAttachments = ;
 			}
 
-			// Use subpass dependencies for attachment layout transitions
+			// Use subpass dependencies for attachment FINAL layout transitions
 			VkSubpassDependency dependency;
 
 			{
 				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 				dependency.dstSubpass = 0; // index 0 refer to our subPass .. which is the first and only one
+
+				// when/where we access the images
 				dependency.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; // wait until the end of shader
-				dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 				dependency.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; // reading in the last pipeline stage
+				
+				// where/when we want to transition our images
+				dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 				dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				
 				dependency.dependencyFlags	= VK_DEPENDENCY_BY_REGION_BIT;
 			}
 

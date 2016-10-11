@@ -57,7 +57,7 @@ namespace luna
 		/* must create its own unique render pass */
 		virtual void CreateRenderPass_() = 0;
 		/* attachment images layout transition before binding fbo/using it */
-		virtual void TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer) = 0;
+		virtual void TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer);
 
 	protected:
 		/* the resolution for this framebuffer */

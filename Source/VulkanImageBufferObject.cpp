@@ -68,6 +68,11 @@ namespace luna
 			// Make sure any writes to the image have been finished
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			break;
+
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			// Shader write (sampler, input attachment)
+			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			break;
 		}
 
 		// Target layouts (new)
@@ -102,6 +107,40 @@ namespace luna
 		vkCmdPipelineBarrier(
 			buffer,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier
+		);
+	}
+
+	void VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+		const VkCommandBuffer & commandbuffer, const VkImage& image, 
+		const VkImageLayout& oldlayout, const VkImageLayout& newlayout, 
+		VkAccessFlags srcaccessflag, VkAccessFlags dstaccessflag,
+		VkPipelineStageFlags srcpipelinestage, VkPipelineStageFlags dstpipelinestage
+	)
+	{
+		// make sure it is optimal for the swap chain images
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldlayout;
+		barrier.newLayout = newlayout;
+		barrier.srcAccessMask = srcaccessflag;
+		barrier.dstAccessMask = dstaccessflag;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer	= 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.image = image;
+
+		vkCmdPipelineBarrier(
+			commandbuffer,
+			srcpipelinestage, // begin to work here
+			dstpipelinestage, // must make sure the work end at this stage
 			0,
 			0, nullptr,
 			0, nullptr,

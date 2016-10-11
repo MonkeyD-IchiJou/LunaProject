@@ -8,12 +8,15 @@
 
 #include "MrtFBO.h"
 #include "LightPassFBO.h"
+#include "TestFBO.h"
 #include "FinalFBO.h"
 
 #include "MRTShader.h"
 #include "DirLightPassShader.h"
 #include "FinalPassShader.h"
 #include "TextShader.h"
+#include "SimplePassShader.h"
+#include "SubPassShader.h"
 
 #include "ModelResources.h"
 #include "Model.h"
@@ -26,7 +29,7 @@
 #include <glm\glm.hpp>
 
 #define INSTANCE_COUNT 3
-static uint32_t totaltext = 0;
+static int32_t totaltext = 0;
 
 namespace luna
 {
@@ -54,151 +57,80 @@ namespace luna
 			m_swapchain = new VulkanSwapchain();
 			m_swapchain->Init();
 
-			// ubo and ssbo that are unique to this renderer
-			m_ubo = new UBO();
-			m_instance_ssbo = new SSBO();
-			m_fontinstance_ssbo = new SSBO();
-
-			/* initial update for ssbo instancedata */
-			std::vector<InstanceData> instancedata(INSTANCE_COUNT);
-			instancedata[0].model = glm::rotate(glm::mat4(), 45.f, glm::vec3(0, 1.f, 0)); 
-			instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
-			instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); 
-			instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
-			instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); 
-			instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
-			m_instance_ssbo->Update(instancedata);
-
-			Font* font = new Font();
-			font->LoadFonts(getAssetPath() + "Fonts/eva.fnt", (float)texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]->getWidth(), (float)texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]->getHeight());
-
-			{
-				glm::mat4 proj = glm::ortho(0.f, 1080.f, 720.f, 0.f); // scale with screen size
-				glm::mat4 parentT = glm::translate(glm::mat4(), glm::vec3(500.f, 720.f / 2.f, 0.f));
-				glm::mat4 parentR = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 0, 1.f));
-				glm::mat4 parentS = glm::scale(glm::mat4(), glm::vec3(400.f, 400.f, 1.f));
-
-				std::string str = "!@#$%^&*()?><:'{}[];'./, ";
-				glm::vec2 cursor = {0.f, 0.0f};
-
-				totaltext = static_cast<uint32_t>(str.size());
-				std::vector<FontInstanceData> fontinstancedata(totaltext);
-
-				for(uint32_t i = 0; i < totaltext; ++i)
-				{
-					FontInstanceData& fid = fontinstancedata[i];
-					const vulkanchar& vc = font->vulkanChars[str[i]];
-
-					// calc the top left hand corner position
-					glm::vec2 toplefthandcorner = glm::vec2(cursor.x + vc.xoffset, cursor.y + vc.yoffset);
-
-					// then find the correct position relative with the left hand corner
-					glm::vec2 position = { toplefthandcorner.x + vc.halfsize.x, toplefthandcorner.y - vc.halfsize.y };
-
-					glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(position, 0.f));
-					glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(vc.size, 1.f));
-					
-					fid.transformation = proj * parentT * parentR * parentS * t * s;
-					fid.uv[0] = vc.uv[0];
-					fid.uv[1] = vc.uv[1];
-					fid.uv[2] = vc.uv[2];
-					fid.uv[3] = vc.uv[3];
-
-					// next cursor pointing at
-					cursor.x += vc.xadvance;
-
-					// materials set up 
-					fid.fontMaterials[0] = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f); // color
-					fid.fontMaterials[1] = glm::vec4(0.45f, 0.15f, 0.5f, 0.15f); // properties
-					fid.fontMaterials[2] = glm::vec4(0.55f, 0.23f, 0.1f, 0.f); // outline color
-					fid.fontMaterials[3] = glm::vec4(0.0015f, 0.000f, 0.f, 0.f); // border offset
-				}
-
-				m_fontinstance_ssbo->Update(fontinstancedata);
-			}
-
-			delete font;
-
 			VkClearValue clearvalue{};
-			clearvalue.color = {0.f, 0.f, 0.f, 1.f};
 			
-			// create the framebuffer for mrt pass
-			m_mrt_fbo = new MrtFBO();
-			m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::WORLDPOS_ATTACHMENT);
-			m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::WORLDNORM_ATTACHMENT);
-			m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::ALBEDO_ATTACHMENT);
-			clearvalue.depthStencil = { 1.0f, 0 };
-			m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::DEPTH_ATTACHMENT);
-			m_mrt_fbo->Init({1920, 1080}); // make sure the attachments are the same size too
-			
-			// create the framebuffer for light pass
-			m_lightpass_fbo = new LightPassFBO();
-			clearvalue.color = {1.0f, 1.0f, 1.0f, 1.f};
-			m_lightpass_fbo->Clear(clearvalue, LIGHTPASS_FBOATTs::COLOR_ATTACHMENT);
-			m_lightpass_fbo->Init({ 1920, 1080 });
-
 			// create framebuffer for each swapchain images
 			m_finalpass_fbos.resize(m_swapchain->getImageCount());
+			clearvalue.color = {1.f, 0.f, 0.f, 1.f};
 			for (int i = 0; i < m_finalpass_fbos.size(); i++)
 			{
 				m_finalpass_fbos[i] = new FinalFBO();
-				m_finalpass_fbos[i]->SetAttachment(m_swapchain->m_buffers[i].image, m_swapchain->m_buffers[i].imageview, m_swapchain->getColorFormat(), FINAL_FBOATTs::COLOR_ATTACHMENT);
+				m_finalpass_fbos[i]->SetAttachment(
+					m_swapchain->m_buffers[i].image, 
+					m_swapchain->m_buffers[i].imageview, 
+					m_swapchain->getColorFormat(), 
+					FINAL_FBOATTs::COLOR_ATTACHMENT
+				);
 				m_finalpass_fbos[i]->Clear(clearvalue, FINAL_FBOATTs::COLOR_ATTACHMENT);
 				m_finalpass_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
 			}
 
-			// shaders creation
-			m_mrt_shader = new MRTShader();
-			m_mrt_shader->Init(MrtFBO::getRenderPass());
-			m_mrt_shader->UpdateDescriptorSets(m_ubo, m_instance_ssbo, texrsc->Textures[eTEXTURES::BASIC_2D_BC2]);
+			// fbo with 2 subpass
+			m_test_fbo = new TestFBO();
+			clearvalue.color = {1.f, 0.f, 0.f, 1.f};
+			m_test_fbo->Clear(clearvalue, TEST_FBOATTs::COLOR_ATTACHMENT);
+			clearvalue.color = {0.f, 0.f, 1.f, 1.f};
+			m_test_fbo->Clear(clearvalue, TEST_FBOATTs::PRESENT_ATTACHMENT);
+			m_test_fbo->Init({1080, 720});
 
-			m_dirlightpass_shader = new DirLightPassShader();
-			m_dirlightpass_shader->Init(LightPassFBO::getRenderPass());
-			m_dirlightpass_shader->UpdateDescriptorSets(
-				texrsc->Textures[eTEXTURES::WORLDPOS_2D_RGBA16FLOAT], 
-				texrsc->Textures[eTEXTURES::WORLDNORMAL_2D_RGBA16FLOAT], 
-				texrsc->Textures[eTEXTURES::ALBEDO_2D_RGBA8UNORM]);
+			
+
+			m_simple_shader = new SimplePassShader();
+			m_simple_shader->SetDescriptors(texrsc->Textures[eTEXTURES::BASIC_2D_RGBA8]);
+			m_simple_shader->Init(TestFBO::getRenderPass());
+
+			m_subpass_shader = new SubPassShader();
+			m_subpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::SUBPASSFIRST_2D_RGBA8UNORM]);
+			m_subpass_shader->Init(TestFBO::getRenderPass());
 
 			m_finalpass_shader = new FinalPassShader();
+			m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::SUBPASSSECOND_2D_RGBA8UNORM]);
 			m_finalpass_shader->Init(FinalFBO::getRenderPass());
-			m_finalpass_shader->UpdateDescriptorSets(texrsc->Textures[eTEXTURES::LIGHTPROCESS_2D_RGBA8UNORM]);
 
-			m_text_shader = new TextShader();
-			m_text_shader->Init(FinalFBO::getRenderPass());
-			m_text_shader->UpdateDescriptorSets(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
+			{
+				// create the command pool first
+				VkCommandPoolCreateInfo commandPool_createinfo{};
+				commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+				commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+				DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
 
-			// create the command pool first
-			VkCommandPoolCreateInfo commandPool_createinfo{};
-			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+				// command buffer creation
+				m_finalpass_cmdbuffers.resize(m_finalpass_fbos.size());
+				VkCommandBufferAllocateInfo buffer_allocateInfo{};
+				buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				buffer_allocateInfo.commandPool = m_commandPool;
+				buffer_allocateInfo.commandBufferCount = (uint32_t)m_finalpass_cmdbuffers.size();
+				buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+				DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_finalpass_cmdbuffers.data()));
 
-			// command buffer creation
-			m_finalpass_cmdbuffers.resize(m_finalpass_fbos.size());
-			VkCommandBufferAllocateInfo buffer_allocateInfo{};
-			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			buffer_allocateInfo.commandPool = m_commandPool;
-			buffer_allocateInfo.commandBufferCount = (uint32_t)m_finalpass_cmdbuffers.size();
-			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_finalpass_cmdbuffers.data()));
+				buffer_allocateInfo.commandBufferCount = 1;
+				DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_test_cmdbuffer));
+				
+				// create semaphores for presetation and rendering synchronisation
+				VkSemaphoreCreateInfo semaphore_createInfo{};
+				semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+				DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentComplete));
+				DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderComplete));
+				DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_subpassComplete));
 
-			buffer_allocateInfo.commandBufferCount = 1;
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_mrt_cmdbuffer));
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_lightpass_cmdbuffer));
-
-			// create semaphores for presetation and rendering synchronisation
-			VkSemaphoreCreateInfo semaphore_createInfo{};
-			semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_mrtComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_lightpassComplete));
+			}
 		}
 	}
 
 	void luna::Renderer::RecordMRTOffscreen_()
 	{
+		m_mrt_shader->UpdateDescriptor(m_instance_ssbo); // just to double make sure that the shader update the latest size of the ssbo
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -212,11 +144,11 @@ namespace luna
 
 		m_mrt_shader->Bind(m_mrt_cmdbuffer);
 		m_mrt_shader->SetViewPort(m_mrt_cmdbuffer, m_mrt_fbo->getResolution());
-		m_mrt_shader->LoadObjectOffset(m_mrt_cmdbuffer, 0);
 		
 		// draw objects
+		m_mrt_shader->LoadObjectOffset(m_mrt_cmdbuffer, 0);
 		m_model->DrawInstanced(m_mrt_cmdbuffer, INSTANCE_COUNT);
-		
+
 		m_mrt_fbo->UnBind(m_mrt_cmdbuffer);
 
 		// finish recording
@@ -251,6 +183,8 @@ namespace luna
 
 	void luna::Renderer::RecordFinalFrame_()
 	{	
+		m_text_shader->UpdateDescriptor(m_fontinstance_ssbo); // just to double make sure that the shader update the latest size of the ssbo
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -292,43 +226,80 @@ namespace luna
 
 	void Renderer::Record()
 	{
-		RecordMRTOffscreen_();
+		/*RecordMRTOffscreen_();
 		RecordLightPassOffscreen_();
 		RecordFinalFrame_();
+		*/
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		// offscreen subpass
+		{
+			// start recording
+			vkBeginCommandBuffer(m_test_cmdbuffer, &beginInfo);
+
+			// bind the fbo 
+			m_test_fbo->Bind(m_test_cmdbuffer);
+
+			// render the simple texture
+			m_simple_shader->Bind(m_test_cmdbuffer);
+			m_simple_shader->SetViewPort(m_test_cmdbuffer, m_test_fbo->getResolution());
+
+			// Draw the quad with final images
+			ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_test_cmdbuffer);
+
+			// next subpass
+			vkCmdNextSubpass(
+				m_test_cmdbuffer,
+				VK_SUBPASS_CONTENTS_INLINE
+			);
+
+			m_subpass_shader->Bind(m_test_cmdbuffer);
+			m_subpass_shader->SetViewPort(m_test_cmdbuffer, m_test_fbo->getResolution());
+
+			// Draw the quad with subpass images
+			ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_test_cmdbuffer);
+
+			// unbind the fbo
+			m_test_fbo->UnBind(m_test_cmdbuffer);
+
+			// finish recording
+			DebugLog::EC(vkEndCommandBuffer(m_test_cmdbuffer));
+		}
+
+
+		// can record the command buffer liao
+		// these command buffer is for the final rendering and final presentation on the screen 
+		for (size_t i = 0; i < m_finalpass_cmdbuffers.size(); ++i)
+		{
+			const VkCommandBuffer& commandbuffer = m_finalpass_cmdbuffers[i];
+			FinalFBO* finalfbo = m_finalpass_fbos[i];
+
+			vkBeginCommandBuffer(commandbuffer, &beginInfo);
+
+			// starting a render pass 
+			// bind the fbo
+			finalfbo->Bind(commandbuffer);
+
+			// bind the shader pipeline stuff
+			m_finalpass_shader->Bind(commandbuffer);
+			m_finalpass_shader->SetViewPort(commandbuffer, finalfbo->getResolution());
+
+			// Draw the quad with final images
+			ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuffer);
+
+			// unbind the fbo
+			finalfbo->UnBind(commandbuffer);
+
+			// finish recording
+			DebugLog::EC(vkEndCommandBuffer(commandbuffer));
+		}
 	}
 
 	void Renderer::Render()
 	{
-		{
-			static auto startTime = std::chrono::high_resolution_clock::now();
-			auto currentTime = std::chrono::high_resolution_clock::now();
-			float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
-
-			{
-				std::vector<InstanceData> instancedata(INSTANCE_COUNT);
-				instancedata[0].model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0, 1.f, 0)); instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
-				instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
-				instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
-				m_instance_ssbo->Update(instancedata);
-			}
-
-			UBOData data{};
-			data.view = glm::lookAt(glm::vec3(-2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-			data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
-			
-			// Vulkan clip space has inverted Y and half Z.
-			glm::mat4 Clip = glm::mat4(
-				1.0f,  0.0f, 0.0f, 0.0f,
-				0.0f, -1.0f, 0.0f, 0.0f,
-				0.0f,  0.0f, 0.5f, 0.0f,
-				0.0f,  0.0f, 0.5f, 1.0f
-			);
-
-			data.proj = Clip * data.proj;
-
-			m_ubo->Update(data);
-		}
-
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
@@ -341,20 +312,14 @@ namespace luna
 		uint32_t imageindex = 0;
 		m_swapchain->AcquireNextImage(m_presentComplete, &imageindex);
 
-		// MRT rendering job submit
-		submitInfo.pWaitSemaphores = &m_presentComplete; // wait for swap chain present finish
-		submitInfo.pSignalSemaphores = &m_mrtComplete; // will tell the next cmdbuffer, when i render finish
-		submitInfo.pCommandBuffers = &m_mrt_cmdbuffer;
-		vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
-		
-		// lightpass rendering job submit
-		submitInfo.pWaitSemaphores = &m_mrtComplete; // wait for mrt present finish
-		submitInfo.pSignalSemaphores = &m_lightpassComplete; // will tell the next cmdbuffer, when i render finish
-		submitInfo.pCommandBuffers = &m_lightpass_cmdbuffer;
+		// subpass submit
+		submitInfo.pWaitSemaphores = &m_presentComplete; // wait for someone render finish
+		submitInfo.pSignalSemaphores = &m_subpassComplete; 
+		submitInfo.pCommandBuffers = &m_test_cmdbuffer;
 		vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
 
-		// final image submiting after MRT pass
-		submitInfo.pWaitSemaphores = &m_lightpassComplete; // wait for someone render finish
+		// final image submiting after present finish on the screen
+		submitInfo.pWaitSemaphores = &m_subpassComplete; // wait for someone render finish
 		submitInfo.pSignalSemaphores = &m_renderComplete; // will tell the swap chain to present, when i render finish
 		submitInfo.pCommandBuffers = &m_finalpass_cmdbuffers[imageindex];
 		vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
@@ -407,6 +372,20 @@ namespace luna
 			m_dirlightpass_shader = nullptr;
 		}
 
+		if (m_simple_shader != nullptr)
+		{
+			m_simple_shader->Destroy();
+			delete m_simple_shader;
+			m_simple_shader = nullptr;
+		}
+
+		if (m_subpass_shader != nullptr)
+		{
+			m_subpass_shader->Destroy();
+			delete m_subpass_shader;
+			m_subpass_shader = nullptr;
+		}
+
 		if (m_finalpass_shader != nullptr)
 		{
 			m_finalpass_shader->Destroy();
@@ -426,6 +405,13 @@ namespace luna
 			m_mrt_fbo->Destroy();
 			delete m_mrt_fbo;
 			m_mrt_fbo = nullptr;
+		}
+
+		if (m_test_fbo != nullptr)
+		{
+			m_test_fbo->Destroy();
+			delete m_test_fbo;
+			m_test_fbo = nullptr;
 		}
 
 		if (m_lightpass_fbo != nullptr)
@@ -473,7 +459,11 @@ namespace luna
 			vkDestroySemaphore(m_logicaldevice, m_lightpassComplete, nullptr);
 			m_lightpassComplete = VK_NULL_HANDLE;
 		}
-
+		if (m_subpassComplete != VK_NULL_HANDLE)
+		{
+			vkDestroySemaphore(m_logicaldevice, m_subpassComplete, nullptr);
+			m_subpassComplete = VK_NULL_HANDLE;
+		}
 		if (m_commandPool != VK_NULL_HANDLE)
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
@@ -481,3 +471,205 @@ namespace luna
 		}
 	}
 }
+
+
+//if (m_swapchain == nullptr)
+//{
+//	// all the models resources will be init 
+//	ModelResources* models = ModelResources::getInstance();
+//	m_model = models->Models[eMODELS::CUBE_MODEL];
+
+//	// all the textures resources will be init
+//	TextureResources* texrsc = TextureResources::getInstance();
+
+//	// swap chain and final fbo creation
+//	// create the swap chain for presenting images
+//	m_swapchain = new VulkanSwapchain();
+//	m_swapchain->Init();
+
+//	// ubo and ssbo that are unique to this renderer
+//	m_ubo = new UBO();
+//	m_instance_ssbo = new SSBO(100 * sizeof(InstanceData)); // 100 different models reserve
+//	m_fontinstance_ssbo = new SSBO(256 * sizeof(FontInstanceData)); // 256 different characters reserve
+
+//	/* initial update for ssbo instancedata */
+//	std::vector<InstanceData> instancedata(INSTANCE_COUNT);
+//	instancedata[0].model = glm::rotate(glm::mat4(), 45.f, glm::vec3(0, 1.f, 0)); 
+//	instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
+//	instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); 
+//	instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
+//	instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); 
+//	instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
+//	m_instance_ssbo->Update<InstanceData>(instancedata);
+
+//	Font* font = new Font();
+//	font->LoadFonts(getAssetPath() + "Fonts/eva.fnt", 
+//		(float)texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]->getWidth(), (float)texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]->getHeight());
+
+//	{
+//		glm::mat4 proj = glm::ortho(0.f, 1080.f, 720.f, 0.f); // scale with screen size
+//		glm::mat4 parentT = glm::translate(glm::mat4(), glm::vec3(5.f, 720.f, 0.f));
+//		glm::mat4 parentR = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 0, 1.f));
+//		glm::mat4 parentS = glm::scale(glm::mat4(), glm::vec3(400.f, 400.f, 1.f));
+
+//		std::string str = "NEON GENESIS EVANGELION";
+//		glm::vec2 cursor = {0.f, 0.0f};
+
+//		totaltext = static_cast<int32_t>(str.size());
+//		std::vector<FontInstanceData> fontinstancedata(totaltext);
+
+//		for(int i = 0; i < totaltext; ++i)
+//		{
+//			FontInstanceData& fid = fontinstancedata[i];
+//			const vulkanchar& vc = font->vulkanChars[str[i]];
+
+//			// calc the top left hand corner position
+//			glm::vec2 toplefthandcorner = glm::vec2(cursor.x + vc.xoffset, cursor.y + vc.yoffset);
+
+//			// then find the correct position relative with the left hand corner
+//			glm::vec2 position = { toplefthandcorner.x + vc.halfsize.x, toplefthandcorner.y - vc.halfsize.y };
+
+//			glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(position, 0.f));
+//			glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(vc.size, 1.f));
+//			
+//			fid.transformation = proj * parentT * parentR * parentS * t * s;
+//			fid.uv[0] = vc.uv[0];
+//			fid.uv[1] = vc.uv[1];
+//			fid.uv[2] = vc.uv[2];
+//			fid.uv[3] = vc.uv[3];
+
+//			// next cursor pointing at
+//			cursor.x += vc.xadvance;
+
+//			// materials set up 
+//			fid.fontMaterials[0] = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f); // color
+//			fid.fontMaterials[1] = glm::vec4(0.45f, 0.15f, 0.5f, 0.15f); // properties
+//			fid.fontMaterials[2] = glm::vec4(0.55f, 0.23f, 0.1f, 0.f); // outline color
+//			fid.fontMaterials[3] = glm::vec4(0.0015f, 0.000f, 0.f, 0.f); // border offset
+//		}
+
+//		m_fontinstance_ssbo->Update<FontInstanceData>(fontinstancedata);
+//	}
+
+//	delete font;
+
+//	VkClearValue clearvalue{};
+//	clearvalue.color = {0.f, 0.f, 0.f, 1.f};
+//	
+//	// create the framebuffer for mrt pass
+//	m_mrt_fbo = new MrtFBO();
+//	m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::WORLDPOS_ATTACHMENT);
+//	m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::WORLDNORM_ATTACHMENT);
+//	m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::ALBEDO_ATTACHMENT);
+//	clearvalue.depthStencil = { 1.0f, 0 };
+//	m_mrt_fbo->Clear(clearvalue, MRT_FBOATTs::DEPTH_ATTACHMENT);
+//	m_mrt_fbo->Init({1920, 1080}); // make sure the attachments are the same size too
+//	
+//	// create the framebuffer for light pass
+//	m_lightpass_fbo = new LightPassFBO();
+//	clearvalue.color = {1.0f, 1.0f, 1.0f, 1.f};
+//	m_lightpass_fbo->Clear(clearvalue, LIGHTPASS_FBOATTs::COLOR_ATTACHMENT);
+//	m_lightpass_fbo->Init({ 1920, 1080 });
+
+//	// create framebuffer for each swapchain images
+//	m_finalpass_fbos.resize(m_swapchain->getImageCount());
+//	for (int i = 0; i < m_finalpass_fbos.size(); i++)
+//	{
+//		m_finalpass_fbos[i] = new FinalFBO();
+//		m_finalpass_fbos[i]->SetAttachment(m_swapchain->m_buffers[i].image, m_swapchain->m_buffers[i].imageview, m_swapchain->getColorFormat(), FINAL_FBOATTs::COLOR_ATTACHMENT);
+//		m_finalpass_fbos[i]->Clear(clearvalue, FINAL_FBOATTs::COLOR_ATTACHMENT);
+//		m_finalpass_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
+//	}
+
+//	// shaders init
+//	m_mrt_shader = new MRTShader();
+//	m_mrt_shader->SetDescriptors(m_ubo, m_instance_ssbo, texrsc->Textures[eTEXTURES::BASIC_2D_BC2]);
+//	m_mrt_shader->Init(MrtFBO::getRenderPass());
+
+//	m_dirlightpass_shader = new DirLightPassShader();
+//	m_dirlightpass_shader->SetDescriptors(
+//		texrsc->Textures[eTEXTURES::WORLDPOS_2D_RGBA16FLOAT], 
+//		texrsc->Textures[eTEXTURES::WORLDNORMAL_2D_RGBA16FLOAT], 
+//		texrsc->Textures[eTEXTURES::ALBEDO_2D_RGBA8UNORM]);
+//	m_dirlightpass_shader->Init(LightPassFBO::getRenderPass());
+//	
+//	m_finalpass_shader = new FinalPassShader();
+//	m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::LIGHTPROCESS_2D_RGBA8UNORM]);
+//	m_finalpass_shader->Init(FinalFBO::getRenderPass());
+//	
+//	m_text_shader = new TextShader();
+//	m_text_shader->SetDescriptors(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
+//	m_text_shader->Init(FinalFBO::getRenderPass());
+//	
+//	// create the command pool first
+//	VkCommandPoolCreateInfo commandPool_createinfo{};
+//	commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+//	commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+//	commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+//	DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+
+//	// command buffer creation
+//	m_finalpass_cmdbuffers.resize(m_finalpass_fbos.size());
+//	VkCommandBufferAllocateInfo buffer_allocateInfo{};
+//	buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+//	buffer_allocateInfo.commandPool = m_commandPool;
+//	buffer_allocateInfo.commandBufferCount = (uint32_t)m_finalpass_cmdbuffers.size();
+//	buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+//	DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_finalpass_cmdbuffers.data()));
+
+//	buffer_allocateInfo.commandBufferCount = 1;
+//	DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_mrt_cmdbuffer));
+//	DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_lightpass_cmdbuffer));
+
+//	// create semaphores for presetation and rendering synchronisation
+//	VkSemaphoreCreateInfo semaphore_createInfo{};
+//	semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+//	DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentComplete));
+//	DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_renderComplete));
+//	DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_mrtComplete));
+//	DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_lightpassComplete));
+//}
+
+
+
+//{
+//	static auto startTime = std::chrono::high_resolution_clock::now();
+//	auto currentTime = std::chrono::high_resolution_clock::now();
+//	float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
+
+//	{
+//		std::vector<InstanceData> instancedata(INSTANCE_COUNT);
+//		instancedata[0].model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0, 1.f, 0)); instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
+//		instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
+//		instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
+//		m_instance_ssbo->Update(instancedata);
+//	}
+
+//	UBOData data{};
+//	data.view = glm::lookAt(glm::vec3(-2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+//	data.proj = glm::perspective(glm::radians(45.f), 1080.f / 720.f, 0.1f, 10.0f); // take note .. hardcoded aspects
+//	
+//	// Vulkan clip space has inverted Y and half Z.
+//	glm::mat4 Clip = glm::mat4(
+//		1.0f,  0.0f, 0.0f, 0.0f,
+//		0.0f, -1.0f, 0.0f, 0.0f,
+//		0.0f,  0.0f, 0.5f, 0.0f,
+//		0.0f,  0.0f, 0.5f, 1.0f
+//	);
+
+//	data.proj = Clip * data.proj;
+
+//	m_ubo->Update(data);
+//}
+
+//// MRT rendering job submit
+//submitInfo.pWaitSemaphores = &m_presentComplete; // wait for swap chain present finish
+//submitInfo.pSignalSemaphores = &m_mrtComplete; // will tell the next cmdbuffer, when i render finish
+//submitInfo.pCommandBuffers = &m_mrt_cmdbuffer;
+//vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
+//
+//// lightpass rendering job submit
+//submitInfo.pWaitSemaphores = &m_mrtComplete; // wait for mrt present finish
+//submitInfo.pSignalSemaphores = &m_lightpassComplete; // will tell the next cmdbuffer, when i render finish
+//submitInfo.pCommandBuffers = &m_lightpass_cmdbuffer;
+//vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);

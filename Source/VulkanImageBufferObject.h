@@ -22,17 +22,22 @@ namespace luna
 
 		/* get the sampler from the implementor (e.g attachments shared sampler with each other) */
 		inline void setSampler(VkSampler sampler) { this->m_sampler = sampler; }
-
 		static void TransitionImageLayout_(const VkCommandBuffer& buffer, VkImage srcimage, const VkImageLayout& oldLayout, const VkImageLayout& newLayout, const VkImageSubresourceRange& subresourceRange);
-		
+		static void TransitionAttachmentImagesLayout_(
+			const VkCommandBuffer & commandbuffer, const VkImage& image,
+			const VkImageLayout& oldlayout, const VkImageLayout& newlayout,
+			VkAccessFlags srcaccessflag, VkAccessFlags dstaccessflag,
+			VkPipelineStageFlags srcpipelinestage, VkPipelineStageFlags dstpipelinestage
+		);
+		static VkCommandBuffer BeginSingleTimeCommands_(VkCommandPool& commandPool);
+		static void EndSingleTimeCommands_(VkCommandBuffer commandBuffer, VkQueue queue);
+
 	protected:
 		static VkDevice m_logicaldevice;
 
 		static void CreateStagingBuffer_(const VkDeviceSize& size, VkBuffer& stagingbuffer, VkDeviceMemory& stagingmemory, VkMemoryRequirements& memReqs);
 		static void CopyBufferToImageBuffer_(const std::vector<VkBufferImageCopy>& bufferCopyRegions, 
 			const VkImage& srcImage, VkBuffer& stagingbuffer, VkDeviceMemory& stagingmemory, const VkImageSubresourceRange& subresourceRange);
-		static VkCommandBuffer BeginSingleTimeCommands_(VkCommandPool& commandPool);
-		static void EndSingleTimeCommands_(VkCommandBuffer commandBuffer, VkQueue queue);
 		static VkSampler CreateSampler_(bool mipmap = false, float miplevel = 0.0f, bool anisotropy = false, float anisotropylevel = 0.0f);
 
 		VkFormat m_format = VK_FORMAT_UNDEFINED;

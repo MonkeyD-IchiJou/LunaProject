@@ -40,4 +40,7 @@ namespace luna
 		attach.view = image->getImageView();
 		m_attachments[i] = attach;
 	}
+	void Framebuffer::TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer)
+	{
+	}
 }

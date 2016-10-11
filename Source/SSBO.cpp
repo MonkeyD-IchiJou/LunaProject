@@ -4,66 +4,28 @@
 
 namespace luna
 {
-	SSBO::SSBO()
+	SSBO::SSBO(const VkDeviceSize& reservesize)
 	{
 		m_logicaldevice = Renderer::getInstance()->GetLogicalDevice();
+		m_queue = Renderer::getInstance()->GetGraphicQueue();
+
+		// preinit
+		m_beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		m_beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		m_copyregion.srcOffset = 0;
+		m_copyregion.dstOffset = 0;
+
+		m_submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		m_submitinfo.commandBufferCount = 1;
+		m_submitinfo.pCommandBuffers = &m_commandbuffer;
 
 		// prepare the command buffer
 		CommandBufferInit_();
-	}
 
-	void SSBO::Update(const std::vector<InstanceData>& ssbo)
-	{
-		VkDeviceSize prevsize = m_ssboTotalSize;
-
-		// get the total size in bytes
-		m_ssboTotalSize = ssbo.size() * sizeof(InstanceData);
-
-		// if the prevsize is not equal to current size.. means something has changed 
-		if (prevsize != m_ssboTotalSize)
-		{
-			// reinit the buffer again because size has changed
-			BufferDeInit_();
-			BufferInit_();
-
-			// IMPORTANT: need to rewrite the descriptor sets for SSBO before calling vkCmdBindDescriptorSets
-		}
-
-		/* begin to record the latest ubo info into the staged device memory */
-		void* data = nullptr;
-		vkMapMemory(m_logicaldevice, m_staging_mem, 0, m_ssboTotalSize, 0, &data);
-		memcpy(data, ssbo.data(), (size_t)m_ssboTotalSize);
-		vkUnmapMemory(m_logicaldevice, m_staging_mem);
-
-		/* then copy into the main buffer */
-		CopyToDeviceMemory_();
-	}
-
-	void SSBO::Update(const std::vector<FontInstanceData>& ssbo)
-	{
-		VkDeviceSize prevsize = m_ssboTotalSize;
-
-		// get the total size in bytes
-		m_ssboTotalSize = ssbo.size() * sizeof(FontInstanceData);
-
-		// if the prevsize is not equal to current size.. means something has changed 
-		if (prevsize != m_ssboTotalSize)
-		{
-			// reinit the buffer again because size has changed
-			BufferDeInit_();
-			BufferInit_();
-
-			// IMPORTANT: need to rewrite the descriptor sets for SSBO before calling vkCmdBindDescriptorSets
-		}
-
-		/* begin to record the latest ubo info into the staged device memory */
-		void* data = nullptr;
-		vkMapMemory(m_logicaldevice, m_staging_mem, 0, m_staging_buffer.RequirementSizeInDeviceMem, 0, &data);
-		memcpy(data, ssbo.data(), (size_t)m_ssboTotalSize);
-		vkUnmapMemory(m_logicaldevice, m_staging_mem);
-
-		/* then copy into the main buffer */
-		CopyToDeviceMemory_();
+		// buffer init with init reserve size
+		m_ssboTotalSize = reservesize;
+		BufferInit_();
 	}
 
 	void SSBO::BufferInit_()
@@ -167,30 +129,19 @@ namespace luna
 	void SSBO::CopyToDeviceMemory_()
 	{
 		// immediately start recording this command buffer
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		vkBeginCommandBuffer(m_commandbuffer, &beginInfo);
+		vkBeginCommandBuffer(m_commandbuffer, &m_beginInfo);
 
 		// start the copy cmd
 		// copy the damn buffer
-		VkBufferCopy copyregion{};
-		copyregion.srcOffset = 0;
-		copyregion.dstOffset = 0;
-		copyregion.size = m_ssboTotalSize;
-		vkCmdCopyBuffer(m_commandbuffer, m_staging_buffer.buffer, m_main_buffer.buffer, 1, &copyregion);
+		m_copyregion.size = m_currentSize;
+		vkCmdCopyBuffer(m_commandbuffer, m_staging_buffer.buffer, m_main_buffer.buffer, 1, &m_copyregion);
 
 		vkEndCommandBuffer(m_commandbuffer);
 
 		// then submit this to the graphics queue to execute it
 		// now execute the command buffer
-		VkSubmitInfo submitinfo{};
-		submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitinfo.commandBufferCount = 1;
-		submitinfo.pCommandBuffers = &m_commandbuffer;
-
-		vkQueueSubmit(Renderer::getInstance()->GetGraphicQueue(), 1, &submitinfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(Renderer::getInstance()->GetGraphicQueue());
+		vkQueueSubmit(m_queue, 1, &m_submitinfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(m_queue);
 	}
 
 	void SSBO::BufferDeInit_()
