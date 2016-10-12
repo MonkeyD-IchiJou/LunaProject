@@ -6,8 +6,6 @@
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
-//layout(location = 3) in vec3 inTangent;
-//layout(location = 4) in vec3 inBitangent;
 
 // output to fragment shader
 layout(location = 0) out vec4 outWorldPos;
@@ -24,11 +22,6 @@ layout(binding = 0) uniform UniformBufferObject
 {
 	mat4 view;
 	mat4 proj;
-	// mat4 projview;
-	// mat4 prev_view;
-	// mat4 inverse_view;
-	// mat4 inverse_proj;
-	// mat4 transpose_view;
 } ubo;
 
 // instance data struct
@@ -36,7 +29,6 @@ struct InstanceData
 {
 	mat4 model;
 	mat4 transpose_inverse_model;
-	// mat4 prev_model;
 };
 
 // shader storage buffer object binding at 1
