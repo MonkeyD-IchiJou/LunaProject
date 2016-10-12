@@ -8,9 +8,9 @@ namespace luna
 	WinNative* WinNative::m_instance = nullptr;
 
 	WinNative::WinNative() : 
-		m_win_size_x(1080), 
+		m_win_size_x(1280), 
 		m_win_size_y(720), 
-		m_win_pos_x(800), 
+		m_win_pos_x(600), 
 		m_win_pos_y(100),
 		m_win_name("Luna")
 	{			

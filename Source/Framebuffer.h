@@ -46,6 +46,9 @@ namespace luna
 		/* return the attachment */
 		inline const FramebufferAttachment& getAttachment(uint32_t i) { return m_attachments[i]; }
 
+		/* return the framebuffer itself */
+		inline const VkFramebuffer getFramebuffer() const { return m_framebuffer; }
+
 		/* set the width and height of the framebuffer */
 		virtual void setResolution(const VkExtent2D& extent);
 
@@ -71,6 +74,8 @@ namespace luna
 
 		/* clear color/depth at the beggining of the frame */
 		std::vector<VkClearValue> m_clearvalues;
+
+		VkRenderPassBeginInfo m_renderPassInfo{};
 
 		/* logical device is needed */
 		VkDevice m_logicaldevice = VK_NULL_HANDLE;

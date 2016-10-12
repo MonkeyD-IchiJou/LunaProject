@@ -1,4 +1,4 @@
-#include "MRTShader.h"
+#include "DeferredShader.h"
 #include "SSBO.h"
 #include "UBO.h"
 #include "DebugLog.h"
@@ -7,16 +7,16 @@
 
 namespace luna
 {
-	MRTShader::MRTShader()
+	DeferredShader::DeferredShader()
 	{
 	}
 
-	MRTShader::~MRTShader()
+	DeferredShader::~DeferredShader()
 	{
 		Destroy();
 	}
 
-	void MRTShader::Bind(const VkCommandBuffer & commandbuffer)
+	void DeferredShader::Bind(const VkCommandBuffer & commandbuffer)
 	{
 		// Graphics Pipeline Binding (shaders binding)
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
@@ -25,7 +25,7 @@ namespace luna
 		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
 	}
 
-	void MRTShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image)
+	void DeferredShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
@@ -75,7 +75,7 @@ namespace luna
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
 	}
 
-	void MRTShader::UpdateDescriptor(const SSBO* ssbo)
+	void DeferredShader::UpdateDescriptor(const SSBO* ssbo)
 	{
 		// descriptor info for ssbo
 		VkDescriptorBufferInfo ssboinfo{};
@@ -90,22 +90,22 @@ namespace luna
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 1);
 	}
 
-	void MRTShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
+	void DeferredShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
 	{
 		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(offset), &offset);
 	}
 
-	void MRTShader::Init(const VkRenderPass & renderpass)
+	void DeferredShader::Init(const VkRenderPass & renderpass)
 	{
 		// only when it has not created
 		if (m_graphicPipeline == VK_NULL_HANDLE)
 		{
 			/* create the shaders first */
-			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/mrt_vert.spv");
+			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/deferred_vert.spv");
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/mrt_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/deferred_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -145,7 +145,7 @@ namespace luna
 		}
 	}
 
-	void MRTShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
+	void DeferredShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
 	{
 		// Blend attachment states required for all color attachments
 		// This is important, as color write mask will otherwise be 0x0 and you
@@ -164,9 +164,36 @@ namespace luna
 		colorBlending.logicOp = VK_LOGIC_OP_CLEAR;
 		colorBlending.attachmentCount = static_cast<uint32_t>(fixedpipeline.colorBlendAttachments.size());
 		colorBlending.pAttachments = fixedpipeline.colorBlendAttachments.data();
+
+		// stencil enable
+		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
+		depthStencil.stencilTestEnable = VK_TRUE;
+
+		VkStencilOpState frontstate{};
+		frontstate.compareOp = VK_COMPARE_OP_ALWAYS; // the comparison operator used in the stencil test
+		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
+		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
+
+		depthStencil.front = frontstate;
+		depthStencil.back = {}; // dun care about the back facing polygon
+
+		// dynamic state 
+		fixedpipeline.dynamicState.resize(5);
+		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
+		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
+		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
+		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
+
+		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
+		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
-	void MRTShader::CreatePipelineLayout_()
+	void DeferredShader::CreatePipelineLayout_()
 	{
 		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
 		{
@@ -190,7 +217,7 @@ namespace luna
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void MRTShader::Destroy()
+	void DeferredShader::Destroy()
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 

@@ -1,5 +1,5 @@
-#ifndef SIMPLE_SHADER_H
-#define SIMPLE_SHADER_H
+#ifndef DEFERRED_SHADER_H
+#define DEFERRED_SHADER_H
 
 #include "ShaderProgram.h"
 #include "DescriptorTool.h"
@@ -10,12 +10,12 @@ namespace luna
 	class SSBO;
 	class VulkanImageBufferObject;
 
-	class MRTShader :
+	class DeferredShader :
 		public ShaderProgram
 	{
 	public:
-		MRTShader();
-		virtual ~MRTShader();
+		DeferredShader();
+		virtual ~DeferredShader();
 
 		void Init(const VkRenderPass& renderpass) override;
 		void Destroy() override;

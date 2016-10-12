@@ -27,7 +27,8 @@ namespace luna
 			const VkCommandBuffer & commandbuffer, const VkImage& image,
 			const VkImageLayout& oldlayout, const VkImageLayout& newlayout,
 			VkAccessFlags srcaccessflag, VkAccessFlags dstaccessflag,
-			VkPipelineStageFlags srcpipelinestage, VkPipelineStageFlags dstpipelinestage
+			VkPipelineStageFlags srcpipelinestage, VkPipelineStageFlags dstpipelinestage,
+			VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT
 		);
 		static VkCommandBuffer BeginSingleTimeCommands_(VkCommandPool& commandPool);
 		static void EndSingleTimeCommands_(VkCommandBuffer commandBuffer, VkQueue queue);

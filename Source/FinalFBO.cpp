@@ -1,6 +1,7 @@
 #include "FinalFBO.h"
 #include "DebugLog.h"
 #include <array>
+#include "VulkanImageBufferObject.h"
 
 namespace luna
 {
@@ -28,9 +29,9 @@ namespace luna
 
 		m_resolution = extent;
 
-		VkImageView imageviews[] = {m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].view};
-
 		CreateRenderPass_();
+
+		VkImageView imageviews[] = {m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].view};
 
 		// create the framebuffer
 		VkFramebufferCreateInfo framebuffer_createinfo{};
@@ -42,64 +43,41 @@ namespace luna
 		framebuffer_createinfo.height			= m_resolution.height;
 		framebuffer_createinfo.layers			= 1; // vr related
 		DebugLog::EC(vkCreateFramebuffer(m_logicaldevice, &framebuffer_createinfo, nullptr, &m_framebuffer));
+
+		// render pass info preinit
+		m_renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		m_renderPassInfo.renderPass = m_renderpass;
+		m_renderPassInfo.framebuffer = m_framebuffer;
+		m_renderPassInfo.renderArea.offset = { 0, 0 };
+		m_renderPassInfo.renderArea.extent = m_resolution;
+		m_renderPassInfo.clearValueCount = static_cast<uint32_t>(m_clearvalues.size());
+		m_renderPassInfo.pClearValues = m_clearvalues.data();
 	}
 
 	void FinalFBO::Bind(const VkCommandBuffer & commandbuffer, VkSubpassContents subpasscontent)
 	{
 		// transition the image layout for the swapchain image
-		TransitionAttachmentImagesLayout_(commandbuffer);
-
-		// starting a render pass
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType				= VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass			= m_renderpass;
-		renderPassInfo.framebuffer			= m_framebuffer;
-		renderPassInfo.renderArea.offset	= { 0, 0 };
-		renderPassInfo.renderArea.extent	= m_resolution;
-		renderPassInfo.clearValueCount		= static_cast<uint32_t>(m_clearvalues.size());
-		renderPassInfo.pClearValues			= m_clearvalues.data();
-
-		vkCmdBeginRenderPass(commandbuffer, &renderPassInfo, subpasscontent);
-	}
-
-	void FinalFBO::TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer)
-	{
-		// make sure it is optimal for the swap chain images
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer	= 0;
-		barrier.subresourceRange.layerCount = 1;
-		// transition the image layout for the swapchain image 
-		barrier.image = m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].image;
-
-		vkCmdPipelineBarrier(
-			commandbuffer,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
+		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+			commandbuffer, m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].image,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
 		);
+
+		vkCmdBeginRenderPass(commandbuffer, &m_renderPassInfo, subpasscontent);
 	}
 
 	void FinalFBO::CreateRenderPass_()
 	{
 		auto lambda = [&]() {
+
 			VkAttachmentDescription attachmentDesc{};
+
 			{
 				attachmentDesc.format = m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].format;
 				attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 				attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this image so that i can present it on the screen
 				attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -107,17 +85,16 @@ namespace luna
 			}
 
 			VkSubpassDescription subPass{};
-			VkAttachmentReference colorAttachmentRef{};
-			{
-				colorAttachmentRef.attachment = 0; // index ref colorAttachment (above) 
-				colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // images used as color attachment
+			VkAttachmentReference colorAttachmentRef{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
+			{
 				subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 				subPass.colorAttachmentCount = 1;
 				subPass.pColorAttachments = &colorAttachmentRef;
 			}
 
 			VkSubpassDependency dependency{};
+
 			{
 				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 				dependency.dstSubpass = 0; // index 0 refer to our subPass .. which is the first and only one

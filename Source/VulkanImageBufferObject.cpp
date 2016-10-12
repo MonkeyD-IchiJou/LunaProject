@@ -118,7 +118,8 @@ namespace luna
 		const VkCommandBuffer & commandbuffer, const VkImage& image, 
 		const VkImageLayout& oldlayout, const VkImageLayout& newlayout, 
 		VkAccessFlags srcaccessflag, VkAccessFlags dstaccessflag,
-		VkPipelineStageFlags srcpipelinestage, VkPipelineStageFlags dstpipelinestage
+		VkPipelineStageFlags srcpipelinestage, VkPipelineStageFlags dstpipelinestage,
+		VkImageAspectFlags aspectMask
 	)
 	{
 		// make sure it is optimal for the swap chain images
@@ -130,7 +131,7 @@ namespace luna
 		barrier.dstAccessMask = dstaccessflag;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.aspectMask = aspectMask;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer	= 0;

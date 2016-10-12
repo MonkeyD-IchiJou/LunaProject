@@ -11,17 +11,13 @@ namespace luna
 	class UBO;
 	class SSBO;
 
-	class MrtFBO;
-	class LightPassFBO;
-	class TestFBO;
+	class DeferredFBO;
 	class FinalFBO;
 
-	class TextShader;
-	class MRTShader;
+	class DeferredShader;
 	class DirLightPassShader;
 	class FinalPassShader;
-	class SimplePassShader;
-	class SubPassShader;
+	class TextShader;
 
 	class Renderer :
 		public VulkanRenderer
@@ -35,6 +31,8 @@ namespace luna
 
 		/* record the command buffer for final presentation */
 		void Record();
+
+		void Update();
 
 		/* render everything and then present it on the screen */
 		void Render();
@@ -61,9 +59,11 @@ namespace luna
 		inline void Destroy() { CleanUpResources(); DeInit_(); }
 
 	private:
-		void RecordMRTOffscreen_();
-		void RecordLightPassOffscreen_();
+		void CreateRenderPassResources_();
+		void CreateCommandBuffers_();
+		void RecordDeferredOffscreen_();
 		void RecordFinalFrame_();
+		void RecordSecondaryCmdbuff_();
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -73,33 +73,24 @@ namespace luna
 		VulkanSwapchain* m_swapchain = nullptr;
 
 		/* fbos for gpu to read/write */
-		MrtFBO* m_mrt_fbo = nullptr;
-		LightPassFBO* m_lightpass_fbo = nullptr;
-		TestFBO* m_test_fbo = nullptr;
+		DeferredFBO* m_deferred_fbo = nullptr;
 		std::vector<FinalFBO*> m_finalpass_fbos;
 
-		/* shader to compute the result of pixels */
-		MRTShader* m_mrt_shader = nullptr;
+		/* all the shaders */
+		DeferredShader* m_deferred_shader = nullptr;
 		DirLightPassShader* m_dirlightpass_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 
-		SimplePassShader* m_simple_shader = nullptr;
-		SubPassShader* m_subpass_shader = nullptr;
-
 		/* recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_finalpass_cmdbuffers;
-		VkCommandBuffer m_mrt_cmdbuffer = VK_NULL_HANDLE;
-		VkCommandBuffer m_lightpass_cmdbuffer = VK_NULL_HANDLE;
-		VkCommandBuffer m_test_cmdbuffer = VK_NULL_HANDLE;
+		VkCommandBuffer m_deferred_cmdbuffer = VK_NULL_HANDLE;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;
-		VkSemaphore m_renderComplete = VK_NULL_HANDLE;
-		VkSemaphore m_mrtComplete = VK_NULL_HANDLE;
-		VkSemaphore m_lightpassComplete = VK_NULL_HANDLE;
-		VkSemaphore m_subpassComplete = VK_NULL_HANDLE;
+		VkSemaphore m_finalpass_renderComplete = VK_NULL_HANDLE;
+		VkSemaphore m_deferred_renderComplete = VK_NULL_HANDLE;
 
 		/* a model with mesh to render */
 		Model* m_model = nullptr;

@@ -30,7 +30,6 @@ namespace luna
 
 	protected:
 		void CreateRenderPass_() override;
-		void TransitionAttachmentImagesLayout_(const VkCommandBuffer & commandbuffer) override;
 
 	private:
 		/* make sure only one renderpass throughout the whole fbo */

@@ -1,27 +1,32 @@
-#ifndef TEST_FBO_H
-#define TEST_FBO_H
+#ifndef MRT_FBO_H
+#define MRT_FBO_H
 
 #include "Framebuffer.h"
 #include <mutex>
 
 namespace luna
 {
-	namespace TEST_FBOATTs
+	class VulkanImageBufferObject;
+
+	namespace DFR_FBOATTs
 	{
 		enum eATTS
 		{
-			COLOR_ATTACHMENT = 0,
-			PRESENT_ATTACHMENT,
+			WORLDPOS_ATTACHMENT = 0,
+			WORLDNORM_ATTACHMENT,
+			ALBEDO_ATTACHMENT,
+			HDRCOLOR_ATTACHMENT,
+			DEPTH_ATTACHMENT,
 			ALL_ATTACHMENTS
 		};
 	}
 
-	class TestFBO :
+	class DeferredFBO :
 		public Framebuffer
 	{
 	public:
-		TestFBO();
-		virtual ~TestFBO();
+		DeferredFBO();
+		virtual ~DeferredFBO();
 
 		void Init(const VkExtent2D& extent) override;
 		void Destroy() override;
@@ -30,14 +35,16 @@ namespace luna
 		static inline VkRenderPass getRenderPass() { return m_renderpass; }
 
 	protected:
+		void CreateAttachments_();
 		void CreateRenderPass_() override;
-		
+
 	private:
 		/* make sure only one renderpass throughout the whole fbo */
 		static std::once_flag m_sflag;
-		/* every framebuffer must have only renderpass to associates with */
+		/* every framebuffer must have only one renderpass to associates with */
 		static VkRenderPass m_renderpass;
 	};
+
 }
 
 #endif

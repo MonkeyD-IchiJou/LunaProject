@@ -19,8 +19,11 @@ namespace luna
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 
-		void SetDescriptors(const VulkanImageBufferObject* samplerPos, 
-			const VulkanImageBufferObject* samplerNormal, const VulkanImageBufferObject* samplerAlbedo);
+		void SetDescriptors(
+			const VulkanImageBufferObject* samplerPos, 
+			const VulkanImageBufferObject* samplerNormal, 
+			const VulkanImageBufferObject* samplerAlbedo
+		);
 
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool& fixedpipeline) override;

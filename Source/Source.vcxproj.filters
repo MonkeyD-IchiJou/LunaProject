@@ -159,19 +159,10 @@
     <ClCompile Include="DirLightPassShader.cpp">
       <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="MRTShader.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="FinalPassShader.cpp">
       <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="FinalFBO.cpp">
-      <Filter>Source Files\Renderer\FBOs</Filter>
-    </ClCompile>
-    <ClCompile Include="MrtFBO.cpp">
-      <Filter>Source Files\Renderer\FBOs</Filter>
-    </ClCompile>
-    <ClCompile Include="LightPassFBO.cpp">
       <Filter>Source Files\Renderer\FBOs</Filter>
     </ClCompile>
     <ClCompile Include="TextShader.cpp">
@@ -189,13 +180,10 @@
     <ClCompile Include="DescriptorTool.cpp">
       <Filter>Source Files\Renderer\GraphicsPipelines</Filter>
     </ClCompile>
-    <ClCompile Include="TestFBO.cpp">
+    <ClCompile Include="DeferredFBO.cpp">
       <Filter>Source Files\Renderer\FBOs</Filter>
     </ClCompile>
-    <ClCompile Include="SubPassShader.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="SimplePassShader.cpp">
+    <ClCompile Include="DeferredShader.cpp">
       <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
@@ -272,9 +260,6 @@
     <ClInclude Include="TextureResources.h">
       <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
-    <ClInclude Include="MRTShader.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="DirLightPassShader.h">
       <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClInclude>
@@ -282,12 +267,6 @@
       <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="FinalFBO.h">
-      <Filter>Header Files\Renderer\FBOs</Filter>
-    </ClInclude>
-    <ClInclude Include="MrtFBO.h">
-      <Filter>Header Files\Renderer\FBOs</Filter>
-    </ClInclude>
-    <ClInclude Include="LightPassFBO.h">
       <Filter>Header Files\Renderer\FBOs</Filter>
     </ClInclude>
     <ClInclude Include="TextShader.h">
@@ -305,13 +284,10 @@
     <ClInclude Include="DescriptorTool.h">
       <Filter>Header Files\Renderer\GraphicsPipelines</Filter>
     </ClInclude>
-    <ClInclude Include="TestFBO.h">
+    <ClInclude Include="DeferredFBO.h">
       <Filter>Header Files\Renderer\FBOs</Filter>
     </ClInclude>
-    <ClInclude Include="SubPassShader.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="SimplePassShader.h">
+    <ClInclude Include="DeferredShader.h">
       <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
     </ClInclude>
   </ItemGroup>

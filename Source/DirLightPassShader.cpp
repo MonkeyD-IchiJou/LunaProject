@@ -27,19 +27,19 @@ namespace luna
 	{
 		// descriptor info for samplerpos
 		VkDescriptorImageInfo samplerposinfo{};
-		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		samplerposinfo.imageView = samplerPos->getImageView();
 		samplerposinfo.sampler = samplerPos->getSampler();
 
 		// descriptor info for samplernormal
 		VkDescriptorImageInfo samplernorminfo{};
-		samplernorminfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		samplernorminfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		samplernorminfo.imageView = samplerNormal->getImageView();
 		samplernorminfo.sampler = samplerNormal->getSampler();
 
 		// descriptor info for albedo
 		VkDescriptorImageInfo albedoinfo{};
-		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		albedoinfo.imageView = samplerAlbedo->getImageView();
 		albedoinfo.sampler = samplerAlbedo->getSampler();
 
@@ -49,21 +49,21 @@ namespace luna
 		samplerposdescriptor.binding = 0;
 		samplerposdescriptor.imageinfo = samplerposinfo;
 		samplerposdescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerposdescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerposdescriptor.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		samplerposdescriptor.typeflags = 1; // an image
 
 		auto& samplernormdescriptor = m_descriptorTool.descriptors[1];
 		samplernormdescriptor.binding = 1;
 		samplernormdescriptor.imageinfo = samplernorminfo;
 		samplernormdescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplernormdescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplernormdescriptor.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		samplernormdescriptor.typeflags = 1; // an image
 
 		auto& albedodescriptor = m_descriptorTool.descriptors[2];
 		albedodescriptor.binding = 2;
 		albedodescriptor.imageinfo = albedoinfo;
 		albedodescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		albedodescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedodescriptor.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		albedodescriptor.typeflags = 1; // an image
 
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
@@ -81,7 +81,7 @@ namespace luna
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/dirlightpass_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/dirlightsubpass_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -109,7 +109,7 @@ namespace luna
 			graphicspipeline_createinfo.pDynamicState			= &fixedpipelineinfo.dynamicStateInfo; // ??
 			graphicspipeline_createinfo.layout					= m_pipelineLayout;
 			graphicspipeline_createinfo.renderPass				= renderpass;
-			graphicspipeline_createinfo.subpass					= 0; // index of the subpass // take note of this
+			graphicspipeline_createinfo.subpass					= 1; // index of the subpass // take note of this
 			graphicspipeline_createinfo.basePipelineHandle		= VK_NULL_HANDLE;
 			graphicspipeline_createinfo.basePipelineIndex		= -1;
 
@@ -129,6 +129,19 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_TRUE; // stencil test enable
+
+		VkStencilOpState frontstate{};
+		frontstate.compareOp = VK_COMPARE_OP_EQUAL; // the comparison operator used in the stencil test
+		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
+		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
+
+		depthStencil.front = frontstate;
+		depthStencil.back = {}; // dun care about the back facing polygon
 
 		// vertex attributes for screen quad
 		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
@@ -142,6 +155,17 @@ namespace luna
 		vertexInputInfo.pVertexBindingDescriptions = &fixedpipeline.bindingDescription;
 		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)fixedpipeline.attributeDescription.size();
 		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
+
+		// dynamic state 
+		fixedpipeline.dynamicState.resize(5);
+		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
+		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
+		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
+		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
+
+		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
+		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
 	void DirLightPassShader::CreatePipelineLayout_()

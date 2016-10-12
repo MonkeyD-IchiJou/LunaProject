@@ -27,13 +27,12 @@ namespace luna
 		Textures[TERRAIN_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/terrain_texturearray_bc3.ktx");
 		Textures[BASIC_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/texturearray_bc3.ktx");
 		Textures[YOKOHOMO_CUBEMAP_BC3] = new VulkanTextureCube(getAssetPath() + "Textures/cubemap_yokohama.ktx");
-		Textures[WORLDPOS_2D_RGBA16FLOAT] = nullptr;
-		Textures[WORLDNORMAL_2D_RGBA16FLOAT] = nullptr;
-		Textures[ALBEDO_2D_RGBA8UNORM] = nullptr;
-		Textures[DEPTH_2D_32FLOAT] = nullptr;
-		Textures[LIGHTPROCESS_2D_RGBA8UNORM] = nullptr;
-		Textures[SUBPASSFIRST_2D_RGBA8UNORM] = nullptr;
-		Textures[SUBPASSSECOND_2D_RGBA8UNORM] = nullptr;
+		
+		Textures[WORLDPOS_ATTACHMENT_RGBA16F] = nullptr;
+		Textures[WORLDNORM_ATTACHMENT_RGBA16F] = nullptr;
+		Textures[ALBEDO_ATTACHMENT_RGBA16F] = nullptr;
+		Textures[HDRTEX_ATTACHMENT_RGBA16F] = nullptr;
+		Textures[DEPTH_ATTACHMENT_32F] = nullptr;
 	}
 
 	void TextureResources::Destroy()

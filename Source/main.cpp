@@ -33,22 +33,17 @@ static void luna_main()
 		// calc how much time have elapsed from prev frame
 		auto delta_time = clock::now() - time_start;
 		time_start = clock::now(); // start of this frame
-		lag += delta_time; // add it until more than 16ms
 
-		// update game logic as lag permits
-		// Fix Time Stamp!!
-		while (lag >= timestep)
-		{
-			// update the window and its input
-			window->UpdateOSWin();
+		// update the window and its input
+		window->UpdateOSWin();
 
-			// begin to render everything and present it on screen
-			renderer->Render();
-			
-			// reduce it until less than my time stamp
-			lag -= timestep;
-		}
-		//luna::DebugLog::printL(std::chrono::duration_cast<std::chrono::milliseconds>(lag).count());
+		// update game logic
+		renderer->Update();
+
+		// begin to render everything and present it on screen
+		renderer->Render();
+
+		//luna::DebugLog::printL(std::chrono::duration_cast<std::chrono::milliseconds>(delta_time).count());
 	}
 
 	/* Major Clean Up*/
