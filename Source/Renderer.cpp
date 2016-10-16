@@ -141,7 +141,7 @@ namespace luna
 	void Renderer::CreateRenderPassResources_()
 	{
 		VkClearValue clearvalue{};
-		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
+		clearvalue.color = {0.f, 1.f, 1.f, 1.f};
 
 		// deferred fbo with 2 subpass
 		m_deferred_fbo = new DeferredFBO();
@@ -149,8 +149,8 @@ namespace luna
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::WORLDNORM_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::ALBEDO_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
-		clearvalue.depthStencil = {1.f, 0};
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTH_ATTACHMENT);
+		clearvalue.depthStencil = {1.f, 0xff};
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
 		m_deferred_fbo->Init({1920, 1080});
 
 		// create framebuffer for each swapchain images
@@ -217,16 +217,78 @@ namespace luna
 		buffer_allocateInfo.commandBufferCount = 1;
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
 
-		//// secondary command buffer
-		//buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		//DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_secondary_buffer));
+		// secondary command buffer
+		m_secondary_cmdbuffers.resize(2);
+		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		buffer_allocateInfo.commandBufferCount = (uint32_t)m_secondary_cmdbuffers.size();
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_secondary_cmdbuffers.data()));
+	}
+
+	void Renderer::RecordSecondaryCmdbuff_()
+	{
+		{
+			VkCommandBuffer& geometrypass_cmdbuff = m_secondary_cmdbuffers[0];
+			vkResetCommandBuffer(geometrypass_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+			VkCommandBufferInheritanceInfo inheritanceinfo{};
+			inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+			inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
+			inheritanceinfo.subpass = 0;
+			inheritanceinfo.occlusionQueryEnable = VK_FALSE;
+			inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
+
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+			beginInfo.pInheritanceInfo = &inheritanceinfo;
+
+			// just to double make sure that the shader update the latest size of the ssbo
+			m_deferred_shader->UpdateDescriptor(m_instance_ssbo);
+
+			// start recording the geometry pass command buffer
+			vkBeginCommandBuffer(geometrypass_cmdbuff, &beginInfo);
+
+			// bind the deferred shader
+			m_deferred_shader->Bind(geometrypass_cmdbuff);
+			m_deferred_shader->SetViewPort(geometrypass_cmdbuff, m_deferred_fbo->getResolution());
+			vkCmdSetStencilCompareMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+			vkCmdSetStencilWriteMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+
+			m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 0);
+			vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
+			m_model->DrawInstanced(geometrypass_cmdbuff, 2);
+
+			m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 2);
+			vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // set stencil value
+			ModelResources::getInstance()->Models[BUNNY_MODEL]->Draw(geometrypass_cmdbuff);
+
+			// end geometry pass cmd buff
+			vkEndCommandBuffer(geometrypass_cmdbuff);
+
+			VkCommandBuffer& lightpass_cmdbuff = m_secondary_cmdbuffers[1];
+			vkResetCommandBuffer(lightpass_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+			inheritanceinfo.subpass = 1;
+
+			// start recording the light pass command buffer
+			vkBeginCommandBuffer(lightpass_cmdbuff, &beginInfo);
+
+			// bind the dirlight pass shader
+			m_dirlightpass_shader->Bind(lightpass_cmdbuff);
+			m_dirlightpass_shader->SetViewPort(lightpass_cmdbuff, m_deferred_fbo->getResolution());
+			vkCmdSetStencilCompareMask(lightpass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+			vkCmdSetStencilWriteMask(lightpass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+
+			vkCmdSetStencilReference(lightpass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
+			ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(lightpass_cmdbuff);
+
+			// end lighting pass cmd buff
+			vkEndCommandBuffer(lightpass_cmdbuff);
+		}
 	}
 
 	void luna::Renderer::RecordDeferredOffscreen_()
 	{
-		// just to double make sure that the shader update the latest size of the ssbo
-		m_deferred_shader->UpdateDescriptor(m_instance_ssbo); 
-
 		// begin init
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -237,38 +299,19 @@ namespace luna
 		vkBeginCommandBuffer(m_deferred_cmdbuffer, &beginInfo);
 
 		// bind the fbo
-		m_deferred_fbo->Bind(m_deferred_cmdbuffer);
+		m_deferred_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-		// bind the deferred shader
-		m_deferred_shader->Bind(m_deferred_cmdbuffer);
-		m_deferred_shader->SetViewPort(m_deferred_cmdbuffer, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
-
-		// draw objects
-		m_deferred_shader->LoadObjectOffset(m_deferred_cmdbuffer, 0);
-		vkCmdSetStencilReference(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 1);
-		m_model->DrawInstanced(m_deferred_cmdbuffer, 2);
-
-		m_deferred_shader->LoadObjectOffset(m_deferred_cmdbuffer, 2);
-		vkCmdSetStencilReference(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 2);
-		ModelResources::getInstance()->Models[BUNNY_MODEL]->Draw(m_deferred_cmdbuffer);
+		// execute the geometry pass
+		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_secondary_cmdbuffers[0]);
 
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
 			m_deferred_cmdbuffer, 
-			VK_SUBPASS_CONTENTS_INLINE
+			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 		);
 
-		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(m_deferred_cmdbuffer);
-		m_dirlightpass_shader->SetViewPort(m_deferred_cmdbuffer, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-
-		// is an integer reference value that is used in the unsigned stencil comparison
-		vkCmdSetStencilReference(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 2);
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_deferred_cmdbuffer);
+		// execute the light pass
+		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_secondary_cmdbuffers[1]);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(m_deferred_cmdbuffer);
@@ -318,30 +361,6 @@ namespace luna
 		}
 	}
 
-	void Renderer::RecordSecondaryCmdbuff_()
-	{
-		//vkResetCommandBuffer(m_secondary_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-
-		//VkCommandBufferInheritanceInfo inheritanceinfo{};
-		//inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		//inheritanceinfo.framebuffer = m_test_fbo->getFramebuffer();
-		//inheritanceinfo.subpass = 0;
-		//inheritanceinfo.occlusionQueryEnable = VK_FALSE;
-		//inheritanceinfo.renderPass = TestFBO::getRenderPass();
-
-		//VkCommandBufferBeginInfo beginInfo{};
-		//beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		//beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		//beginInfo.pInheritanceInfo = &inheritanceinfo;
-
-		//// start recording the second command buffer
-		//vkBeginCommandBuffer(m_secondary_buffer, &beginInfo);
-		//m_simple_shader->Bind(m_secondary_buffer);
-		//m_simple_shader->SetViewPort(m_secondary_buffer, m_test_fbo->getResolution());
-		//ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_secondary_buffer);
-		//vkEndCommandBuffer(m_secondary_buffer);
-	}
-
 	void Renderer::Record()
 	{
 		RecordSecondaryCmdbuff_();
@@ -377,7 +396,7 @@ namespace luna
 		);
 
 		data.proj = Clip * data.proj;
-
+		
 		m_ubo->Update(data);
 	}
 

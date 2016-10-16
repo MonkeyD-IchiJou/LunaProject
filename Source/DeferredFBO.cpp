@@ -38,7 +38,7 @@ namespace luna
 			m_attachments[DFR_FBOATTs::WORLDNORM_ATTACHMENT].view, 
 			m_attachments[DFR_FBOATTs::ALBEDO_ATTACHMENT].view,
 			m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].view,
-			m_attachments[DFR_FBOATTs::DEPTH_ATTACHMENT].view
+			m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].view
 		};
 
 		// create the framebuffer
@@ -147,10 +147,10 @@ namespace luna
 		*imageattachment = new VulkanTexture2D(
 			m_resolution.width, m_resolution.height, 
 			VK_FORMAT_D32_SFLOAT_S8_UINT,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);
-		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTH_ATTACHMENT); // depth stencil attachment
+		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT); // depth stencil attachment
 	}
 
 	void DeferredFBO::CreateRenderPass_()
@@ -171,7 +171,7 @@ namespace luna
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // dun care about storing this attachment
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_GENERAL; // for second subpass to input it
@@ -182,7 +182,7 @@ namespace luna
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // dun care about storing this attachment
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_GENERAL; // for second subpass to input it
@@ -193,7 +193,7 @@ namespace luna
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // dun care about storing this attachment
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_GENERAL; // for second subpass to input it
@@ -204,17 +204,17 @@ namespace luna
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // going to store this attachment, to be used to present later
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // for other shaders to access it
 
 				// depth attachment description
-				descs = &attachmentDescs[DFR_FBOATTs::DEPTH_ATTACHMENT];
-				descs->format = m_attachments[DFR_FBOATTs::DEPTH_ATTACHMENT].format;
+				descs = &attachmentDescs[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT];
+				descs->format = m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // not going to store this depth buffer
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // not going to store this depth/stencil buffer
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -234,7 +234,7 @@ namespace luna
 			inputAttachmentRef[1] = { DFR_FBOATTs::WORLDNORM_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
 			inputAttachmentRef[2] = { DFR_FBOATTs::ALBEDO_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
 
-			VkAttachmentReference depthstencilAttachmentRef = {DFR_FBOATTs::DEPTH_ATTACHMENT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+			VkAttachmentReference depthstencilAttachmentRef = {DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 			VkAttachmentReference presentColorAttachmentRef{DFR_FBOATTs::HDRCOLOR_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
 			{

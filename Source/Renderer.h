@@ -86,6 +86,7 @@ namespace luna
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_finalpass_cmdbuffers;
 		VkCommandBuffer m_deferred_cmdbuffer = VK_NULL_HANDLE;
+		std::vector<VkCommandBuffer> m_secondary_cmdbuffers;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;

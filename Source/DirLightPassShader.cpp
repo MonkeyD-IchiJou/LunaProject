@@ -23,7 +23,8 @@ namespace luna
 		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
 	}
 
-	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, const VulkanImageBufferObject * samplerAlbedo)
+	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, 
+		const VulkanImageBufferObject * samplerAlbedo)
 	{
 		// descriptor info for samplerpos
 		VkDescriptorImageInfo samplerposinfo{};
@@ -132,7 +133,7 @@ namespace luna
 		depthStencil.stencilTestEnable = VK_TRUE; // stencil test enable
 
 		VkStencilOpState frontstate{};
-		frontstate.compareOp = VK_COMPARE_OP_EQUAL; // the comparison operator used in the stencil test
+		frontstate.compareOp = VK_COMPARE_OP_GREATER_OR_EQUAL; // the comparison operator used in the stencil test
 		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
 		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
 		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
