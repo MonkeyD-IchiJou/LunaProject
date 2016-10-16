@@ -10,11 +10,81 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BasicMesh.h" />
+    <ClInclude Include="DebugLog.h" />
+    <ClInclude Include="DeferredFBO.h" />
+    <ClInclude Include="DeferredShader.h" />
+    <ClInclude Include="DescriptorTool.h" />
+    <ClInclude Include="DirLightPassShader.h" />
+    <ClInclude Include="FinalFBO.h" />
+    <ClInclude Include="FinalPassShader.h" />
+    <ClInclude Include="FixedPipelineCreationInfo.h" />
+    <ClInclude Include="Font.h" />
+    <ClInclude Include="FontMesh.h" />
+    <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelResources.h" />
+    <ClInclude Include="platform.h" />
+    <ClInclude Include="QueueFamilyIndices.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="ScreenQuadMesh.h" />
+    <ClInclude Include="ShaderProgram.h" />
+    <ClInclude Include="SSBO.h" />
+    <ClInclude Include="StorageData.h" />
+    <ClInclude Include="TextShader.h" />
+    <ClInclude Include="TextureResources.h" />
+    <ClInclude Include="UBO.h" />
+    <ClInclude Include="Vertex.h" />
+    <ClInclude Include="VulkanBufferData.h" />
+    <ClInclude Include="VulkanBufferObject.h" />
+    <ClInclude Include="VulkanImageBufferObject.h" />
+    <ClInclude Include="VulkanRenderer.h" />
+    <ClInclude Include="VulkanSwapchain.h" />
+    <ClInclude Include="VulkanTexture2D.h" />
+    <ClInclude Include="VulkanTextureArray2D.h" />
+    <ClInclude Include="VulkanTextureCube.h" />
+    <ClInclude Include="WinNative.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BasicMesh.cpp" />
+    <ClCompile Include="DebugLog.cpp" />
+    <ClCompile Include="DeferredFBO.cpp" />
+    <ClCompile Include="DeferredShader.cpp" />
+    <ClCompile Include="DescriptorTool.cpp" />
+    <ClCompile Include="DirLightPassShader.cpp" />
+    <ClCompile Include="FinalFBO.cpp" />
+    <ClCompile Include="FinalPassShader.cpp" />
+    <ClCompile Include="FixedPipelineCreationInfo.cpp" />
+    <ClCompile Include="Font.cpp" />
+    <ClCompile Include="FontMesh.cpp" />
+    <ClCompile Include="Framebuffer.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ModelResources.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RendererDebug.cpp" />
+    <ClCompile Include="ScreenQuadMesh.cpp" />
+    <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="SSBO.cpp" />
+    <ClCompile Include="TextShader.cpp" />
+    <ClCompile Include="TextureResources.cpp" />
+    <ClCompile Include="UBO.cpp" />
+    <ClCompile Include="VulkanBufferObject.cpp" />
+    <ClCompile Include="VulkanImageBufferObject.cpp" />
+    <ClCompile Include="VulkanRenderer.cpp" />
+    <ClCompile Include="VulkanSwapchain.cpp" />
+    <ClCompile Include="VulkanTexture2D.cpp" />
+    <ClCompile Include="VulkanTextureArray2D.cpp" />
+    <ClCompile Include="VulkanTextureCube.cpp" />
+    <ClCompile Include="Win32.cpp" />
+    <ClCompile Include="WinNative.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A4DAC9C8-0CF0-406E-99E3-2D8F6E0C664B}</ProjectGuid>
+    <ProjectGuid>{AA420CAD-E8B1-4D9F-BCF2-0C3131C6CCC9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Source</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -49,8 +119,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>$(SolutionDir)\Bin\Intermediate\$(ProjectName)\$(ConfigurationName)</IntDir>
     <OutDir>$(SolutionDir)\Bin\</OutDir>
+    <IntDir>$(SolutionDir)\Bin\Intermediate\$(ProjectName)\$(ConfigurationName)</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -59,9 +129,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -79,7 +147,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\Libraries\glm;..\Libraries\VulkanSDK\1.0.26.0\Include;..\Libraries\gli;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -91,76 +158,6 @@
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="DescriptorTool.cpp" />
-    <ClCompile Include="FinalFBO.cpp" />
-    <ClCompile Include="DirLightPassShader.cpp" />
-    <ClCompile Include="FinalPassShader.cpp" />
-    <ClCompile Include="Font.cpp" />
-    <ClCompile Include="FontMesh.cpp" />
-    <ClCompile Include="DeferredFBO.cpp" />
-    <ClCompile Include="DeferredShader.cpp" />
-    <ClCompile Include="ScreenQuadMesh.cpp" />
-    <ClCompile Include="SSBO.cpp" />
-    <ClCompile Include="TextShader.cpp" />
-    <ClCompile Include="TextureResources.cpp" />
-    <ClCompile Include="UBO.cpp" />
-    <ClCompile Include="DebugLog.cpp" />
-    <ClCompile Include="FixedPipelineCreationInfo.cpp" />
-    <ClCompile Include="Framebuffer.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="BasicMesh.cpp" />
-    <ClCompile Include="Model.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="ModelResources.cpp" />
-    <ClCompile Include="VulkanBufferObject.cpp" />
-    <ClCompile Include="VulkanImageBufferObject.cpp" />
-    <ClCompile Include="VulkanRenderer.cpp" />
-    <ClCompile Include="RendererDebug.cpp" />
-    <ClCompile Include="ShaderProgram.cpp" />
-    <ClCompile Include="VulkanSwapchain.cpp" />
-    <ClCompile Include="VulkanTexture2D.cpp" />
-    <ClCompile Include="VulkanTextureArray2D.cpp" />
-    <ClCompile Include="VulkanTextureCube.cpp" />
-    <ClCompile Include="Win32.cpp" />
-    <ClCompile Include="WinNative.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="DescriptorTool.h" />
-    <ClInclude Include="FinalFBO.h" />
-    <ClInclude Include="DirLightPassShader.h" />
-    <ClInclude Include="FinalPassShader.h" />
-    <ClInclude Include="Font.h" />
-    <ClInclude Include="FontMesh.h" />
-    <ClInclude Include="DeferredFBO.h" />
-    <ClInclude Include="DeferredShader.h" />
-    <ClInclude Include="ScreenQuadMesh.h" />
-    <ClInclude Include="SSBO.h" />
-    <ClInclude Include="TextShader.h" />
-    <ClInclude Include="TextureResources.h" />
-    <ClInclude Include="UBO.h" />
-    <ClInclude Include="DebugLog.h" />
-    <ClInclude Include="FixedPipelineCreationInfo.h" />
-    <ClInclude Include="Framebuffer.h" />
-    <ClInclude Include="BasicMesh.h" />
-    <ClInclude Include="Model.h" />
-    <ClInclude Include="platform.h" />
-    <ClInclude Include="QueueFamilyIndices.h" />
-    <ClInclude Include="Renderer.h" />
-    <ClInclude Include="ModelResources.h" />
-    <ClInclude Include="StorageData.h" />
-    <ClInclude Include="VulkanBufferData.h" />
-    <ClInclude Include="VulkanBufferObject.h" />
-    <ClInclude Include="VulkanImageBufferObject.h" />
-    <ClInclude Include="VulkanRenderer.h" />
-    <ClInclude Include="ShaderProgram.h" />
-    <ClInclude Include="Vertex.h" />
-    <ClInclude Include="VulkanSwapchain.h" />
-    <ClInclude Include="VulkanTexture2D.h" />
-    <ClInclude Include="VulkanTextureArray2D.h" />
-    <ClInclude Include="VulkanTextureCube.h" />
-    <ClInclude Include="WinNative.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -13,240 +13,115 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Windows">
-      <UniqueIdentifier>{b6bb1882-effd-441e-9a96-8ff173fbda7e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Windows">
-      <UniqueIdentifier>{8f686cb6-5d3e-4722-9b85-fb2f3d14cba7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\System">
-      <UniqueIdentifier>{7b68e975-381f-4b66-b4df-33e96d4421fa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\System">
-      <UniqueIdentifier>{a47887b3-9784-4fc6-96f0-d49893938717}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Renderer">
-      <UniqueIdentifier>{ce925415-b799-4369-826d-0155012a4240}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Renderer">
-      <UniqueIdentifier>{6aa2d752-e99c-4ad7-9af1-152db5d157c4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Utils">
-      <UniqueIdentifier>{4fa069fb-2e72-4518-9849-f4328cfd2871}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Resources">
-      <UniqueIdentifier>{31e4e121-09ff-411c-9808-f92d4b652465}</UniqueIdentifier>
+      <UniqueIdentifier>{fea225ba-7b8a-455e-bed9-51c3fce45074}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Resources">
-      <UniqueIdentifier>{e3312cb2-2b89-440b-8fca-5d5c7d89d06f}</UniqueIdentifier>
+      <UniqueIdentifier>{f142752b-0ea3-486e-8544-600d18c9d39d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Resources\Models">
-      <UniqueIdentifier>{f3c51dd0-1ffd-4d49-94ca-5529a3393acc}</UniqueIdentifier>
+    <Filter Include="Header Files\Resources\Shaders">
+      <UniqueIdentifier>{559b6440-10e4-4de3-802d-e1a2b760b007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\Meshes">
+      <UniqueIdentifier>{e5a833ab-7f7e-4ef7-a5ef-a2f2259eeda4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Resources\Textures">
-      <UniqueIdentifier>{fafcb1fb-4d44-44a7-821c-85c5d742179c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Resources\Models">
-      <UniqueIdentifier>{478fd0d9-579e-4f36-8c47-89489c5182d7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Resources\Textures">
-      <UniqueIdentifier>{2552436a-af8e-43d2-89ec-a1c40454af31}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Renderer\FBOs">
-      <UniqueIdentifier>{70504fde-1ebe-49a3-98b0-34e7ae0d9d6c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Renderer\SwapChain">
-      <UniqueIdentifier>{dc723853-5d0d-4c5f-b069-10543a58ec19}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Renderer\FBOs">
-      <UniqueIdentifier>{6303ec0c-a70b-44eb-a08d-b72bd617acf5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Renderer\SwapChain">
-      <UniqueIdentifier>{b45cfe79-dab1-4dd8-9086-d6ea1acc9326}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Resources\StorageObjs">
-      <UniqueIdentifier>{7a1ef215-ac06-4255-babe-bfba7770641a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Resources\StorageObjs">
-      <UniqueIdentifier>{b34158ce-0ef0-46d4-b2d2-f46e09eaecc1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Renderer\GraphicsPipelines">
-      <UniqueIdentifier>{88ffdb5e-812e-4a15-9035-c56ba0d4cbb7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Renderer\GraphicsPipelines\Shaders">
-      <UniqueIdentifier>{d0875417-b9dc-4982-893e-aa4dc02b21df}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Renderer\GraphicsPipelines">
-      <UniqueIdentifier>{84f7a665-434f-45e8-aae1-491893550261}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Renderer\GraphicsPipelines\Shaders">
-      <UniqueIdentifier>{17bb7055-5ac0-4c6b-905e-124158940b55}</UniqueIdentifier>
+      <UniqueIdentifier>{85fce999-6899-4173-b082-c0b1a23a99db}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Resources\Fonts">
-      <UniqueIdentifier>{24126d77-6720-4461-94bb-f3963186daa5}</UniqueIdentifier>
+      <UniqueIdentifier>{ce51c424-b7ff-494a-9e66-8bbcc84177af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\System">
+      <UniqueIdentifier>{d6521d2c-427c-42e9-b6c1-587c48dca6f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\System">
+      <UniqueIdentifier>{fb456c85-eaee-4a7a-a4f9-fc0d31c7bdb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\Meshes">
+      <UniqueIdentifier>{196d15db-0b15-4e4b-93b3-1b70b445ddef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\Shaders">
+      <UniqueIdentifier>{e47acee6-0c25-4efb-8266-1ab98a3e0978}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\Textures">
+      <UniqueIdentifier>{c6bf7e30-dcee-4497-8cb2-ca557875303c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Resources\Fonts">
-      <UniqueIdentifier>{db1c679f-e77b-49e8-be94-0fb504481f73}</UniqueIdentifier>
+      <UniqueIdentifier>{501e3311-3620-48bb-896c-ca10ef6f3f82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windows">
+      <UniqueIdentifier>{b0b03cc9-0bb7-4cea-9e44-c4ce811abd84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows">
+      <UniqueIdentifier>{5d793d24-247f-43c1-ba4b-67ee8101c840}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\Storages">
+      <UniqueIdentifier>{bff6b117-2112-4ca1-a83a-020e5fcc41a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\Storages">
+      <UniqueIdentifier>{54a4c575-1e16-49aa-b4d9-e60dc3bcb5d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Renderer">
+      <UniqueIdentifier>{e5846f94-f073-46f0-b281-c0145d2a9aa6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Renderer">
+      <UniqueIdentifier>{6e2fb3fe-f8d6-4115-a0c7-cf7b7851cf3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\Shaders\Tools">
+      <UniqueIdentifier>{270ba469-2eb1-48ff-82ab-80fc21ff176e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\Shaders\Tools">
+      <UniqueIdentifier>{82ed9678-26f4-44f9-a605-1ca13743d83d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\SwapChain">
+      <UniqueIdentifier>{be2806bf-5f51-447b-a37e-b61581b8b13d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\SwapChain">
+      <UniqueIdentifier>{5c669e4f-cb34-4374-a12c-69510aa784db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\FBOs">
+      <UniqueIdentifier>{f0fdb1a4-d688-47c4-a268-95b2efc0ce6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\FBOs">
+      <UniqueIdentifier>{46ac13df-ca10-48bb-bb5a-b4d4331adfb2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\FBOs\Tools">
+      <UniqueIdentifier>{5d8e8c84-e2e8-4580-8a78-9a3920086485}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\FBOs\Tools">
+      <UniqueIdentifier>{cd0c05fc-a9a0-4c75-be7a-196ef55e8a6f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="WinNative.cpp">
-      <Filter>Source Files\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="DebugLog.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
-    <ClCompile Include="RendererDebug.cpp">
-      <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="ShaderProgram.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines</Filter>
-    </ClCompile>
-    <ClCompile Include="FixedPipelineCreationInfo.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanRenderer.cpp">
-      <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="BasicMesh.cpp">
-      <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="Framebuffer.cpp">
-      <Filter>Source Files\Renderer\FBOs</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanSwapchain.cpp">
-      <Filter>Source Files\Renderer\SwapChain</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanBufferObject.cpp">
-      <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelResources.cpp">
-      <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanImageBufferObject.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="UBO.cpp">
-      <Filter>Source Files\Resources\StorageObjs</Filter>
-    </ClCompile>
-    <ClCompile Include="SSBO.cpp">
-      <Filter>Source Files\Resources\StorageObjs</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanTexture2D.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanTextureArray2D.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanTextureCube.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureResources.cpp">
-      <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="DirLightPassShader.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="FinalPassShader.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="FinalFBO.cpp">
-      <Filter>Source Files\Renderer\FBOs</Filter>
-    </ClCompile>
-    <ClCompile Include="TextShader.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="FontMesh.cpp">
-      <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="ScreenQuadMesh.cpp">
-      <Filter>Source Files\Resources\Models</Filter>
-    </ClCompile>
-    <ClCompile Include="Font.cpp">
-      <Filter>Source Files\Resources\Fonts</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorTool.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredFBO.cpp">
-      <Filter>Source Files\Renderer\FBOs</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredShader.cpp">
-      <Filter>Source Files\Renderer\GraphicsPipelines\Shaders</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="platform.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="WinNative.h">
-      <Filter>Header Files\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="DebugLog.h">
-      <Filter>Header Files\System</Filter>
-    </ClInclude>
-    <ClInclude Include="QueueFamilyIndices.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderProgram.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines</Filter>
-    </ClInclude>
-    <ClInclude Include="FixedPipelineCreationInfo.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines</Filter>
-    </ClInclude>
-    <ClInclude Include="Vertex.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="VulkanRenderer.h">
-      <Filter>Header Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.h">
-      <Filter>Header Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="VulkanBufferData.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="BasicMesh.h">
-      <Filter>Header Files\Resources\Models</Filter>
+      <Filter>Header Files\Resources\Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>Header Files\Resources\Models</Filter>
+    <ClInclude Include="DeferredShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="VulkanSwapchain.h">
-      <Filter>Header Files\Renderer\SwapChain</Filter>
+    <ClInclude Include="DirLightPassShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="Framebuffer.h">
-      <Filter>Header Files\Renderer\FBOs</Filter>
-    </ClInclude>
-    <ClInclude Include="VulkanBufferObject.h">
-      <Filter>Header Files\Resources\Models</Filter>
+    <ClInclude Include="FinalPassShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="ModelResources.h">
-      <Filter>Header Files\Resources\Models</Filter>
+      <Filter>Header Files\Resources\Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="VulkanImageBufferObject.h">
+    <ClInclude Include="ScreenQuadMesh.h">
+      <Filter>Header Files\Resources\Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="TextShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureResources.h">
       <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
-    <ClInclude Include="StorageData.h">
-      <Filter>Header Files\Utils</Filter>
+    <ClInclude Include="Font.h">
+      <Filter>Header Files\Resources\Fonts</Filter>
     </ClInclude>
-    <ClInclude Include="UBO.h">
-      <Filter>Header Files\Resources\StorageObjs</Filter>
-    </ClInclude>
-    <ClInclude Include="SSBO.h">
-      <Filter>Header Files\Resources\StorageObjs</Filter>
+    <ClInclude Include="FontMesh.h">
+      <Filter>Header Files\Resources\Meshes</Filter>
     </ClInclude>
     <ClInclude Include="VulkanTexture2D.h">
       <Filter>Header Files\Resources\Textures</Filter>
@@ -257,38 +132,166 @@
     <ClInclude Include="VulkanTextureCube.h">
       <Filter>Header Files\Resources\Textures</Filter>
     </ClInclude>
-    <ClInclude Include="TextureResources.h">
-      <Filter>Header Files\Resources\Textures</Filter>
+    <ClInclude Include="DebugLog.h">
+      <Filter>Header Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="DirLightPassShader.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    <ClInclude Include="WinNative.h">
+      <Filter>Header Files\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="FinalPassShader.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    <ClInclude Include="platform.h">
+      <Filter>Header Files\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="FinalFBO.h">
-      <Filter>Header Files\Renderer\FBOs</Filter>
+    <ClInclude Include="SSBO.h">
+      <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
-    <ClInclude Include="TextShader.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    <ClInclude Include="VulkanBufferData.h">
+      <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
-    <ClInclude Include="FontMesh.h">
-      <Filter>Header Files\Resources\Models</Filter>
+    <ClInclude Include="VulkanBufferObject.h">
+      <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
-    <ClInclude Include="ScreenQuadMesh.h">
-      <Filter>Header Files\Resources\Models</Filter>
+    <ClInclude Include="VulkanImageBufferObject.h">
+      <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
-    <ClInclude Include="Font.h">
-      <Filter>Header Files\Resources\Fonts</Filter>
+    <ClInclude Include="UBO.h">
+      <Filter>Header Files\Resources\Storages</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files\Resources\Storages</Filter>
+    </ClInclude>
+    <ClInclude Include="StorageData.h">
+      <Filter>Header Files\Resources\Storages</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Header Files\Resources\Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRenderer.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderProgram.h">
+      <Filter>Header Files\Resources\Shaders\Tools</Filter>
     </ClInclude>
     <ClInclude Include="DescriptorTool.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines</Filter>
+      <Filter>Header Files\Resources\Shaders\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="FixedPipelineCreationInfo.h">
+      <Filter>Header Files\Resources\Shaders\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanSwapchain.h">
+      <Filter>Header Files\Resources\SwapChain</Filter>
+    </ClInclude>
+    <ClInclude Include="QueueFamilyIndices.h">
+      <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
     <ClInclude Include="DeferredFBO.h">
-      <Filter>Header Files\Renderer\FBOs</Filter>
+      <Filter>Header Files\Resources\FBOs</Filter>
     </ClInclude>
-    <ClInclude Include="DeferredShader.h">
-      <Filter>Header Files\Renderer\GraphicsPipelines\Shaders</Filter>
+    <ClInclude Include="FinalFBO.h">
+      <Filter>Header Files\Resources\FBOs</Filter>
     </ClInclude>
+    <ClInclude Include="Framebuffer.h">
+      <Filter>Header Files\Resources\FBOs\Tools</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DebugLog.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicMesh.cpp">
+      <Filter>Source Files\Resources\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelResources.cpp">
+      <Filter>Source Files\Resources\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenQuadMesh.cpp">
+      <Filter>Source Files\Resources\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="FontMesh.cpp">
+      <Filter>Source Files\Resources\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files\Resources\Fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureResources.cpp">
+      <Filter>Source Files\Resources\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="DeferredShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="DirLightPassShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="FinalPassShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="TextShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="WinNative.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Source Files\Resources\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="SSBO.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="UBO.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanBufferObject.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanImageBufferObject.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanTexture2D.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanTextureArray2D.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanTextureCube.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererDebug.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRenderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderProgram.cpp">
+      <Filter>Source Files\Resources\Shaders\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorTool.cpp">
+      <Filter>Source Files\Resources\Shaders\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="FixedPipelineCreationInfo.cpp">
+      <Filter>Source Files\Resources\Shaders\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanSwapchain.cpp">
+      <Filter>Source Files\Resources\SwapChain</Filter>
+    </ClCompile>
+    <ClCompile Include="DeferredFBO.cpp">
+      <Filter>Source Files\Resources\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="FinalFBO.cpp">
+      <Filter>Source Files\Resources\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="Framebuffer.cpp">
+      <Filter>Source Files\Resources\FBOs\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
