@@ -151,7 +151,7 @@ namespace luna
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
 		clearvalue.depthStencil = {1.f, 0xff};
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
-		m_deferred_fbo->Init({1920, 1080});
+		m_deferred_fbo->Init({1280, 720});
 
 		// create framebuffer for each swapchain images
 		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
@@ -412,22 +412,22 @@ namespace luna
 
 		// get the available image to render with
 		uint32_t imageindex = 0;
-		m_swapchain->AcquireNextImage(m_presentComplete, &imageindex);
+		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
 		// subpass submit
 		submitInfo.pWaitSemaphores = &m_presentComplete; // wait for someone render finish
 		submitInfo.pSignalSemaphores = &m_deferred_renderComplete; // will inform the next one, when i render finish
 		submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
-		vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
 
 		// final image submiting after present finish on the screen
 		submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait for someone render finish
 		submitInfo.pSignalSemaphores = &m_finalpass_renderComplete; // will tell the swap chain to present, when i render finish
 		submitInfo.pCommandBuffers = &m_finalpass_cmdbuffers[imageindex];
-		vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE);
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
 
 		// present it on the screen pls
-		m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_finalpass_renderComplete);
+		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_finalpass_renderComplete));
 	}
 
 	void Renderer::CleanUpResources()

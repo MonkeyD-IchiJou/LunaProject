@@ -66,6 +66,8 @@ namespace luna
 		m_gpu_features = m_physicaldevices.getGPUDeviceFeatures(gpuChoose);
 		m_gpu_memProperties = m_physicaldevices.getGPUMemoryProperties(gpuChoose);
 	
+		DebugLog::print("Physical Device: ");
+		DebugLog::printL(m_gpu_properties.deviceName);
 
 #if _DEBUG
 		/* print out all the device extensions only */

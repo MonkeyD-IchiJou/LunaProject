@@ -10,8 +10,8 @@ namespace luna
 	WinNative::WinNative() : 
 		m_win_size_x(1280), 
 		m_win_size_y(720), 
-		m_win_pos_x(600), 
-		m_win_pos_y(100),
+		m_win_pos_x(90), 
+		m_win_pos_y(70),
 		m_win_name("Luna")
 	{			
 		/* get the reference of the vulkan instance */
