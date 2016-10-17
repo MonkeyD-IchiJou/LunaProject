@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BasicMesh.h" />
+    <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="DebugLog.h" />
     <ClInclude Include="DeferredFBO.h" />
     <ClInclude Include="DeferredShader.h" />
@@ -48,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp" />
+    <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="DebugLog.cpp" />
     <ClCompile Include="DeferredFBO.cpp" />
     <ClCompile Include="DeferredShader.cpp" />

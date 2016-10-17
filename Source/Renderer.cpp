@@ -13,6 +13,7 @@
 #include "DirLightPassShader.h"
 #include "FinalPassShader.h"
 #include "TextShader.h"
+#include "ComputeShader.h"
 
 #include "ModelResources.h"
 #include "Model.h"
@@ -135,6 +136,7 @@ namespace luna
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_finalpass_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_deferred_renderComplete));
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_compute_computeComplete));
 		}
 	}
 
@@ -185,9 +187,14 @@ namespace luna
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
+		// compute shader init
+		m_compute_shader = new ComputeShader();
+		m_compute_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F], texrsc->Textures[eTEXTURES::COMPUTETARGET_2D_RGBA16F]);
+		m_compute_shader->Init(nullptr);
+
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
-		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
+		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::COMPUTETARGET_2D_RGBA16F]);
 		m_finalpass_shader->Init(FinalFBO::getRenderPass());
 
 		// text shader init
@@ -222,6 +229,22 @@ namespace luna
 		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 		buffer_allocateInfo.commandBufferCount = (uint32_t)m_secondary_cmdbuffers.size();
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_secondary_cmdbuffers.data()));
+
+		// Separate command pool as queue family for compute may be different than graphics
+		VkCommandPoolCreateInfo cmdPoolInfo = {};
+		cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		cmdPoolInfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &cmdPoolInfo, nullptr, &m_comp_cmdpool));
+
+		// Create a command buffer for compute operations
+		VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
+		cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cmdBufAllocateInfo.commandPool = m_comp_cmdpool;
+		cmdBufAllocateInfo.commandBufferCount = 1;
+		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &cmdBufAllocateInfo, &m_comp_cmdbuffer));
 	}
 
 	void Renderer::RecordSecondaryCmdbuff_()
@@ -320,6 +343,23 @@ namespace luna
 		DebugLog::EC(vkEndCommandBuffer(m_deferred_cmdbuffer));
 	}
 
+	void Renderer::RecordCompute_()
+	{
+		// begin init
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		DebugLog::EC(vkBeginCommandBuffer(m_comp_cmdbuffer, &beginInfo));
+
+		m_compute_shader->Bind(m_comp_cmdbuffer);
+
+		vkCmdDispatch(m_comp_cmdbuffer, 1280 / 16, 720 / 16, 1);
+
+		DebugLog::EC(vkEndCommandBuffer(m_comp_cmdbuffer));
+	}
+
 	void luna::Renderer::RecordFinalFrame_()
 	{	
 		// just to double make sure that the shader update the latest size of the ssbo
@@ -365,6 +405,7 @@ namespace luna
 	{
 		RecordSecondaryCmdbuff_();
 		RecordDeferredOffscreen_();
+		RecordCompute_();
 		RecordFinalFrame_();
 	}
 
@@ -408,6 +449,7 @@ namespace luna
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.waitSemaphoreCount = 1;
 		VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkPipelineStageFlags waitStages2[1] = { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
 		submitInfo.pWaitDstStageMask = waitStages; // wait until draw finish
 
 		// get the available image to render with
@@ -420,8 +462,15 @@ namespace luna
 		submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
 
+		// compute submit
+		submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait until deferred rendering finish
+		submitInfo.pSignalSemaphores = &m_compute_computeComplete; // will inform the next one, when i compute finish
+		submitInfo.pCommandBuffers = &m_comp_cmdbuffer;
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
+
 		// final image submiting after present finish on the screen
-		submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait for someone render finish
+		submitInfo.pWaitDstStageMask = waitStages2; // wait until compute finish
+		submitInfo.pWaitSemaphores = &m_compute_computeComplete; // wait for someone render finish
 		submitInfo.pSignalSemaphores = &m_finalpass_renderComplete; // will tell the swap chain to present, when i render finish
 		submitInfo.pCommandBuffers = &m_finalpass_cmdbuffers[imageindex];
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
@@ -472,6 +521,13 @@ namespace luna
 			m_dirlightpass_shader->Destroy();
 			delete m_dirlightpass_shader;
 			m_dirlightpass_shader = nullptr;
+		}
+
+		if (m_compute_shader != nullptr)
+		{
+			m_compute_shader->Destroy();
+			delete m_compute_shader;
+			m_compute_shader = nullptr;
 		}
 
 		if (m_finalpass_shader != nullptr)
@@ -528,10 +584,39 @@ namespace luna
 			vkDestroySemaphore(m_logicaldevice, m_deferred_renderComplete, nullptr);
 			m_deferred_renderComplete = VK_NULL_HANDLE;
 		}
+		if (m_compute_computeComplete != VK_NULL_HANDLE)
+		{
+			vkDestroySemaphore(m_logicaldevice, m_compute_computeComplete, nullptr);
+			m_compute_computeComplete = VK_NULL_HANDLE;
+		}
 		if (m_commandPool != VK_NULL_HANDLE)
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
 			m_commandPool = VK_NULL_HANDLE;
 		}
+		if (m_comp_cmdpool != VK_NULL_HANDLE)
+		{
+			vkDestroyCommandPool(m_logicaldevice, m_comp_cmdpool, nullptr);
+			m_comp_cmdpool = VK_NULL_HANDLE;
+		}
 	}
 }
+
+//// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
+//VkImageMemoryBarrier imageMemoryBarrier = {};
+//imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+//// We won't be changing the layout of the image
+//imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+//imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; // not changing any layout
+//imageMemoryBarrier.image = TextureResources::getInstance()->Textures[eTEXTURES::COMPUTETARGET_2D_RGBA16F]->getImage();
+//imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+//imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+//imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+//vkCmdPipelineBarrier(
+//	commandbuffer,
+//	VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+//	VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+//	0,
+//	0, nullptr,
+//	0, nullptr,
+//	1, &imageMemoryBarrier);

@@ -18,7 +18,7 @@ namespace luna
 	void TextShader::Init(const VkRenderPass & renderpass)
 	{
 		// only when it has not created
-		if (m_graphicPipeline == VK_NULL_HANDLE)
+		if (m_Pipeline == VK_NULL_HANDLE)
 		{
 			/* create the shaders first */
 			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/text_vert.spv");
@@ -57,7 +57,7 @@ namespace luna
 			graphicspipeline_createinfo.basePipelineHandle		= VK_NULL_HANDLE;
 			graphicspipeline_createinfo.basePipelineIndex		= -1;
 
-			DebugLog::EC(vkCreateGraphicsPipelines(m_logicaldevice, VK_NULL_HANDLE, 1, &graphicspipeline_createinfo, nullptr, &m_graphicPipeline));
+			DebugLog::EC(vkCreateGraphicsPipelines(m_logicaldevice, VK_NULL_HANDLE, 1, &graphicspipeline_createinfo, nullptr, &m_Pipeline));
 
 			/* destroy the shader modules as they are useless now */
 			if (vertinfo.module != VK_NULL_HANDLE) { vkDestroyShaderModule(m_logicaldevice, vertinfo.module, nullptr); }
@@ -68,7 +68,7 @@ namespace luna
 	void TextShader::Bind(const VkCommandBuffer & commandbuffer)
 	{
 		// Graphics Pipeline Binding (shaders binding)
-		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicPipeline);
+		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
 		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
@@ -197,10 +197,10 @@ namespace luna
 			m_pipelineLayout = VK_NULL_HANDLE;
 		}
 
-		if (m_graphicPipeline != VK_NULL_HANDLE)
+		if (m_Pipeline != VK_NULL_HANDLE)
 		{
-			vkDestroyPipeline(m_logicaldevice, m_graphicPipeline, nullptr);
-			m_graphicPipeline = VK_NULL_HANDLE;
+			vkDestroyPipeline(m_logicaldevice, m_Pipeline, nullptr);
+			m_Pipeline = VK_NULL_HANDLE;
 		}
 	}
 }

@@ -18,6 +18,7 @@ namespace luna
 	class DirLightPassShader;
 	class FinalPassShader;
 	class TextShader;
+	class ComputeShader;
 
 	class Renderer :
 		public VulkanRenderer
@@ -62,6 +63,7 @@ namespace luna
 		void CreateRenderPassResources_();
 		void CreateCommandBuffers_();
 		void RecordDeferredOffscreen_();
+		void RecordCompute_();
 		void RecordFinalFrame_();
 		void RecordSecondaryCmdbuff_();
 
@@ -81,17 +83,21 @@ namespace luna
 		DirLightPassShader* m_dirlightpass_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
+		ComputeShader* m_compute_shader = nullptr;
 
 		/* recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_finalpass_cmdbuffers;
 		VkCommandBuffer m_deferred_cmdbuffer = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_secondary_cmdbuffers;
+		VkCommandPool m_comp_cmdpool = VK_NULL_HANDLE;
+		VkCommandBuffer m_comp_cmdbuffer = VK_NULL_HANDLE;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;
 		VkSemaphore m_finalpass_renderComplete = VK_NULL_HANDLE;
 		VkSemaphore m_deferred_renderComplete = VK_NULL_HANDLE;
+		VkSemaphore m_compute_computeComplete = VK_NULL_HANDLE;
 
 		/* a model with mesh to render */
 		Model* m_model = nullptr;

@@ -2,7 +2,6 @@
 #define SHADER_PROGRAM_H
 
 #include "FixedPipelineCreationInfo.h"
-#include <mutex>
 
 namespace luna
 {
@@ -32,8 +31,8 @@ namespace luna
 		VkPipelineShaderStageCreateInfo CreateShaders_(const std::string& shaderFileName);
 		
 	protected:
-		/* every shaders must have a graphic pipeline */
-		VkPipeline m_graphicPipeline = VK_NULL_HANDLE;
+		/* every shaders must have a graphic/compute pipeline */
+		VkPipeline m_Pipeline = VK_NULL_HANDLE;
 
 		/* every shaders must have a graphic pipeline layout */
 		VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;

@@ -67,12 +67,6 @@
     <Filter Include="Source Files\Renderer">
       <UniqueIdentifier>{6e2fb3fe-f8d6-4115-a0c7-cf7b7851cf3f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Resources\Shaders\Tools">
-      <UniqueIdentifier>{270ba469-2eb1-48ff-82ab-80fc21ff176e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Resources\Shaders\Tools">
-      <UniqueIdentifier>{82ed9678-26f4-44f9-a605-1ca13743d83d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Resources\SwapChain">
       <UniqueIdentifier>{be2806bf-5f51-447b-a37e-b61581b8b13d}</UniqueIdentifier>
     </Filter>
@@ -85,11 +79,17 @@
     <Filter Include="Header Files\Resources\FBOs">
       <UniqueIdentifier>{46ac13df-ca10-48bb-bb5a-b4d4331adfb2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Resources\FBOs\Tools">
+    <Filter Include="Source Files\Resources\Shaders\Base">
+      <UniqueIdentifier>{82ed9678-26f4-44f9-a605-1ca13743d83d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\FBOs\Base">
       <UniqueIdentifier>{5d8e8c84-e2e8-4580-8a78-9a3920086485}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Resources\FBOs\Tools">
+    <Filter Include="Header Files\Resources\FBOs\Base">
       <UniqueIdentifier>{cd0c05fc-a9a0-4c75-be7a-196ef55e8a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\Shaders\Base">
+      <UniqueIdentifier>{270ba469-2eb1-48ff-82ab-80fc21ff176e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -169,13 +169,13 @@
       <Filter>Header Files\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="ShaderProgram.h">
-      <Filter>Header Files\Resources\Shaders\Tools</Filter>
+      <Filter>Header Files\Resources\Shaders\Base</Filter>
     </ClInclude>
     <ClInclude Include="DescriptorTool.h">
-      <Filter>Header Files\Resources\Shaders\Tools</Filter>
+      <Filter>Header Files\Resources\Shaders\Base</Filter>
     </ClInclude>
     <ClInclude Include="FixedPipelineCreationInfo.h">
-      <Filter>Header Files\Resources\Shaders\Tools</Filter>
+      <Filter>Header Files\Resources\Shaders\Base</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>Header Files\Renderer</Filter>
@@ -193,7 +193,10 @@
       <Filter>Header Files\Resources\FBOs</Filter>
     </ClInclude>
     <ClInclude Include="Framebuffer.h">
-      <Filter>Header Files\Resources\FBOs\Tools</Filter>
+      <Filter>Header Files\Resources\FBOs\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="ComputeShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -270,13 +273,13 @@
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="ShaderProgram.cpp">
-      <Filter>Source Files\Resources\Shaders\Tools</Filter>
+      <Filter>Source Files\Resources\Shaders\Base</Filter>
     </ClCompile>
     <ClCompile Include="DescriptorTool.cpp">
-      <Filter>Source Files\Resources\Shaders\Tools</Filter>
+      <Filter>Source Files\Resources\Shaders\Base</Filter>
     </ClCompile>
     <ClCompile Include="FixedPipelineCreationInfo.cpp">
-      <Filter>Source Files\Resources\Shaders\Tools</Filter>
+      <Filter>Source Files\Resources\Shaders\Base</Filter>
     </ClCompile>
     <ClCompile Include="VulkanSwapchain.cpp">
       <Filter>Source Files\Resources\SwapChain</Filter>
@@ -288,10 +291,13 @@
       <Filter>Source Files\Resources\FBOs</Filter>
     </ClCompile>
     <ClCompile Include="Framebuffer.cpp">
-      <Filter>Source Files\Resources\FBOs\Tools</Filter>
+      <Filter>Source Files\Resources\FBOs\Base</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="ComputeShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

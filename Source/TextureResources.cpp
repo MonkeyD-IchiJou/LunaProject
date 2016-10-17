@@ -33,6 +33,13 @@ namespace luna
 		Textures[ALBEDO_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[HDRTEX_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[DEPTH_ATTACHMENT_32F] = nullptr;
+
+		Textures[COMPUTETARGET_2D_RGBA16F] = new VulkanTexture2D(
+			1280, 720, 
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, // sampled in the frag shader and used as storage target in the comp shader
+			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL
+		);
 	}
 
 	void TextureResources::Destroy()

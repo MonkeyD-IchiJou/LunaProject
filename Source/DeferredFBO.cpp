@@ -137,7 +137,7 @@ namespace luna
 		*imageattachment = new VulkanTexture2D(
 			m_resolution.width, m_resolution.height, 
 			VK_FORMAT_R16G16B16A16_SFLOAT, 
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // output by subpass and will be used by other fbo
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, // output by subpass and will be used by compute shader
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
