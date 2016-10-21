@@ -1,0 +1,51 @@
+#version 450
+
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_ARB_shading_language_420pack : enable
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba16f) uniform readonly image2D inputImage;
+layout (binding = 1, rgba16f) uniform highp image2D resultImage;
+
+const int taps = 5;
+float weight[taps] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+
+layout(push_constant) uniform PushConst
+{
+	ivec2 direction;
+	ivec2 resolution;
+} pushconsts;
+
+void main()
+{	
+	// get index in global work group i.e x,y position
+	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy); // this is in image space (not texel space)
+		
+	ivec2 rightOffset[taps];
+	ivec2 leftOffset[taps];
+	for(int i = 0; i < taps; ++i)
+	{
+		rightOffset[i] = pixel_coords + (i * pushconsts.direction); // plus 1 pixel beside
+		
+		// make sure it is not more than the resolution size
+		rightOffset[i].x = min(rightOffset[i].x, pushconsts.resolution.x - 1);
+		rightOffset[i].y = min(rightOffset[i].y, pushconsts.resolution.y - 1);
+		
+		leftOffset[i] = pixel_coords - (i * pushconsts.direction); // minus 1 pixel beside
+	
+		// make sure it is not less than 0
+		leftOffset[i].x = max(leftOffset[i].x, 0);
+		leftOffset[i].y = max(leftOffset[i].y, 0);
+	}
+	
+	// the middle pixel
+	vec3 result = imageLoad(inputImage, pixel_coords).rgb * weight[0];
+	
+	for(int i = 1; i < taps; ++i)
+	{
+		result += imageLoad(inputImage, rightOffset[i]).rgb * weight[i];
+		result += imageLoad(inputImage, leftOffset[i]).rgb * weight[i];
+	}
+	imageStore(resultImage, pixel_coords, vec4(result, 1.0));
+}

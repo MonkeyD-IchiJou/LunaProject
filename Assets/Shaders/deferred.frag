@@ -30,5 +30,5 @@ void main()
 	outPosition = inWorldPos;
 	outNormal = vec4(inNormal, 1.0);
 	outAlbedo = texture(samplerColor, inUV);
-	//outAlbedo = vec4(1.0 - LinearizeDepth(gl_FragCoord.z));
+	//outAlbedo = vec4(LinearizeDepth(gl_FragCoord.z));
 }
