@@ -35,18 +35,21 @@
 #include <cassert>
 #include <cstddef>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Version
 
-#define GLM_VERSION					97
+#define GLM_VERSION					98
 #define GLM_VERSION_MAJOR			0
 #define GLM_VERSION_MINOR			9
-#define GLM_VERSION_PATCH			7
-#define GLM_VERSION_REVISION		6
+#define GLM_VERSION_PATCH			8
+#define GLM_VERSION_REVISION		0
 
 #if(defined(GLM_MESSAGES) && !defined(GLM_MESSAGE_VERSION_DISPLAYED))
 #	define GLM_MESSAGE_VERSION_DISPLAYED
-#	pragma message ("GLM: version 0.9.7.6")
+#	pragma message ("GLM: version 0.9.8.0")
 #endif//GLM_MESSAGE
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +65,6 @@
 #define GLM_PLATFORM_UNIX			0x00400000
 #define GLM_PLATFORM_QNXNTO			0x00800000
 #define GLM_PLATFORM_WINCE			0x01000000
-#define GLM_PLATFORM_CYGWIN			0x02000000
 
 #ifdef GLM_FORCE_PLATFORM_UNKNOWN
 #	define GLM_PLATFORM GLM_PLATFORM_UNKNOWN
@@ -152,14 +154,7 @@
 #define GLM_COMPILER_GCC51			0x02000300
 #define GLM_COMPILER_GCC52			0x02000400
 #define GLM_COMPILER_GCC53			0x02000500
-#define GLM_COMPILER_GCC54			0x02000600
-#define GLM_COMPILER_GCC60			0x02000700
-#define GLM_COMPILER_GCC61			0x02000800
-#define GLM_COMPILER_GCC62			0x02000900
-#define GLM_COMPILER_GCC70			0x02000A00
-#define GLM_COMPILER_GCC71			0x02000B00
-#define GLM_COMPILER_GCC72			0x02000C00
-#define GLM_COMPILER_GCC80			0x02000D00
+#define GLM_COMPILER_GCC60			0x02000600
 
 // CUDA
 #define GLM_COMPILER_CUDA			0x10000000
@@ -171,7 +166,6 @@
 #define GLM_COMPILER_CUDA65			0x10000090
 #define GLM_COMPILER_CUDA70			0x100000A0
 #define GLM_COMPILER_CUDA75			0x100000B0
-#define GLM_COMPILER_CUDA80			0x100000C0
 
 // LLVM
 #define GLM_COMPILER_LLVM			0x20000000
@@ -193,9 +187,6 @@
 #define GLM_COMPILER_APPLE_CLANG51	0x40000050
 #define GLM_COMPILER_APPLE_CLANG60	0x40000060
 #define GLM_COMPILER_APPLE_CLANG61	0x40000070
-#define GLM_COMPILER_APPLE_CLANG70	0x40000080
-#define GLM_COMPILER_APPLE_CLANG73	0x40000090
-#define GLM_COMPILER_APPLE_CLANG80	0x400000A0
 
 // Build model
 #define GLM_MODEL_32				0x00000010
@@ -266,12 +257,8 @@
 #			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG60
 #		elif __clang_major__ == 6 && __clang_minor__ >= 1
 #			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG61
-#		elif __clang_major__ == 7 && __clang_minor__ == 0
-#			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG70
-#		elif __clang_major__ == 7 && __clang_minor__ >= 3
-#			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG73
-#		elif __clang_major__ >= 8
-#			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG80
+#		elif __clang_major__ >= 7
+#			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG61
 #		else
 #			define GLM_COMPILER GLM_COMPILER_APPLE_CLANG
 #		endif
@@ -327,24 +314,10 @@
 #		define GLM_COMPILER (GLM_COMPILER_GCC51)
 #	elif (__GNUC__ == 5) && (__GNUC_MINOR__ == 2)
 #		define GLM_COMPILER (GLM_COMPILER_GCC52)
-#	elif (__GNUC__ == 5) && (__GNUC_MINOR__ == 3)
+#	elif (__GNUC__ == 5) && (__GNUC_MINOR__ >= 3)
 #		define GLM_COMPILER (GLM_COMPILER_GCC53)
-#	elif (__GNUC__ == 5) && (__GNUC_MINOR__ >= 4)
-#		define GLM_COMPILER (GLM_COMPILER_GCC54)
-#	elif (__GNUC__ == 6) && (__GNUC_MINOR__ == 0)
+#	elif (__GNUC__ >= 6)
 #		define GLM_COMPILER (GLM_COMPILER_GCC60)
-#	elif (__GNUC__ == 6) && (__GNUC_MINOR__ == 1)
-#		define GLM_COMPILER (GLM_COMPILER_GCC61)
-#	elif (__GNUC__ == 6) && (__GNUC_MINOR__ >= 2)
-#		define GLM_COMPILER (GLM_COMPILER_GCC62)
-#	elif (__GNUC__ == 7) && (__GNUC_MINOR__ == 0)
-#		define GLM_COMPILER (GLM_COMPILER_GCC70)
-#	elif (__GNUC__ == 7) && (__GNUC_MINOR__ == 1)
-#		define GLM_COMPILER (GLM_COMPILER_GCC71)
-#	elif (__GNUC__ == 7) && (__GNUC_MINOR__ == 2)
-#		define GLM_COMPILER (GLM_COMPILER_GCC72)
-#	elif (__GNUC__ >= 8)
-#		define GLM_COMPILER (GLM_COMPILER_GCC80)
 #	else
 #		define GLM_COMPILER (GLM_COMPILER_GCC)
 #	endif
@@ -452,14 +425,8 @@
 #		define GLM_ARCH (GLM_ARCH_AVX2 | GLM_ARCH_AVX | GLM_ARCH_SSE4 | GLM_ARCH_SSE3 | GLM_ARCH_SSE2)
 #	elif defined(__AVX__)
 #		define GLM_ARCH (GLM_ARCH_AVX | GLM_ARCH_SSE4 | GLM_ARCH_SSE3 | GLM_ARCH_SSE2)
-#	elif defined(_M_X64)
+#	elif _M_IX86_FP == 2
 #		define GLM_ARCH (GLM_ARCH_SSE2)
-#	elif defined(_M_IX86_FP)
-#		if _M_IX86_FP >= 2
-#			define GLM_ARCH (GLM_ARCH_SSE2)
-#		else
-#			define GLM_ARCH (GLM_ARCH_PURE)
-#		endif
 #	else
 #		define GLM_ARCH (GLM_ARCH_PURE)
 #	endif
@@ -684,16 +651,21 @@
 #if GLM_PLATFORM == GLM_PLATFORM_ANDROID || GLM_PLATFORM == GLM_PLATFORM_CYGWIN
 #	define GLM_HAS_CXX11_STL 0
 #elif GLM_COMPILER & (GLM_COMPILER_LLVM | GLM_COMPILER_APPLE_CLANG)
-#	if defined(_LIBCPP_VERSION) && GLM_LANG & GLM_LANG_CXX11_FLAG
+#	if __has_include(<__config>) // libc++
+#		include <__config>
+//#	else // libstdc++
+//#		include <bits/c++config.h>
+#	endif
+#	if defined(_LIBCPP_VERSION)// || defined(__GLIBCXX__)
 #		define GLM_HAS_CXX11_STL 1
 #	else
 #		define GLM_HAS_CXX11_STL 0
 #	endif
 #else
-#	define GLM_HAS_CXX11_STL ((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (\
+#	define GLM_HAS_CXX11_STL ((GLM_LANG & GLM_LANG_CXX0X_FLAG) && \
 		((GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC48)) || \
 		((GLM_COMPILER & GLM_COMPILER_VC) && (GLM_COMPILER >= GLM_COMPILER_VC2013)) || \
-		((GLM_PLATFORM != GLM_PLATFORM_WINDOWS) && (GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_COMPILER >= GLM_COMPILER_INTEL15))))
+		((GLM_PLATFORM != GLM_PLATFORM_WINDOWS) && (GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_COMPILER >= GLM_COMPILER_INTEL15)))
 #endif
 
 // N1720
@@ -922,6 +894,39 @@
 #		pragma message("GLM: Swizzling operators disabled, #define GLM_SWIZZLE to enable swizzle operators")
 #	endif
 #endif//GLM_MESSAGE
+
+///////////////////////////////////////////////////////////////////////////////////
+// Clip control
+
+#ifdef GLM_DEPTH_ZERO_TO_ONE // Legacy 0.9.8 development
+#	error Define GLM_FORCE_DEPTH_ZERO_TO_ONE instead of GLM_DEPTH_ZERO_TO_ONE to use 0 to 1 clip space.
+#endif
+
+#define GLM_DEPTH_ZERO_TO_ONE				0x00000001
+#define GLM_DEPTH_NEGATIVE_ONE_TO_ONE		0x00000002
+
+#ifdef GLM_FORCE_DEPTH_ZERO_TO_ONE
+#	define GLM_DEPTH_CLIP_SPACE GLM_DEPTH_ZERO_TO_ONE
+#else
+#	define GLM_DEPTH_CLIP_SPACE GLM_DEPTH_NEGATIVE_ONE_TO_ONE
+#endif
+
+///////////////////////////////////////////////////////////////////////////////////
+// Coordinate system, define GLM_FORCE_LEFT_HANDED before including GLM
+// to use left handed coordinate system by default.
+
+#ifdef GLM_LEFT_HANDED // Legacy 0.9.8 development
+#	error Define GLM_FORCE_LEFT_HANDED instead of GLM_LEFT_HANDED left handed coordinate system by default.
+#endif
+
+#define GLM_LEFT_HANDED				0x00000001	// For DirectX, Metal, Vulkan
+#define GLM_RIGHT_HANDED			0x00000002	// For OpenGL, default in GLM
+
+#ifdef GLM_FORCE_LEFT_HANDED
+#	define GLM_COORDINATE_SYSTEM GLM_LEFT_HANDED
+#else
+#	define GLM_COORDINATE_SYSTEM GLM_RIGHT_HANDED
+#endif 
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Qualifiers

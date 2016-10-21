@@ -194,15 +194,9 @@ namespace glm
 	// -- Unary bit operators --
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P> operator+(tdualquat<T, P> const & q)
-	{
-		return q;
-	}
-
-	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER tdualquat<T, P> operator-(tdualquat<T, P> const & q)
 	{
-		return tdualquat<T, P>(-q.real, -q.dual);
+		return q;
 	}
 
 	// -- Binary operators --

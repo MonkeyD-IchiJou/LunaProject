@@ -113,7 +113,7 @@ namespace glm
 
 	// atan
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType atan(genType y, genType x)
+	GLM_FUNC_QUALIFIER genType atan(genType const & y, genType const & x)
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'atan' only accept floating-point input");
 
@@ -123,7 +123,7 @@ namespace glm
 	template <typename T, precision P, template <typename, precision> class vecType>
 	GLM_FUNC_QUALIFIER vecType<T, P> atan(vecType<T, P> const & a, vecType<T, P> const & b)
 	{
-		return detail::functor2<T, P, vecType>::call(atan2, a, b);
+		return detail::functor2<T, P, vecType>::call(::std::atan2, a, b);
 	}
 
 	using std::atan;
@@ -165,8 +165,8 @@ namespace glm
 #	if GLM_HAS_CXX11_STL
 		using std::asinh;
 #	else
-		template <typename genType>
-		GLM_FUNC_QUALIFIER genType asinh(genType x)
+		template <typename genType> 
+		GLM_FUNC_QUALIFIER genType asinh(genType const & x)
 		{
 			GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'asinh' only accept floating-point input");
 
@@ -185,7 +185,7 @@ namespace glm
 		using std::acosh;
 #	else
 		template <typename genType> 
-		GLM_FUNC_QUALIFIER genType acosh(genType x)
+		GLM_FUNC_QUALIFIER genType acosh(genType const & x)
 		{
 			GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'acosh' only accept floating-point input");
 
@@ -206,7 +206,7 @@ namespace glm
 		using std::atanh;
 #	else
 		template <typename genType>
-		GLM_FUNC_QUALIFIER genType atanh(genType x)
+		GLM_FUNC_QUALIFIER genType atanh(genType const & x)
 		{
 			GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'atanh' only accept floating-point input");
 		
