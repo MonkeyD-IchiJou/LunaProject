@@ -13,7 +13,7 @@
 #include "DirLightPassShader.h"
 #include "FinalPassShader.h"
 #include "TextShader.h"
-#include "ComputeShader.h"
+#include "GausianBlur1DShader.h"
 
 #include "ModelResources.h"
 #include "Model.h"
@@ -187,14 +187,19 @@ namespace luna
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
+		// make sure my HDR tex is blit to a lower res tex 
+
 		// compute shader init
-		m_compute_shader = new ComputeShader();
-		m_compute_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F], texrsc->Textures[eTEXTURES::COMPUTETARGET_2D_RGBA16F]);
-		m_compute_shader->Init(nullptr);
+		m_gausianblur_shader = new GausianBlur1DShader();
+		m_gausianblur_shader->SetDescriptors(
+			texrsc->Textures[eTEXTURES::HORBLUR_2D_RGBA16F], 
+			texrsc->Textures[eTEXTURES::VERTBLUR_2D_RGBA16F]
+		);
+		m_gausianblur_shader->Init(nullptr);
 
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
-		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::COMPUTETARGET_2D_RGBA16F]);
+		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HORBLUR_2D_RGBA16F]);
 		m_finalpass_shader->Init(FinalFBO::getRenderPass());
 
 		// text shader init
@@ -277,12 +282,12 @@ namespace luna
 			vkCmdSetStencilCompareMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
 			vkCmdSetStencilWriteMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
 
-			m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 0);
 			vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
+			m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 0);
 			m_model->DrawInstanced(geometrypass_cmdbuff, 2);
 
+			//vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // set stencil value
 			m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 2);
-			vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // set stencil value
 			ModelResources::getInstance()->Models[BUNNY_MODEL]->Draw(geometrypass_cmdbuff);
 
 			// end geometry pass cmd buff
@@ -346,6 +351,34 @@ namespace luna
 	void Renderer::RecordCompute_()
 	{
 		// begin init
+
+		// will blit the HDR image to smaller texture .. for bluring later
+		VkImageSubresourceLayers srcsubrsc{};
+		srcsubrsc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		srcsubrsc.baseArrayLayer = 0;
+		srcsubrsc.mipLevel = 0; // at miplevel 0
+		srcsubrsc.layerCount = 1; // only got one mipmap
+
+		VkImageSubresourceLayers dstsubrsc{};
+		dstsubrsc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		dstsubrsc.baseArrayLayer = 0;
+		dstsubrsc.mipLevel = 0; // at miplevel 0
+		dstsubrsc.layerCount = 1; // only got one mipmap
+
+		VulkanImageBufferObject* srcimg = TextureResources::getInstance()->Textures[HDRTEX_ATTACHMENT_RGBA16F];
+		VulkanImageBufferObject* dstimg = TextureResources::getInstance()->Textures[HORBLUR_2D_RGBA16F];
+
+		VkImageBlit region{};
+		region.srcOffsets[1].x = srcimg->getWidth();
+		region.srcOffsets[1].y = srcimg->getHeight();
+		region.srcOffsets[1].z = 1;
+		region.srcSubresource = srcsubrsc;
+
+		region.dstOffsets[1].x = dstimg->getWidth();
+		region.dstOffsets[1].y = dstimg->getHeight();
+		region.dstOffsets[1].z = 1;
+		region.dstSubresource = dstsubrsc;
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -353,9 +386,64 @@ namespace luna
 
 		DebugLog::EC(vkBeginCommandBuffer(m_comp_cmdbuffer, &beginInfo));
 
-		m_compute_shader->Bind(m_comp_cmdbuffer);
+		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+			m_comp_cmdbuffer, srcimg->getImage(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+		);
 
-		vkCmdDispatch(m_comp_cmdbuffer, 1280 / 16, 720 / 16, 1);
+		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+			m_comp_cmdbuffer, dstimg->getImage(),
+			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+		);
+
+		vkCmdBlitImage(
+			m_comp_cmdbuffer,
+			srcimg->getImage(),
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstimg->getImage(),
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&region,
+			VK_FILTER_LINEAR);
+
+		// change back to optimal layout
+		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+			m_comp_cmdbuffer, srcimg->getImage(),
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+		);
+
+		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+			m_comp_cmdbuffer, dstimg->getImage(),
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+		);
+
+		auto resolution = glm::ivec2(dstimg->getWidth(), dstimg->getHeight());
+		auto workgroup = glm::ivec2(resolution.x / 16, resolution.y / 16);
+
+		// start compute blur 
+		m_gausianblur_shader->Bind(m_comp_cmdbuffer);
+		m_gausianblur_shader->LoadResolution(m_comp_cmdbuffer, glm::ivec2(resolution.x, resolution.y));
+
+		for (int i = 0; i < 16; ++i)
+		{
+			// verticle pass
+			m_gausianblur_shader->BindDescriptorSet(m_comp_cmdbuffer, 0);
+			m_gausianblur_shader->LoadBlurDirection(m_comp_cmdbuffer, glm::ivec2(0, 1));
+			vkCmdDispatch(m_comp_cmdbuffer, workgroup.x, workgroup.y, 1);
+
+			// horizontal pass again
+			m_gausianblur_shader->BindDescriptorSet(m_comp_cmdbuffer, 1);
+			m_gausianblur_shader->LoadBlurDirection(m_comp_cmdbuffer, glm::ivec2(1, 0));
+			vkCmdDispatch(m_comp_cmdbuffer, workgroup.x, workgroup.y, 1);
+		}
 
 		DebugLog::EC(vkEndCommandBuffer(m_comp_cmdbuffer));
 	}
@@ -415,8 +503,8 @@ namespace luna
 		auto currentTime = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
 
+		std::vector<InstanceData> instancedata(INSTANCE_COUNT);
 		{
-			std::vector<InstanceData> instancedata(INSTANCE_COUNT);
 			instancedata[0].model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(0, 1.f, 0)); instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
 			instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
 			instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
@@ -425,19 +513,12 @@ namespace luna
 
 		WinNative* win = WinNative::getInstance();
 		UBOData data{};
-		data.view = glm::lookAt(glm::vec3(-2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-		data.proj = glm::perspective(glm::radians(45.f), win->getWinSizeX() / static_cast<float>(win->getWinSizeY()), 0.1f, 10.0f); // take note .. hardcoded aspects
+		data.view = glm::lookAt(glm::vec3(2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+		data.proj = glm::perspective(glm::radians(45.f), win->getWinSizeX() / static_cast<float>(win->getWinSizeY()), 0.1f, 10.0f);
 
-		// Vulkan clip space has inverted Y and half Z.
-		glm::mat4 Clip = glm::mat4(
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, -1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 0.5f, 0.0f,
-			0.0f, 0.0f, 0.5f, 1.0f
-		);
+		// invert y coordinate
+		data.proj[1][1] *= -1.f;
 
-		data.proj = Clip * data.proj;
-		
 		m_ubo->Update(data);
 	}
 
@@ -462,7 +543,7 @@ namespace luna
 		submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
 
-		// compute submit
+		// compute1 submit
 		submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait until deferred rendering finish
 		submitInfo.pSignalSemaphores = &m_compute_computeComplete; // will inform the next one, when i compute finish
 		submitInfo.pCommandBuffers = &m_comp_cmdbuffer;
@@ -523,11 +604,11 @@ namespace luna
 			m_dirlightpass_shader = nullptr;
 		}
 
-		if (m_compute_shader != nullptr)
+		if (m_gausianblur_shader != nullptr)
 		{
-			m_compute_shader->Destroy();
-			delete m_compute_shader;
-			m_compute_shader = nullptr;
+			m_gausianblur_shader->Destroy();
+			delete m_gausianblur_shader;
+			m_gausianblur_shader = nullptr;
 		}
 
 		if (m_finalpass_shader != nullptr)
@@ -589,6 +670,7 @@ namespace luna
 			vkDestroySemaphore(m_logicaldevice, m_compute_computeComplete, nullptr);
 			m_compute_computeComplete = VK_NULL_HANDLE;
 		}
+		
 		if (m_commandPool != VK_NULL_HANDLE)
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
@@ -601,22 +683,3 @@ namespace luna
 		}
 	}
 }
-
-//// Image memory barrier to make sure that compute shader writes are finished before sampling from the texture
-//VkImageMemoryBarrier imageMemoryBarrier = {};
-//imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-//// We won't be changing the layout of the image
-//imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-//imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; // not changing any layout
-//imageMemoryBarrier.image = TextureResources::getInstance()->Textures[eTEXTURES::COMPUTETARGET_2D_RGBA16F]->getImage();
-//imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-//imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-//imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-//vkCmdPipelineBarrier(
-//	commandbuffer,
-//	VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-//	VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-//	0,
-//	0, nullptr,
-//	0, nullptr,
-//	1, &imageMemoryBarrier);

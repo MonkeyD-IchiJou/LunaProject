@@ -195,7 +195,7 @@
     <ClInclude Include="Framebuffer.h">
       <Filter>Header Files\Resources\FBOs\Base</Filter>
     </ClInclude>
-    <ClInclude Include="ComputeShader.h">
+    <ClInclude Include="GausianBlur1DShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
@@ -296,7 +296,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files\System</Filter>
     </ClCompile>
-    <ClCompile Include="ComputeShader.cpp">
+    <ClCompile Include="GausianBlur1DShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>

@@ -20,30 +20,47 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
 	}
 
 	void FinalPassShader::SetDescriptors(const VulkanImageBufferObject * finalimage)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
+		// 1 kind of descriptors to send to
+		// set up the layout for the shaders 
+		const int totalbinding = 1;
+		VulkanDescriptorLayoutInfo layoutinfo{};
+
+		layoutinfo.binding = 0;
+		layoutinfo.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layoutinfo.typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, &layoutinfo);
+
+		// create the poolsize to hold all my descriptors
+		const int totaldescriptors = 1; // total num of descriptors
+		const int totalsets = 1; // total num of descriptor sets i will have
+
+		VkDescriptorPoolSize poolSize;
+		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSize.descriptorCount = totaldescriptors; // all my descriptors are the same type
+
+		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 1, &poolSize, totalsets);
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+
+		// first descriptor set update
 		VkDescriptorImageInfo image{};
 		image.imageLayout = VK_IMAGE_LAYOUT_GENERAL; // make sure layout to be shader read only optimal 
 		image.imageView = finalimage->getImageView();
 		image.sampler = finalimage->getSampler();
 
-		m_descriptorTool.descriptors.resize(1);
+		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
+		firstdescriptorset[0].layoutinfo = layoutinfo;
+		firstdescriptorset[0].imageinfo = image;
 
-		auto& imagedescriptor = m_descriptorTool.descriptors[0];
-		imagedescriptor.binding = 0;
-		imagedescriptor.imageinfo = image;
-		imagedescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		imagedescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		imagedescriptor.typeflags = 1; // an image
-
-		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
-		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
 	}
 
 	void FinalPassShader::Init(const VkRenderPass & renderpass)

@@ -23,7 +23,7 @@ namespace luna
 		virtual void Bind(const VkCommandBuffer& commandbuffer) = 0;
 
 		/* set the dynamic view port */
-		void SetViewPort(const VkCommandBuffer& commandbuffer, const VkExtent2D& size);
+		void SetViewPort(const VkCommandBuffer& commandbuffer, const VkExtent2D& size, float mindepth = 0.f, float maxdepth = 1.f);
 
 	protected:
 		virtual void CreatePipelineLayout_() = 0;

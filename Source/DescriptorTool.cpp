@@ -11,7 +11,7 @@ namespace luna
 	{
 	}
 
-	void DescriptorTool::SetUpDescriptorLayout(const VkDevice& logicaldevice)
+	void DescriptorTool::SetUpDescriptorLayout(const VkDevice& logicaldevice, const uint32_t& numdescriptors, const VulkanDescriptorLayoutInfo* descriptors)
 	{
 		// destroy the previous layout if have any
 		if (descriptorSetLayout != VK_NULL_HANDLE)
@@ -21,7 +21,7 @@ namespace luna
 		}
 
 		// set up the layout for the shaders to have a better understanding of what i am going to send to it
-		std::vector<VkDescriptorSetLayoutBinding> layoutbindings(descriptors.size());
+		std::vector<VkDescriptorSetLayoutBinding> layoutbindings(numdescriptors);
 		for (int i = 0; i < layoutbindings.size(); ++i)
 		{
 			layoutbindings[i].binding = descriptors[i].binding;
@@ -38,58 +38,55 @@ namespace luna
 		DebugLog::EC(vkCreateDescriptorSetLayout(logicaldevice, &descriptorSetLayout_createinfo, nullptr, &descriptorSetLayout));
 	}
 
-	void DescriptorTool::SetUpDescriptorSets(const VkDevice& logicaldevice)
+	void DescriptorTool::SetUpDescriptorPools(const VkDevice& logicaldevice, const uint32_t& numpoolsize, const VkDescriptorPoolSize* poolsizes, const uint32_t& maxsets)
 	{
 		// destroy the previous descriptor pool if have any
 		if (descriptorPool != VK_NULL_HANDLE)
 		{
 			vkDestroyDescriptorPool(logicaldevice, descriptorPool, nullptr);
 			descriptorPool = VK_NULL_HANDLE;
-			descriptorSets = VK_NULL_HANDLE;
-		}
-
-		// create the descriptor pool first, based on how many descriptors i have
-		std::vector<VkDescriptorPoolSize> poolSizes(descriptors.size());
-		for (int i = 0; i < poolSizes.size(); ++i)
-		{
-			poolSizes[i].type = descriptors[i].type;
-			poolSizes[i].descriptorCount = 1;
+			descriptorSets.clear();
 		}
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = 1;
+		poolInfo.poolSizeCount = numpoolsize;
+		poolInfo.pPoolSizes = poolsizes;
+		poolInfo.maxSets = maxsets;
 		DebugLog::EC(vkCreateDescriptorPool(logicaldevice, &poolInfo, nullptr, &descriptorPool));
 
+		// prepare the descriptor sets
+		descriptorSets.resize(maxsets);
+	}
+
+	void DescriptorTool::AddDescriptorSet(const VkDevice & logicaldevice, const int& whichset)
+	{
 		// then allocate the descriptor set
 		VkDescriptorSetAllocateInfo allocinfo{};
 		allocinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocinfo.descriptorPool = descriptorPool;
 		allocinfo.descriptorSetCount = 1;
 		allocinfo.pSetLayouts = &descriptorSetLayout;
-		vkAllocateDescriptorSets(logicaldevice, &allocinfo, &descriptorSets);
+		vkAllocateDescriptorSets(logicaldevice, &allocinfo, &descriptorSets[whichset]);
 	}
 
-	void DescriptorTool::UpdateDescriptorSets(const VkDevice& logicaldevice)
+	void DescriptorTool::UpdateDescriptorSets(const VkDevice& logicaldevice, const int &whichset, const int &totalbinding, const VulkanDescriptorSetInfo* descriptorsetsinfo)
 	{
-		// update the descriptor set, based on how many descriptors i have
-		std::vector<VkWriteDescriptorSet> descriptorWrites(descriptors.size());
+		std::vector<VkWriteDescriptorSet> descriptorWrites(totalbinding);
 		for (int i = 0; i < descriptorWrites.size(); ++i)
 		{
 			auto& descriptorwrite = descriptorWrites[i];
-			auto& descriptor = descriptors[i];
+			auto& descriptor = descriptorsetsinfo[i];
 
 			descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorwrite.dstSet = descriptorSets;
-			descriptorwrite.dstBinding = descriptor.binding;
+			descriptorwrite.dstSet = descriptorSets[whichset];
+			descriptorwrite.dstBinding = descriptor.layoutinfo.binding;
 			descriptorwrite.dstArrayElement = 0;
-			descriptorwrite.descriptorType = descriptor.type;
+			descriptorwrite.descriptorType = descriptor.layoutinfo.type;
 			descriptorwrite.descriptorCount = 1;
 
 			// if is buffer type
-			if (descriptor.typeflags == 0)
+			if (descriptor.layoutinfo.typeflags == 0)
 			{
 				descriptorwrite.pBufferInfo = &descriptor.bufferinfo;
 				descriptorwrite.pImageInfo = nullptr;
@@ -104,28 +101,27 @@ namespace luna
 		vkUpdateDescriptorSets(logicaldevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 
-	void DescriptorTool::UpdateDescriptorSets(const VkDevice & logicaldevice, const int & i)
+	void DescriptorTool::UpdateDescriptorSets(const VkDevice & logicaldevice, const int &whichset, const VulkanDescriptorSetInfo& descriptorsetsinfo)
 	{
 		VkWriteDescriptorSet descriptorwrite = {};
-		auto& descriptor = descriptors[i];
 
 		descriptorwrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorwrite.dstSet = descriptorSets;
-		descriptorwrite.dstBinding = descriptor.binding;
+		descriptorwrite.dstSet = descriptorSets[whichset];
+		descriptorwrite.dstBinding = descriptorsetsinfo.layoutinfo.binding;
 		descriptorwrite.dstArrayElement = 0;
-		descriptorwrite.descriptorType = descriptor.type;
+		descriptorwrite.descriptorType = descriptorsetsinfo.layoutinfo.type;
 		descriptorwrite.descriptorCount = 1;
 
 		// if is buffer type
-		if (descriptor.typeflags == 0)
+		if (descriptorsetsinfo.layoutinfo.typeflags == 0)
 		{
-			descriptorwrite.pBufferInfo = &descriptor.bufferinfo;
+			descriptorwrite.pBufferInfo = &descriptorsetsinfo.bufferinfo;
 			descriptorwrite.pImageInfo = nullptr;
 		}
 		else
 		{
 			descriptorwrite.pBufferInfo = nullptr;
-			descriptorwrite.pImageInfo = &descriptor.imageinfo;
+			descriptorwrite.pImageInfo = &descriptorsetsinfo.imageinfo;
 		}
 
 		vkUpdateDescriptorSets(logicaldevice, 1, &descriptorwrite, 0, nullptr);
@@ -143,9 +139,7 @@ namespace luna
 		{
 			vkDestroyDescriptorPool(logicaldevice, descriptorPool, nullptr);
 			descriptorPool = VK_NULL_HANDLE;
-			descriptorSets = VK_NULL_HANDLE;
+			descriptorSets.clear();
 		}
-
-		descriptors.clear();
 	}
 }

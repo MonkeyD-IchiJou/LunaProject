@@ -20,56 +20,71 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
 	}
 
 	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, 
 		const VulkanImageBufferObject * samplerAlbedo)
 	{
-		// descriptor info for samplerpos
+		// 3 kind of descriptors to send to
+		// set up the layout for the shaders 
+		const int totalbinding = 3;
+		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
+
+		// sampler pos
+		layoutinfo[0].binding = 0;
+		layoutinfo[0].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		layoutinfo[0].typeflags = 1; // an image
+
+		// sampler norm
+		layoutinfo[1].binding = 1;
+		layoutinfo[1].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		layoutinfo[1].typeflags = 1; // an image
+
+		// sampler albedo
+		layoutinfo[2].binding = 2;
+		layoutinfo[2].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		layoutinfo[2].typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
+
+		// create the poolsize to hold all my descriptors
+		const int totaldescriptors = 3; // total num of descriptors
+		const int totalsets = 1; // total num of descriptor sets i will have
+
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		poolSize.descriptorCount = totaldescriptors;
+
+		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 1, &poolSize, totalsets);
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+
+		// first descriptor set update
 		VkDescriptorImageInfo samplerposinfo{};
 		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		samplerposinfo.imageView = samplerPos->getImageView();
 		samplerposinfo.sampler = samplerPos->getSampler();
-
-		// descriptor info for samplernormal
 		VkDescriptorImageInfo samplernorminfo{};
 		samplernorminfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		samplernorminfo.imageView = samplerNormal->getImageView();
 		samplernorminfo.sampler = samplerNormal->getSampler();
-
-		// descriptor info for albedo
 		VkDescriptorImageInfo albedoinfo{};
 		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		albedoinfo.imageView = samplerAlbedo->getImageView();
 		albedoinfo.sampler = samplerAlbedo->getSampler();
 
-		m_descriptorTool.descriptors.resize(3);
+		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
+		firstdescriptorset[0].layoutinfo = layoutinfo[0];
+		firstdescriptorset[0].imageinfo = samplerposinfo;
+		firstdescriptorset[1].layoutinfo = layoutinfo[1];
+		firstdescriptorset[1].imageinfo = samplernorminfo;
+		firstdescriptorset[2].layoutinfo = layoutinfo[2];
+		firstdescriptorset[2].imageinfo = albedoinfo;
 
-		auto& samplerposdescriptor = m_descriptorTool.descriptors[0];
-		samplerposdescriptor.binding = 0;
-		samplerposdescriptor.imageinfo = samplerposinfo;
-		samplerposdescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerposdescriptor.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		samplerposdescriptor.typeflags = 1; // an image
-
-		auto& samplernormdescriptor = m_descriptorTool.descriptors[1];
-		samplernormdescriptor.binding = 1;
-		samplernormdescriptor.imageinfo = samplernorminfo;
-		samplernormdescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplernormdescriptor.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		samplernormdescriptor.typeflags = 1; // an image
-
-		auto& albedodescriptor = m_descriptorTool.descriptors[2];
-		albedodescriptor.binding = 2;
-		albedodescriptor.imageinfo = albedoinfo;
-		albedodescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		albedodescriptor.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		albedodescriptor.typeflags = 1; // an image
-
-		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
-		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
 	}
 
 	void DirLightPassShader::Init(const VkRenderPass & renderpass)

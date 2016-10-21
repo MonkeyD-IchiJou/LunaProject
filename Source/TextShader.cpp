@@ -71,44 +71,62 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
 	}
 
 	void TextShader::SetDescriptors(const SSBO * ssbo, const VulkanImageBufferObject * font_image)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
-		// descriptor info for ssbo
+		// 2 kind of descriptors to send to
+		// set up the layout for the shaders 
+		const int totalbinding = 2;
+		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
+
+		// ssbo
+		layoutinfo[0].binding = 0;
+		layoutinfo[0].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo[0].typeflags = 0;
+
+		// image
+		layoutinfo[1].binding = 1;
+		layoutinfo[1].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layoutinfo[1].typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
+
+		// create the poolsize to hold all my descriptors
+		const int totaldescriptors = 2; // total num of descriptors
+		const int totalsets = 1; // total num of descriptor sets i will have
+
+		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[0].descriptorCount = 1;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[1].descriptorCount = 1;
+
+		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 2, poolSizes.data(), totalsets);
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+
+		// first descriptor set update
 		VkDescriptorBufferInfo ssboinfo{};
 		ssboinfo.buffer = ssbo->getMainBuffer().buffer;
 		ssboinfo.offset = 0;
 		ssboinfo.range = ssbo->getSSBOTotalSize();
-
-		// font image 
 		VkDescriptorImageInfo fontimage{};
 		fontimage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // make sure layout to be shader read only optimal 
 		fontimage.imageView = font_image->getImageView();
 		fontimage.sampler = font_image->getSampler();
 
-		m_descriptorTool.descriptors.resize(2);
+		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
+		firstdescriptorset[0].layoutinfo = layoutinfo[0];
+		firstdescriptorset[0].bufferinfo = ssboinfo;
+		firstdescriptorset[1].layoutinfo = layoutinfo[1];
+		firstdescriptorset[1].imageinfo = fontimage;
 
-		auto& ssbodescriptor = m_descriptorTool.descriptors[0];
-		ssbodescriptor.binding = 0;
-		ssbodescriptor.bufferinfo = ssboinfo;
-		ssbodescriptor.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
-		ssbodescriptor.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		ssbodescriptor.typeflags = 0;
-
-		auto& fontimagedescriptor = m_descriptorTool.descriptors[1];
-		fontimagedescriptor.binding = 1;
-		fontimagedescriptor.imageinfo = fontimage;
-		fontimagedescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fontimagedescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		fontimagedescriptor.typeflags = 1; // an image
-
-		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
-		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
 	}
 
 	void TextShader::UpdateDescriptor(const SSBO * ssbo)
@@ -119,11 +137,19 @@ namespace luna
 		ssboinfo.offset = 0;
 		ssboinfo.range = ssbo->getSSBOTotalSize();
 
-		auto& ssbodescriptor = m_descriptorTool.descriptors[0];
-		ssbodescriptor.bufferinfo = ssboinfo;
+		// layout info
+		VulkanDescriptorLayoutInfo layoutinfo{};
+		layoutinfo.binding = 0;
+		layoutinfo.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo.typeflags = 0;
+
+		VulkanDescriptorSetInfo updateinfo{};
+		updateinfo.bufferinfo = ssboinfo;
+		updateinfo.layoutinfo = layoutinfo;
 
 		// update the ssbo buffer
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, updateinfo);
 	}
 
 	void TextShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)

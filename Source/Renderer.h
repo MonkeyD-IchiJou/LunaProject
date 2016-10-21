@@ -18,7 +18,7 @@ namespace luna
 	class DirLightPassShader;
 	class FinalPassShader;
 	class TextShader;
-	class ComputeShader;
+	class GausianBlur1DShader;
 
 	class Renderer :
 		public VulkanRenderer
@@ -33,6 +33,7 @@ namespace luna
 		/* record the command buffer for final presentation */
 		void Record();
 
+		/* update the renderer if needed */
 		void Update();
 
 		/* render everything and then present it on the screen */
@@ -83,7 +84,7 @@ namespace luna
 		DirLightPassShader* m_dirlightpass_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
-		ComputeShader* m_compute_shader = nullptr;
+		GausianBlur1DShader* m_gausianblur_shader = nullptr;
 
 		/* recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;

@@ -22,57 +22,77 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets, 0, nullptr);
+		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
 	}
 
 	void DeferredShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
-		// descriptor info for Uniform Buffer
+		// 3 kind of descriptors to send to
+		// set up the layout for the shaders 
+		const int totalbinding = 3;
+		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
+
+		// ubo
+		layoutinfo[0].binding = 0;
+		layoutinfo[0].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutinfo[0].typeflags = 0;
+
+		// ssbo
+		layoutinfo[1].binding = 1;
+		layoutinfo[1].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo[1].typeflags = 0;
+
+		// diffuse texture
+		layoutinfo[2].binding = 2;
+		layoutinfo[2].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layoutinfo[2].typeflags = 1; // an image
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
+
+		// create the poolsize to hold all my descriptors
+		const int totaldescriptors = 3; // total num of descriptors
+		const int totalsets = 1; // total num of descriptor sets i will have
+
+		// 3 different kind of descriptor sets type
+		std::array<VkDescriptorPoolSize, 3> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = 1;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[1].descriptorCount = 1;
+		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[2].descriptorCount = 1;
+
+		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 3, poolSizes.data(), totalsets);
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+
+		// first descriptor set update
 		VkDescriptorBufferInfo uboinfo{};
 		uboinfo.buffer = ubo->getMainBuffer().buffer;
 		uboinfo.offset = 0;
 		uboinfo.range = ubo->getUboTotalSize();
-
-		// descriptor info for ssbo
 		VkDescriptorBufferInfo ssboinfo{};
 		ssboinfo.buffer = ssbo->getMainBuffer().buffer;
 		ssboinfo.offset = 0;
 		ssboinfo.range = ssbo->getSSBOTotalSize();
-
-		// descriptor info for albedo texture
 		VkDescriptorImageInfo albedoinfo{};
 		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		albedoinfo.imageView = image->getImageView();
 		albedoinfo.sampler = image->getSampler();
 
-		m_descriptorTool.descriptors.resize(3);
+		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
+		firstdescriptorset[0].layoutinfo = layoutinfo[0];
+		firstdescriptorset[0].bufferinfo = uboinfo;
+		firstdescriptorset[1].layoutinfo = layoutinfo[1];
+		firstdescriptorset[1].bufferinfo = ssboinfo;
+		firstdescriptorset[2].layoutinfo = layoutinfo[2];
+		firstdescriptorset[2].imageinfo = albedoinfo;
 
-		auto& ubodescriptor = m_descriptorTool.descriptors[0];
-		ubodescriptor.binding = 0;
-		ubodescriptor.bufferinfo = uboinfo;
-		ubodescriptor.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
-		ubodescriptor.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubodescriptor.typeflags = 0;
-
-		auto& ssbodescriptor = m_descriptorTool.descriptors[1];
-		ssbodescriptor.binding = 1;
-		ssbodescriptor.bufferinfo = ssboinfo;
-		ssbodescriptor.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
-		ssbodescriptor.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		ssbodescriptor.typeflags = 0;
-
-		auto& albedoimagedescriptor = m_descriptorTool.descriptors[2];
-		albedoimagedescriptor.binding = 2;
-		albedoimagedescriptor.imageinfo = albedoinfo;
-		albedoimagedescriptor.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		albedoimagedescriptor.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		albedoimagedescriptor.typeflags = 1; // an image
-
-		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice);
-		m_descriptorTool.SetUpDescriptorSets(m_logicaldevice);
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
 	}
 
 	void DeferredShader::UpdateDescriptor(const SSBO* ssbo)
@@ -83,11 +103,19 @@ namespace luna
 		ssboinfo.offset = 0;
 		ssboinfo.range = ssbo->getSSBOTotalSize();
 
-		auto& ssbodescriptor = m_descriptorTool.descriptors[1];
-		ssbodescriptor.bufferinfo = ssboinfo;
+		// layout info
+		VulkanDescriptorLayoutInfo layoutinfo{};
+		layoutinfo.binding = 1;
+		layoutinfo.shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo.typeflags = 0;
+
+		VulkanDescriptorSetInfo updateinfo{};
+		updateinfo.bufferinfo = ssboinfo;
+		updateinfo.layoutinfo = layoutinfo;
 
 		// update the ssbo buffer
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 1);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, updateinfo);
 	}
 
 	void DeferredShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
@@ -180,7 +208,7 @@ namespace luna
 
 		depthStencil.front = frontstate;
 		depthStencil.back = {}; // dun care about the back facing polygon
-
+		
 		// dynamic state 
 		fixedpipeline.dynamicState.resize(5);
 		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;

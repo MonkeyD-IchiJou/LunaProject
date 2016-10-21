@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BasicMesh.h" />
-    <ClInclude Include="ComputeShader.h" />
+    <ClInclude Include="GausianBlur1DShader.h" />
     <ClInclude Include="DebugLog.h" />
     <ClInclude Include="DeferredFBO.h" />
     <ClInclude Include="DeferredShader.h" />
@@ -49,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp" />
-    <ClCompile Include="ComputeShader.cpp" />
+    <ClCompile Include="GausianBlur1DShader.cpp" />
     <ClCompile Include="DebugLog.cpp" />
     <ClCompile Include="DeferredFBO.cpp" />
     <ClCompile Include="DeferredShader.cpp" />
@@ -116,8 +116,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)\Bin\</OutDir>
-    <IntDir>$(SolutionDir)\Bin\Intermediate\$(ProjectName)\$(ConfigurationName)</IntDir>
+    <OutDir>$(SolutionDir)\BinDebug\</OutDir>
+    <IntDir>$(SolutionDir)\BinDebug\Intermediate\$(ProjectName)\$(ConfigurationName)</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

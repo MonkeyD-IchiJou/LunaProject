@@ -43,7 +43,7 @@ static void luna_main()
 		// begin to render everything and present it on screen
 		renderer->Render();
 
-		//luna::DebugLog::printL(std::chrono::duration_cast<std::chrono::milliseconds>(delta_time).count());
+		luna::DebugLog::printL(std::chrono::duration_cast<std::chrono::milliseconds>(delta_time).count());
 	}
 
 	/* Major Clean Up*/
