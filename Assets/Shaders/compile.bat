@@ -10,4 +10,7 @@ D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V text.vert -o text_vert.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V text.frag -o text_frag.spv
 
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V gausianblur1d.comp -o gausianblur1d_comp.spv
+
+D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V skybox.vert -o skybox_vert.spv
+D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V skybox.frag -o skybox_frag.spv
 pause

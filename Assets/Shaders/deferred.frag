@@ -5,12 +5,13 @@
 layout(early_fragment_tests) in;
 
 // textures sampler
-layout (binding = 2) uniform sampler2D samplerColor;
+layout (set = 1, binding = 0) uniform sampler2D samplerColor;
 
 // input from vertex shader
 layout(location = 0) in vec4 inWorldPos;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 inUV;
+layout(location = 1) in vec4 inMaterialColor;
+layout(location = 2) in vec3 inNormal;
+layout(location = 3) in vec2 inUV;
 
 // output as color attachment
 layout (location = 0) out vec4 outPosition;
@@ -29,6 +30,6 @@ void main()
 {
 	outPosition = inWorldPos;
 	outNormal = vec4(inNormal, 1.0);
-	outAlbedo = texture(samplerColor, inUV);
+	outAlbedo = texture(samplerColor, inUV) + inMaterialColor;
 	//outAlbedo = vec4(LinearizeDepth(gl_FragCoord.z));
 }

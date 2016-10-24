@@ -9,8 +9,10 @@ layout(location = 2) in vec2 inTexCoord;
 
 // output to fragment shader
 layout(location = 0) out vec4 outWorldPos;
-layout(location = 1) out vec3 outNormal;
-layout(location = 2) out vec2 outUV;
+layout(location = 1) out vec4 outMaterialColor;
+layout(location = 2) out vec3 outNormal;
+layout(location = 3) out vec2 outUV;
+
 
 out gl_PerVertex
 {
@@ -18,7 +20,7 @@ out gl_PerVertex
 };
 
 // uniform buffer object binding at 0
-layout(binding = 0) uniform UniformBufferObject
+layout(set = 0, binding = 0) uniform UniformBufferObject
 {
 	mat4 view;
 	mat4 proj;
@@ -32,7 +34,7 @@ struct InstanceData
 };
 
 // shader storage buffer object binding at 1
-layout(std430, binding = 1) buffer sb
+layout(std430, set = 0, binding = 1) buffer sb
 {
 	InstanceData instance[];
 };
@@ -40,6 +42,7 @@ layout(std430, binding = 1) buffer sb
 // offset telling shader where to start indexing the instance data
 layout(push_constant) uniform PushConst
 {
+	vec4 color; // materials color
 	int offset;
 } pushconsts;
 
@@ -56,4 +59,7 @@ void main()
 	
 	// normal in world space
 	outNormal = mat3(instance[pushconsts.offset + gl_InstanceIndex].transpose_inverse_model) * normalize(inNormal);
+
+	// out material color
+	outMaterialColor = pushconsts.color;
 }
