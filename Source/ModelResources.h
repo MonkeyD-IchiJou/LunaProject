@@ -9,17 +9,6 @@ namespace luna
 {
 	class Model;
 
-	enum eMODELS
-	{
-		QUAD_MODEL = 0,
-		FONT_MODEL,
-		BOXES_MODEL,
-		BUNNY_MODEL,
-		TYRA_MODEL,
-		CUBE_MODEL,
-		MAX_MODELS
-	};
-
 	/* all the mesh resources are here */
 	class ModelResources
 	{

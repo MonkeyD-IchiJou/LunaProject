@@ -3,6 +3,7 @@
 #include <array>
 #include "TextureResources.h"
 #include "VulkanTexture2D.h"
+#include "enum_c.h"
 
 namespace luna
 {

@@ -3,7 +3,6 @@
 #include "Renderer.h"
 
 #if VK_USE_PLATFORM_WIN32_KHR
-
 namespace luna
 {
 	LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -82,10 +81,6 @@ namespace luna
 
 		switch (msg)
 		{
-		case WM_CREATE:
-
-			break;
-
 		case WM_SIZE:
 
 			break;
@@ -139,24 +134,6 @@ namespace luna
 		}
 
 		return 0;
-	}
-
-	void WinNative::UpdateOSWindow_()
-	{
-		// always waiting for inputs to occur
-
-		MSG msg{};
-		while (PeekMessage(&msg, m_win32_handle, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-
-			// stop getting any input
-			if (m_close)
-			{
-				break;
-			}
-		}
 	}
 
 	void WinNative::InitOSWindowSurface_()

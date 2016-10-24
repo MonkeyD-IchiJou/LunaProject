@@ -24,12 +24,6 @@ namespace luna
 		InitOSWindowSurface_();
 	}
 
-	void WinNative::UpdateOSWin()
-	{
-		// update the os window
-		UpdateOSWindow_();
-	}
-
 	void WinNative::DeInitWindowSurface_()
 	{
 		if (m_surface != VK_NULL_HANDLE)

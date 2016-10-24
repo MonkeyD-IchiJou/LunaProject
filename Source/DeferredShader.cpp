@@ -20,43 +20,61 @@ namespace luna
 	{
 		// Graphics Pipeline Binding (shaders binding)
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-
-		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
 	}
 
-	void DeferredShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image)
+	void DeferredShader::BindTexture(const VkCommandBuffer & commandbuffer, const int & whichset)
+	{
+		VkDescriptorSet descriptorSets[] = {
+			m_descriptorTool.descriptorsInfo[0].descriptorSets[0], // first layout and its first descriptor sets
+			m_descriptorTool.descriptorsInfo[1].descriptorSets[whichset] // second layout and one of its descriptor sets
+		};
+
+		// bind the first layout and its first descriptor sets 
+		vkCmdBindDescriptorSets(
+			commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 
+			2, descriptorSets,
+			0, nullptr
+		);
+	}
+
+	void DeferredShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const std::vector<VulkanImageBufferObject*>& diffuseTexs)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
-		// 3 kind of descriptors to send to
-		// set up the layout for the shaders 
-		const int totalbinding = 3;
-		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
+		// set up the fist common layout for the shaders 
+		// layout(set = 0, binding = x)
+		std::array<VulkanDescriptorLayoutInfo, 2> layoutinfo0{};
 
 		// ubo
-		layoutinfo[0].binding = 0;
-		layoutinfo[0].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
-		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutinfo[0].typeflags = 0;
+		layoutinfo0[0].binding = 0;
+		layoutinfo0[0].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo0[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutinfo0[0].typeflags = 0;
 
 		// ssbo
-		layoutinfo[1].binding = 1;
-		layoutinfo[1].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
-		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		layoutinfo[1].typeflags = 0;
+		layoutinfo0[1].binding = 1;
+		layoutinfo0[1].shaderstage = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutinfo0[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo0[1].typeflags = 0;
+
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, 2, layoutinfo0.data());
+
+		// material descriptor layout 
+		// layout(set = 1, binding = x)
+		VulkanDescriptorLayoutInfo layoutinfo1{};
 
 		// diffuse texture
-		layoutinfo[2].binding = 2;
-		layoutinfo[2].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		layoutinfo[2].typeflags = 1; // an image
+		layoutinfo1.binding = 0;
+		layoutinfo1.shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo1.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layoutinfo1.typeflags = 1; // an image
 
-		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
+		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, 1, &layoutinfo1);
 
 		// create the poolsize to hold all my descriptors
 		const int totaldescriptors = 3; // total num of descriptors
-		const int totalsets = 1; // total num of descriptor sets i will have
+		const int totalNumDiffTex = static_cast<int>(diffuseTexs.size());
+		const int totalsets = 1 + totalNumDiffTex; // total num of descriptor sets i will have
 
 		// 3 different kind of descriptor sets type
 		std::array<VkDescriptorPoolSize, 3> poolSizes{};
@@ -65,12 +83,21 @@ namespace luna
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		poolSizes[1].descriptorCount = 1;
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[2].descriptorCount = 1;
+		poolSizes[2].descriptorCount = static_cast<uint32_t>(totalNumDiffTex);
 
 		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 3, poolSizes.data(), totalsets);
-		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+		m_descriptorTool.descriptorsInfo[0].descriptorSets.resize(1); // first layout has 1 descriptorsets
+		m_descriptorTool.descriptorsInfo[1].descriptorSets.resize(totalNumDiffTex); // second layout has num descriptorsets based on how many diff texs i have
+		
+		// first layout descriptor set adding
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0, 0);
+		// second layout descriptor sets adding
+		for (int i = 0; i < totalNumDiffTex; ++i)
+		{
+			m_descriptorTool.AddDescriptorSet(m_logicaldevice, 1, i);
+		}
 
-		// first descriptor set update
+		// fist descriptorset layout de first descriptorset update
 		VkDescriptorBufferInfo uboinfo{};
 		uboinfo.buffer = ubo->getMainBuffer().buffer;
 		uboinfo.offset = 0;
@@ -79,20 +106,29 @@ namespace luna
 		ssboinfo.buffer = ssbo->getMainBuffer().buffer;
 		ssboinfo.offset = 0;
 		ssboinfo.range = ssbo->getSSBOTotalSize();
-		VkDescriptorImageInfo albedoinfo{};
-		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		albedoinfo.imageView = image->getImageView();
-		albedoinfo.sampler = image->getSampler();
-
-		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
-		firstdescriptorset[0].layoutinfo = layoutinfo[0];
+		
+		std::array<VulkanDescriptorSetInfo, 2> firstdescriptorset{};
+		firstdescriptorset[0].layoutinfo = layoutinfo0[0];
 		firstdescriptorset[0].bufferinfo = uboinfo;
-		firstdescriptorset[1].layoutinfo = layoutinfo[1];
+		firstdescriptorset[1].layoutinfo = layoutinfo0[1];
 		firstdescriptorset[1].bufferinfo = ssboinfo;
-		firstdescriptorset[2].layoutinfo = layoutinfo[2];
-		firstdescriptorset[2].imageinfo = albedoinfo;
+		
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, 2, firstdescriptorset.data());
 
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
+		// second layout de descriptorset update
+		for (int i = 0; i < totalNumDiffTex; ++i)
+		{
+			VkDescriptorImageInfo albedoinfo{};
+			albedoinfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			albedoinfo.imageView = diffuseTexs[i]->getImageView();
+			albedoinfo.sampler = diffuseTexs[i]->getSampler();
+
+			VulkanDescriptorSetInfo descriptorset{};
+			descriptorset.layoutinfo = layoutinfo1;
+			descriptorset.imageinfo = albedoinfo;
+
+			m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 1, i, 1, &descriptorset);
+		}
 	}
 
 	void DeferredShader::UpdateDescriptor(const SSBO* ssbo)
@@ -115,12 +151,18 @@ namespace luna
 		updateinfo.layoutinfo = layoutinfo;
 
 		// update the ssbo buffer
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, updateinfo);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, updateinfo);
 	}
 
 	void DeferredShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
 	{
-		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(offset), &offset);
+		// after color
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4), sizeof(offset), &offset);
+	}
+
+	void DeferredShader::LoadObjectColor(const VkCommandBuffer & commandbuffer, const glm::vec4 & color)
+	{
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(color), &color);
 	}
 
 	void DeferredShader::Init(const VkRenderPass & renderpass)
@@ -223,22 +265,24 @@ namespace luna
 
 	void DeferredShader::CreatePipelineLayout_()
 	{
-		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
-		{
-			DebugLog::throwEx("descriptor set layout not init");
-		}
-
 		/* push constant info */
 		VkPushConstantRange pushconstant{};
 		pushconstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushconstant.offset = 0;
-		pushconstant.size = sizeof(int);
+		pushconstant.size = sizeof(glm::vec4) + sizeof(int);
 	
+		std::vector<VkDescriptorSetLayout> setlayouts;
+		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());
+		for (int i = 0; i < m_descriptorTool.descriptorsInfo.size(); ++i)
+		{
+			setlayouts[i] = m_descriptorTool.descriptorsInfo[i].descriptorSetLayout;
+		}
+
 		/* lastly pipeline layout creation */
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorTool.descriptorSetLayout;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setlayouts.size()); // how many descriptor layout i have
+		pipelineLayoutInfo.pSetLayouts = setlayouts.data();
 		pipelineLayoutInfo.pushConstantRangeCount = 1; 
 		pipelineLayoutInfo.pPushConstantRanges = &pushconstant;
 

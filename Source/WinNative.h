@@ -14,9 +14,6 @@ namespace luna
 	class WinNative
 	{
 	public:
-		// Update the os window, its input and etc
-		void UpdateOSWin();
-
 		inline auto getWinSizeX() const { return m_win_size_x; }
 		inline auto getWinSizeY() const { return m_win_size_y; }
 		inline auto getWinPosX() const { return m_win_pos_x; }
@@ -71,9 +68,6 @@ namespace luna
 
 		/* platform specific: init the os surface */
 		void InitOSWindowSurface_();
-
-		/* platform specific: init the os window */
-		void UpdateOSWindow_();
 
 		/* platform specific: de init and destroy the os window */
 		void DeInitOSWindow_();

@@ -2,6 +2,7 @@
 #include "DebugLog.h"
 #include <array>
 #include "VulkanImageBufferObject.h"
+#include "enum_c.h"
 
 namespace luna
 {

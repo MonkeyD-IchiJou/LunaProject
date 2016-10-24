@@ -71,7 +71,11 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
+		vkCmdBindDescriptorSets(
+			commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 
+			1, &m_descriptorTool.descriptorsInfo[0].descriptorSets[0], 
+			0, nullptr
+		);
 	}
 
 	void TextShader::SetDescriptors(const SSBO * ssbo, const VulkanImageBufferObject * font_image)
@@ -108,7 +112,8 @@ namespace luna
 		poolSizes[1].descriptorCount = 1;
 
 		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 2, poolSizes.data(), totalsets);
-		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+		m_descriptorTool.descriptorsInfo[0].descriptorSets.resize(1); // first layout has 1 descriptorsets
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0, 0);
 
 		// first descriptor set update
 		VkDescriptorBufferInfo ssboinfo{};
@@ -126,7 +131,7 @@ namespace luna
 		firstdescriptorset[1].layoutinfo = layoutinfo[1];
 		firstdescriptorset[1].imageinfo = fontimage;
 
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
 
 	void TextShader::UpdateDescriptor(const SSBO * ssbo)
@@ -149,7 +154,7 @@ namespace luna
 		updateinfo.layoutinfo = layoutinfo;
 
 		// update the ssbo buffer
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, updateinfo);
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, updateinfo);
 	}
 
 	void TextShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
@@ -199,16 +204,18 @@ namespace luna
 
 	void TextShader::CreatePipelineLayout_()
 	{
-		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
+		std::vector<VkDescriptorSetLayout> setlayouts;
+		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());
+		for (int i = 0; i < m_descriptorTool.descriptorsInfo.size(); ++i)
 		{
-			DebugLog::throwEx("descriptor set layout not init");
+			setlayouts[i] = m_descriptorTool.descriptorsInfo[i].descriptorSetLayout;
 		}
 
 		/* lastly pipeline layout creation */
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorTool.descriptorSetLayout;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setlayouts.size()); // how many descriptor layout i have
+		pipelineLayoutInfo.pSetLayouts = setlayouts.data();
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // 0 push constant
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}

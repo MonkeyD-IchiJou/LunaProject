@@ -63,7 +63,7 @@ namespace luna
 		if (msg_flags &  VK_DEBUG_REPORT_ERROR_BIT_EXT)
 		{
 #ifdef _WIN32
-			MessageBox(NULL, stream.str().c_str(), "Vulkan Error! See Log File", 0);
+			MessageBox(NULL, stream.str().c_str(), "Vulkan Error!", 0);
 #endif
 			DebugLog::throwEx(stream.str().c_str());
 		}

@@ -20,7 +20,11 @@ namespace luna
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		// bind the descriptor sets using 
-		vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorTool.descriptorSets[0], 0, nullptr);
+		vkCmdBindDescriptorSets(
+			commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 
+			1, &m_descriptorTool.descriptorsInfo[0].descriptorSets[0], 
+			0, nullptr
+		);
 	}
 
 	void FinalPassShader::SetDescriptors(const VulkanImageBufferObject * finalimage)
@@ -48,7 +52,8 @@ namespace luna
 		poolSize.descriptorCount = totaldescriptors; // all my descriptors are the same type
 
 		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 1, &poolSize, totalsets);
-		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0);
+		m_descriptorTool.descriptorsInfo[0].descriptorSets.resize(1); // first layout has 1 descriptorsets
+		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0, 0);
 
 		// first descriptor set update
 		VkDescriptorImageInfo image{};
@@ -60,7 +65,7 @@ namespace luna
 		firstdescriptorset[0].layoutinfo = layoutinfo;
 		firstdescriptorset[0].imageinfo = image;
 
-		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, totalbinding, firstdescriptorset.data());
+		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
 
 	void FinalPassShader::Init(const VkRenderPass & renderpass)
@@ -138,15 +143,17 @@ namespace luna
 
 	void FinalPassShader::CreatePipelineLayout_()
 	{
-		if (m_descriptorTool.descriptorSetLayout == VK_NULL_HANDLE)
+		std::vector<VkDescriptorSetLayout> setlayouts;
+		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());
+		for (int i = 0; i < m_descriptorTool.descriptorsInfo.size(); ++i)
 		{
-			DebugLog::throwEx("descriptor set layout not init");
+			setlayouts[i] = m_descriptorTool.descriptorsInfo[i].descriptorSetLayout;
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorTool.descriptorSetLayout;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setlayouts.size()); // how many descriptor layout i have
+		pipelineLayoutInfo.pSetLayouts = setlayouts.data();
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}

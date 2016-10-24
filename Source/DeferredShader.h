@@ -3,6 +3,7 @@
 
 #include "ShaderProgram.h"
 #include "DescriptorTool.h"
+#include <glm\glm.hpp>
 
 namespace luna
 {
@@ -21,13 +22,18 @@ namespace luna
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 
-		void SetDescriptors(const UBO* ubo, const SSBO* ssbo, const VulkanImageBufferObject* image);
+		void BindTexture(const VkCommandBuffer& commandbuffer, const int& whichset);
+
+		void SetDescriptors(const UBO* ubo, const SSBO* ssbo, const std::vector<VulkanImageBufferObject*>& diffuseTexs);
 
 		// if ssbo size is different, update the descriptor sets about it before binding 
 		void UpdateDescriptor(const SSBO* ssbo);
 
 		// load push constant offset
 		void LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int& offset);
+
+		// load material color 
+		void LoadObjectColor(const VkCommandBuffer& commandbuffer, const glm::vec4& color);
 
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline) override;

@@ -15,6 +15,7 @@ namespace luna
 	class FinalFBO;
 
 	class DeferredShader;
+	class SkyBoxShader;
 	class DirLightPassShader;
 	class FinalPassShader;
 	class TextShader;
@@ -66,7 +67,10 @@ namespace luna
 		void RecordDeferredOffscreen_();
 		void RecordCompute_();
 		void RecordFinalFrame_();
+
 		void RecordSecondaryCmdbuff_();
+		void RecordGeometryPass_();
+		void RecordLightPass_();
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -81,6 +85,7 @@ namespace luna
 
 		/* all the shaders */
 		DeferredShader* m_deferred_shader = nullptr;
+		SkyBoxShader* m_skybox_shader = nullptr;
 		DirLightPassShader* m_dirlightpass_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
@@ -99,9 +104,6 @@ namespace luna
 		VkSemaphore m_finalpass_renderComplete = VK_NULL_HANDLE;
 		VkSemaphore m_deferred_renderComplete = VK_NULL_HANDLE;
 		VkSemaphore m_compute_computeComplete = VK_NULL_HANDLE;
-
-		/* a model with mesh to render */
-		Model* m_model = nullptr;
 
 		/* a universal UBO */
 		UBO* m_ubo = nullptr;

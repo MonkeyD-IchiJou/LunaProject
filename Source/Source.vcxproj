@@ -12,6 +12,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BasicMesh.h" />
+    <ClInclude Include="BasicMeshComponent.h" />
+    <ClInclude Include="Component.h" />
+    <ClInclude Include="ComponentManager.h" />
+    <ClInclude Include="Entity.h" />
+    <ClInclude Include="enum_c.h" />
+    <ClInclude Include="FontComponent.h" />
     <ClInclude Include="GausianBlur1DShader.h" />
     <ClInclude Include="DebugLog.h" />
     <ClInclude Include="DeferredFBO.h" />
@@ -24,17 +30,25 @@
     <ClInclude Include="Font.h" />
     <ClInclude Include="FontMesh.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="LunaManager.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelResources.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="SceneDefault.h" />
+    <ClInclude Include="SceneMedium.h" />
+    <ClInclude Include="SceneSmall.h" />
+    <ClInclude Include="SceneVolume.h" />
     <ClInclude Include="ScreenQuadMesh.h" />
     <ClInclude Include="ShaderProgram.h" />
+    <ClInclude Include="SkyBoxShader.h" />
     <ClInclude Include="SSBO.h" />
     <ClInclude Include="StorageData.h" />
     <ClInclude Include="TextShader.h" />
     <ClInclude Include="TextureResources.h" />
+    <ClInclude Include="TransformationComponent.h" />
     <ClInclude Include="UBO.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VulkanBufferData.h" />
@@ -49,6 +63,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp" />
+    <ClCompile Include="BasicMeshComponent.cpp" />
+    <ClCompile Include="Component.cpp" />
+    <ClCompile Include="ComponentManager.cpp" />
+    <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="FontComponent.cpp" />
     <ClCompile Include="GausianBlur1DShader.cpp" />
     <ClCompile Include="DebugLog.cpp" />
     <ClCompile Include="DeferredFBO.cpp" />
@@ -61,16 +80,24 @@
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FontMesh.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
+    <ClCompile Include="LunaManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelResources.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneDefault.cpp" />
+    <ClCompile Include="SceneMedium.cpp" />
+    <ClCompile Include="SceneSmall.cpp" />
+    <ClCompile Include="SceneVolume.cpp" />
     <ClCompile Include="ScreenQuadMesh.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="SkyBoxShader.cpp" />
     <ClCompile Include="SSBO.cpp" />
     <ClCompile Include="TextShader.cpp" />
     <ClCompile Include="TextureResources.cpp" />
+    <ClCompile Include="TransformationComponent.cpp" />
     <ClCompile Include="UBO.cpp" />
     <ClCompile Include="VulkanBufferObject.cpp" />
     <ClCompile Include="VulkanImageBufferObject.cpp" />
