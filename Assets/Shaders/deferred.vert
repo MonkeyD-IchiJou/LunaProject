@@ -31,6 +31,7 @@ struct InstanceData
 {
 	mat4 model;
 	mat4 transpose_inverse_model;
+	vec4 material;
 };
 
 // shader storage buffer object binding at 1
@@ -42,13 +43,14 @@ layout(std430, set = 0, binding = 1) buffer sb
 // offset telling shader where to start indexing the instance data
 layout(push_constant) uniform PushConst
 {
-	vec4 color; // materials color
 	int offset;
 } pushconsts;
 
 void main()
 {
-	outWorldPos = instance[pushconsts.offset + gl_InstanceIndex].model * vec4(inPosition, 1.0);
+	int index = pushconsts.offset + gl_InstanceIndex;
+	
+	outWorldPos = instance[index].model * vec4(inPosition, 1.0);
 	gl_Position = ubo.proj * ubo.view * outWorldPos;
 	
 	// out texcoord
@@ -58,8 +60,8 @@ void main()
 	outWorldPos.w = 1; 
 	
 	// normal in world space
-	outNormal = mat3(instance[pushconsts.offset + gl_InstanceIndex].transpose_inverse_model) * normalize(inNormal);
+	outNormal = mat3(instance[index].transpose_inverse_model) * normalize(inNormal);
 
 	// out material color
-	outMaterialColor = pushconsts.color;
+	outMaterialColor = instance[index].material;
 }

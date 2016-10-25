@@ -18,18 +18,9 @@ layout (location = 0) out vec4 outPosition;
 layout (location = 1) out vec4 outNormal;
 layout (location = 2) out vec4 outAlbedo;
 
-float LinearizeDepth(float depth)
-{
-  float n = 0.1; // camera z near
-  float f = 10.0; // camera z far
-  float z = depth;
-  return (2.0 * n) / (f + n - z * (f - n));	
-}
-
 void main()
 {
 	outPosition = inWorldPos;
 	outNormal = vec4(inNormal, 1.0);
 	outAlbedo = texture(samplerColor, inUV) + inMaterialColor;
-	//outAlbedo = vec4(LinearizeDepth(gl_FragCoord.z));
 }
