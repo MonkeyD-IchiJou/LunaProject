@@ -156,13 +156,7 @@ namespace luna
 
 	void DeferredShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
 	{
-		// after color
-		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4), sizeof(offset), &offset);
-	}
-
-	void DeferredShader::LoadObjectColor(const VkCommandBuffer & commandbuffer, const glm::vec4 & color)
-	{
-		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(color), &color);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(offset), &offset);
 	}
 
 	void DeferredShader::Init(const VkRenderPass & renderpass)
@@ -269,7 +263,7 @@ namespace luna
 		VkPushConstantRange pushconstant{};
 		pushconstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushconstant.offset = 0;
-		pushconstant.size = sizeof(glm::vec4) + sizeof(int);
+		pushconstant.size = sizeof(int);
 	
 		std::vector<VkDescriptorSetLayout> setlayouts;
 		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());

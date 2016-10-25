@@ -55,6 +55,9 @@ namespace luna
 		/* setup & register the component into the container */
 		Component* RegisterComponent_(Component* component);
 
+		/* reset and remove the component from the container */
+		void RemoveComponent_(Component* component);
+
 		/* default constructor */
 		Entity();
 

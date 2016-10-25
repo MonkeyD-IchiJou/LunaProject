@@ -32,9 +32,6 @@ namespace luna
 		// load push constant offset
 		void LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int& offset);
 
-		// load material color 
-		void LoadObjectColor(const VkCommandBuffer& commandbuffer, const glm::vec4& color);
-
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline) override;
 		void CreatePipelineLayout_() override;

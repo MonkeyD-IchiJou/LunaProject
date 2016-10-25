@@ -43,9 +43,6 @@ namespace luna
 		~LunaManager() {/* do nothing */}
 
 	private:
-		Renderer* m_renderer = nullptr;
-		WinNative* m_window = nullptr;
-
 		/* all the scenes are here */
 		Scene* m_scene = nullptr;
 

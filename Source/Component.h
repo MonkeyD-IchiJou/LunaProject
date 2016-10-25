@@ -10,6 +10,9 @@ namespace luna
 	class Component
 	{
 	public:
+		Component(const COMPONENT_TYPE& component_type);
+		virtual ~Component();
+
 		/* update the component if necessary */
 		virtual void Update() = 0;
 
@@ -19,12 +22,10 @@ namespace luna
 		inline bool isActive() const { return m_active; }
 		inline void SetActive(const bool& active) { this->m_active = active; }
 		inline void SetOwner(Entity* entity) { this->m_owner = entity; }
-		inline Entity* GetOwner() { return this->m_owner; }
+		inline Entity* GetOwner() const { return this->m_owner; }
+		inline COMPONENT_TYPE GetComponentType() const { return this->m_componenttype; }
 
 	protected:
-		Component(const COMPONENT_TYPE& component_type);
-		virtual ~Component();
-
 		/* what is the type of this component */
 		COMPONENT_TYPE m_componenttype = LAST_CTYPE;
 

@@ -2,6 +2,8 @@
 #define STORAGE_DATA_H
 
 #include <glm\glm.hpp>
+#include "enum_c.h"
+#include <vector>
 
 namespace luna
 {
@@ -12,16 +14,28 @@ namespace luna
 
 	struct InstanceData
 	{
-		glm::mat4 model;
-		glm::mat4 transpose_inverse_model;
+		glm::mat4 model{};
+		glm::mat4 transpose_inverse_model{};
+		glm::vec4 material{};
 	};
 
 	struct FontInstanceData
 	{
-		glm::mat4 transformation;
-		glm::mat4 fontMaterials;
+		glm::mat4 transformation{};
+		glm::mat4 fontMaterials{};
 		glm::vec2 uv[4];
 	};
+
+	class BasicMeshComponent;
+	struct RenderingInfo
+	{
+		eMODELS modelID = MAX_MODELS;
+		eTEXTURES textureID = MAXTEX_NAME_TYPE_FORMAT;
+		std::vector<BasicMeshComponent*> instancedatas{};
+
+		static int totalcounter;
+	};
+	
 }
 
 #endif

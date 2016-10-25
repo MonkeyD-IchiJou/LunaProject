@@ -20,17 +20,15 @@
 #include "Model.h"
 #include "TextureResources.h"
 #include "VulkanImageBufferObject.h"
-#include "Font.h"
-
 #include "enum_c.h"
 
 #include "WinNative.h"
+#include "Font.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm\glm.hpp>
 
-#define INSTANCE_COUNT 3
 #define BASE_RESOLUTION_X 1280
 #define BASE_RESOLUTION_Y 720
 static int32_t totaltext = 0;
@@ -60,39 +58,23 @@ namespace luna
 			m_instance_ssbo = new SSBO(100 * sizeof(InstanceData)); // 100 different models reserve
 			m_fontinstance_ssbo = new SSBO(256 * sizeof(FontInstanceData)); // 256 different characters reserve
 
-			/* initial update for ssbo instancedata */
-			std::vector<InstanceData> instancedata(INSTANCE_COUNT);
-			instancedata[0].model = glm::rotate(glm::mat4(), 45.f, glm::vec3(0, 1.f, 0)); 
-			instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
-			instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); 
-			instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
-			instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); 
-			instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
-			m_instance_ssbo->Update<InstanceData>(instancedata);
-
-			Font* font = new Font();
-			auto fontTex = texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3];
-			font->LoadFonts(
-				getAssetPath() + "Fonts/eva.fnt", 
-				(float)fontTex->getWidth(), 
-				(float)fontTex->getHeight()
-			);
-
 			{
 				WinNative* win = WinNative::getInstance();
+
+				std::string str = "NEON GENESIS EVANGELION";
+				auto font = texrsc->Fonts[FONT_EVA];
 
 				glm::mat4 proj = glm::ortho(0.f, (float)win->getWinSizeX(), (float)win->getWinSizeY(), 0.f); // scale with screen size
 				glm::mat4 parentT = glm::translate(glm::mat4(), glm::vec3(5.f, 720.f, 0.f));
 				glm::mat4 parentR = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 0, 1.f));
 				glm::mat4 parentS = glm::scale(glm::mat4(), glm::vec3(400.f, 400.f, 1.f));
 
-				std::string str = "NEON GENESIS EVANGELION";
-				glm::vec2 cursor = {0.f, 0.0f};
+				glm::vec2 cursor = { 0.f, 0.0f };
 
 				totaltext = static_cast<int32_t>(str.size());
 				std::vector<FontInstanceData> fontinstancedata(totaltext);
 
-				for(int i = 0; i < totaltext; ++i)
+				for (int i = 0; i < totaltext; ++i)
 				{
 					FontInstanceData& fid = fontinstancedata[i];
 					const vulkanchar& vc = font->vulkanChars[str[i]];
@@ -122,10 +104,8 @@ namespace luna
 					fid.fontMaterials[3] = glm::vec4(0.0015f, 0.000f, 0.f, 0.f); // border offset
 				}
 
-				m_fontinstance_ssbo->Update<FontInstanceData>(fontinstancedata);
+				m_fontinstance_ssbo->Update(fontinstancedata);
 			}
-
-			delete font;
 
 			// swap chain and final fbo creation
 			// create the swap chain for presenting images
@@ -145,6 +125,9 @@ namespace luna
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_finalpass_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_deferred_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_compute_computeComplete));
+
+			// pre record the fixed primary command buffers
+			PreRecord_();
 		}
 	}
 
@@ -182,9 +165,10 @@ namespace luna
 		TextureResources* texrsc = TextureResources::getInstance();
 		
 		// available textures for the shader descriptors
-		std::vector<VulkanImageBufferObject*> totalDiffTex(2);
-		totalDiffTex[0] = texrsc->getInstance()->Textures[eTEXTURES::BASIC_2D_BC2];
-		totalDiffTex[1] = texrsc->getInstance()->Textures[eTEXTURES::BASIC_2D_RGBA8];
+		std::vector<VulkanImageBufferObject*> totalDiffTex(3);
+		totalDiffTex[0] = texrsc->getInstance()->Textures[eTEXTURES::BLACK_2D_RGBA];
+		totalDiffTex[1] = texrsc->getInstance()->Textures[eTEXTURES::BASIC_2D_BC2];
+		totalDiffTex[2] = texrsc->getInstance()->Textures[eTEXTURES::BASIC_2D_RGBA8];
 
 		// deferred shader init
 		m_deferred_shader = new DeferredShader();
@@ -246,10 +230,9 @@ namespace luna
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
 
 		// secondary command buffer
-		m_secondary_cmdbuffers.resize(2);
 		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		buffer_allocateInfo.commandBufferCount = (uint32_t)m_secondary_cmdbuffers.size();
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_secondary_cmdbuffers.data()));
+		buffer_allocateInfo.commandBufferCount = 1;
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_geometry_secondary_cmdbuff));
 
 		// Separate command pool as queue family for compute may be different than graphics
 		VkCommandPoolCreateInfo cmdPoolInfo = {};
@@ -268,17 +251,11 @@ namespace luna
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &cmdBufAllocateInfo, &m_comp_cmdbuffer));
 	}
 
-	void Renderer::RecordSecondaryCmdbuff_()
+	void Renderer::RecordGeometryPass(std::vector<RenderingInfo>& renderinfos)
 	{
-		// can multithread these command buffer
-		RecordGeometryPass_();
-		RecordLightPass_();
-	}
+		auto mr = ModelResources::getInstance();
 
-	void Renderer::RecordGeometryPass_()
-	{
-		VkCommandBuffer& geometrypass_cmdbuff = m_secondary_cmdbuffers[0];
-		vkResetCommandBuffer(geometrypass_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(m_geometry_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -296,86 +273,63 @@ namespace luna
 		m_deferred_shader->UpdateDescriptor(m_instance_ssbo);
 
 		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(geometrypass_cmdbuff, &beginInfo);
+		vkBeginCommandBuffer(m_geometry_secondary_cmdbuff, &beginInfo);
 
-		// bind the deferred shader
-		m_deferred_shader->Bind(geometrypass_cmdbuff);
-		m_deferred_shader->SetViewPort(geometrypass_cmdbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+		auto totalrenderinfosize = renderinfos.size();
 
-		m_deferred_shader->BindTexture(geometrypass_cmdbuff, 1);
+		// if there are something to render
+		if (totalrenderinfosize > 0)
+		{
+			// bind the deferred shader
+			m_deferred_shader->Bind(m_geometry_secondary_cmdbuff);
+			m_deferred_shader->SetViewPort(m_geometry_secondary_cmdbuff, m_deferred_fbo->getResolution());
+			vkCmdSetStencilCompareMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+			vkCmdSetStencilWriteMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+			vkCmdSetStencilReference(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
 
-		// 1 cube models
-		vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
-		m_deferred_shader->LoadObjectColor(geometrypass_cmdbuff, glm::vec4(0.f));
-		m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 0);
-		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(geometrypass_cmdbuff);
+			// record the first renderinfo first
+			m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, 1);
+			m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, 0);
+			mr->Models[renderinfos[0].modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfos[0].instancedatas.size()));
 
-		m_deferred_shader->BindTexture(geometrypass_cmdbuff, 0);
+			// record the rest renderinfo
+			for (int i = 1; i < totalrenderinfosize; ++i)
+			{
+				auto& renderinfo = renderinfos[i];
 
-		// 1 cube models
-		vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
-		m_deferred_shader->LoadObjectColor(geometrypass_cmdbuff, glm::vec4(0.f));
-		m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 1);
-		ModelResources::getInstance()->Models[CUBE_MODEL]->Draw(geometrypass_cmdbuff);
-
-		// 1 rabbit
-		vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // set stencil value
-		m_deferred_shader->LoadObjectColor(geometrypass_cmdbuff, glm::vec4(1.f, 0.f, 0.f, 0.f));
-		m_deferred_shader->LoadObjectOffset(geometrypass_cmdbuff, 2);
-		ModelResources::getInstance()->Models[BUNNY_MODEL]->Draw(geometrypass_cmdbuff);
+				m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, 1);
+				m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfos[i-1].instancedatas.size()));
+				mr->Models[renderinfo.modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfo.instancedatas.size()));
+			}
+		}
 
 		// draw skybox last
-		m_skybox_shader->Bind(geometrypass_cmdbuff);
-		m_skybox_shader->SetViewPort(geometrypass_cmdbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+		m_skybox_shader->Bind(m_geometry_secondary_cmdbuff);
+		m_skybox_shader->SetViewPort(m_geometry_secondary_cmdbuff, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
 
-		vkCmdSetStencilReference(geometrypass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
+		vkCmdSetStencilReference(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
 		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
 		auto s = glm::scale(glm::mat4(), glm::vec3(5.f, 5.f, 5.f));
 		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
-		m_skybox_shader->LoadModel(geometrypass_cmdbuff, t * s * r);
-		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(geometrypass_cmdbuff);
+		m_skybox_shader->LoadModel(m_geometry_secondary_cmdbuff, t * s * r);
+		mr->Models[SKYBOX_MODEL]->Draw(m_geometry_secondary_cmdbuff);
 
 		// end geometry pass cmd buff
-		vkEndCommandBuffer(geometrypass_cmdbuff);
+		vkEndCommandBuffer(m_geometry_secondary_cmdbuff);
 	}
 
-	void Renderer::RecordLightPass_()
+	void Renderer::PreRecord_()
 	{
-		VkCommandBuffer& lightpass_cmdbuff = m_secondary_cmdbuffers[1];
-		vkResetCommandBuffer(lightpass_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		// dummy record secondary buffer
+		std::vector<RenderingInfo> temp;
+		RecordGeometryPass(temp);
 
-		VkCommandBufferInheritanceInfo inheritanceinfo{};
-		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
-		inheritanceinfo.subpass = 1;
-		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
-		inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = &inheritanceinfo;
-
-		// start recording the light pass command buffer
-		vkBeginCommandBuffer(lightpass_cmdbuff, &beginInfo);
-
-		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(lightpass_cmdbuff);
-		m_dirlightpass_shader->SetViewPort(lightpass_cmdbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(lightpass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(lightpass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-
-		vkCmdSetStencilReference(lightpass_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(lightpass_cmdbuff);
-
-		// combined with those not lightpass geometry
-
-		// end lighting pass cmd buff
-		vkEndCommandBuffer(lightpass_cmdbuff);
+		// primary command buffers, record once and for all
+		RecordDeferredOffscreen_();
+		RecordCompute_();
+		RecordPresentation_();
 	}
 
 	void luna::Renderer::RecordDeferredOffscreen_()
@@ -393,16 +347,25 @@ namespace luna
 		m_deferred_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the geometry pass
-		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_secondary_cmdbuffers[0]);
+		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_geometry_secondary_cmdbuff);
 
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
 			m_deferred_cmdbuffer, 
-			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+			VK_SUBPASS_CONTENTS_INLINE
 		);
 
-		// execute the light pass
-		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_secondary_cmdbuffers[1]);
+		// execute all the light passes
+
+		// bind the dirlight pass shader
+		m_dirlightpass_shader->Bind(m_deferred_cmdbuffer);
+		m_dirlightpass_shader->SetViewPort(m_deferred_cmdbuffer, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_deferred_cmdbuffer);
+
+		// combined with those not lightpass geometry
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(m_deferred_cmdbuffer);
@@ -511,7 +474,7 @@ namespace luna
 		DebugLog::EC(vkEndCommandBuffer(m_comp_cmdbuffer));
 	}
 
-	void luna::Renderer::RecordFinalFrame_()
+	void luna::Renderer::RecordPresentation_()
 	{	
 		// just to double make sure that the shader update the latest size of the ssbo
 		m_text_shader->UpdateDescriptor(m_fontinstance_ssbo); 
@@ -552,37 +515,11 @@ namespace luna
 		}
 	}
 
-	void Renderer::Record()
+	void Renderer::UploadDatas(UBOData& ubo, std::vector<InstanceData>& instancedatas, std::vector<FontInstanceData>& fontinstancedatas)
 	{
-		RecordSecondaryCmdbuff_();
-		RecordDeferredOffscreen_();
-		RecordCompute_();
-		RecordFinalFrame_();
-	}
-
-	void Renderer::Update()
-	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.f;
-
-		std::vector<InstanceData> instancedata(INSTANCE_COUNT);
-		{
-			instancedata[0].model = glm::rotate(glm::mat4(), time * glm::radians(40.f), glm::vec3(1.f, 0.f, 0)); instancedata[0].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[0].model));
-			instancedata[1].model = glm::translate(glm::mat4(), glm::vec3(0, 2.f, 0)); instancedata[1].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[1].model));
-			instancedata[2].model = glm::translate(glm::mat4(), glm::vec3(0, 0.f, 2.f)); instancedata[2].transpose_inverse_model = glm::transpose(glm::inverse(instancedata[2].model));
-			m_instance_ssbo->Update(instancedata);
-		}
-
-		WinNative* win = WinNative::getInstance();
-		UBOData data{};
-		data.view = glm::lookAt(glm::vec3(2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-		data.proj = glm::perspective(glm::radians(45.f), win->getWinSizeX() / static_cast<float>(win->getWinSizeY()), 0.1f, 10.0f);
-
-		// invert y coordinate
-		data.proj[1][1] *= -1.f;
-
-		m_ubo->Update(data);
+		m_ubo->Update(ubo);
+		m_instance_ssbo->Update(instancedatas);
+		//m_fontinstance_ssbo->Update(fontinstancedatas);
 	}
 
 	void Renderer::Render()

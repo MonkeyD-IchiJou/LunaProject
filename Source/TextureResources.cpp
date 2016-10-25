@@ -4,6 +4,7 @@
 #include "VulkanTextureCube.h"
 #include "Renderer.h"
 #include "enum_c.h"
+#include "Font.h"
 
 namespace luna
 {
@@ -24,6 +25,7 @@ namespace luna
 
 		Textures[BASIC_2D_RGBA8] = new VulkanTexture2D(getAssetPath() + "Textures/NewTex_rgba.ktx");
 		Textures[BASIC_2D_BC2] = new VulkanTexture2D(getAssetPath() + "Textures/pattern_02_bc2.ktx");
+		Textures[BLACK_2D_RGBA] = new VulkanTexture2D(getAssetPath() + "Textures/black.ktx");
 		Textures[EVAFONT_2D_BC3] = new VulkanTexture2D(getAssetPath() + "Textures/eva_bc3.ktx");
 		Textures[TERRAIN_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/terrain_texturearray_bc3.ktx");
 		Textures[BASIC_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/texturearray_bc3.ktx");
@@ -48,6 +50,16 @@ namespace luna
 			VK_IMAGE_USAGE_STORAGE_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL
 		);
+
+		// font resource init
+		Fonts.resize(MAX_FONT);
+
+		Fonts[FONT_EVA] = new Font();
+		Fonts[FONT_EVA]->LoadFonts(
+			getAssetPath() + "Fonts/eva.fnt", 
+			(float)Textures[EVAFONT_2D_BC3]->getWidth(), 
+			(float)Textures[EVAFONT_2D_BC3]->getHeight()
+		);
 	}
 
 	void TextureResources::Destroy()
@@ -57,5 +69,11 @@ namespace luna
 			delete i;
 		}
 		Textures.clear();
+
+		for (auto& i : Fonts)
+		{
+			delete i;
+		}
+		Fonts.clear();
 	}
 }

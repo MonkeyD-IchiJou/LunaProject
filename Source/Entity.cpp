@@ -27,7 +27,7 @@ namespace luna
 			m_active = true;
 
 			// auto register the transformation component
-			transformation = dynamic_cast<TransformationComponent*>(m_componentManager->GetComponent<TransformationComponent>());
+			transformation = dynamic_cast<TransformationComponent*>(m_componentManager->m_transformationContainer.GetComponent());
 			RegisterComponent_(transformation);
 		}
 	}
@@ -38,17 +38,17 @@ namespace luna
 		m_active = false;
 		m_name = "default";
 
-		m_componentManager = nullptr;
-
 		// reset all the components 
-		for (auto &c : m_componentsContainer)
+		for (int i = 0; i < m_componentsContainer.size(); ++i)
 		{
-			if (c != nullptr)
-			{
-				c->Reset();
-			}
+			RemoveComponent_(m_componentsContainer[i]);
 		}
+
 		m_componentsContainer.clear();
+
+		transformation = nullptr;
+
+		m_componentManager = nullptr;
 	}
 
 	void Entity::SetActive(const bool & active)
@@ -79,17 +79,18 @@ namespace luna
 			switch (componentType)
 			{
 			case COMPONENT_ATYPE::BASICMESH_ACTYPE:
-				component = m_componentManager->GetComponent<BasicMeshComponent>();
+				component = m_componentManager->m_basicmeshContainer.GetComponent();
 				break;
 
 			case COMPONENT_ATYPE::FONT_ACTYPE:
-				component = m_componentManager->GetComponent<FontComponent>();
+				component = m_componentManager->m_fontContainer.GetComponent();
 				break;
 
 			default:
 				break;
 			}
 
+			// register the component 
 			return RegisterComponent_(component);
 		}
 		else
@@ -129,5 +130,14 @@ namespace luna
 			DebugLog::throwEx("entity is not awaken yet, cannot register component");
 			return nullptr;
 		}
+	}
+
+	void Entity::RemoveComponent_(Component* component)
+	{
+		// reset the component first
+		component->Reset();
+
+		// then set it to nullptr
+		component = nullptr;
 	}
 }

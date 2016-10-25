@@ -13,6 +13,9 @@ namespace luna
 		SceneDefault();
 		virtual ~SceneDefault();
 
+		/* load datas to renderer and prepare everything before update every frame */
+		void EarlyUpdate() override;
+
 		/* scene update objects transformation, physics, AI, secondary command buffer, every frame */
 		void Update() override;
 

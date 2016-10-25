@@ -9,6 +9,7 @@ namespace luna
 {
 	struct FontMaterial
 	{
+		eFONTS fontID = eFONTS::MAX_FONT;
 		glm::vec4 color{};
 		glm::vec4 outlinecolor{};
 		glm::vec2 borderOffset{};
@@ -30,6 +31,10 @@ namespace luna
 
 		std::string text = "text";
 		FontMaterial material{};
+
+	private:
+		// only used for comparison in finding
+		friend bool operator== (const FontComponent& n1, const FontComponent& n2);
 	};
 }
 

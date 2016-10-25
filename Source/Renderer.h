@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include "VulkanRenderer.h"
+#include "StorageData.h"
 #include <mutex>
 
 namespace luna
@@ -31,13 +32,13 @@ namespace luna
 		/* delete swap chain, fbo, shaders and renderpass, etc */
 		void CleanUpResources() override;
 
-		/* record the command buffer for final presentation */
-		void Record();
+		/* update all the necessary datas to the gpu */
+		void UploadDatas(UBOData& ubo, std::vector<InstanceData>& instancedatas, std::vector<FontInstanceData>& fontinstancedatas);
 
-		/* update the renderer if needed */
-		void Update();
+		/* record the dynamic geometry pass */
+		void RecordGeometryPass(std::vector<RenderingInfo>& renderinfos);
 
-		/* render everything and then present it on the screen */
+		/* submit all the queues && render everything && then present it on the screen */
 		void Render();
 
 	public:
@@ -64,13 +65,18 @@ namespace luna
 	private:
 		void CreateRenderPassResources_();
 		void CreateCommandBuffers_();
-		void RecordDeferredOffscreen_();
-		void RecordCompute_();
-		void RecordFinalFrame_();
 
-		void RecordSecondaryCmdbuff_();
-		void RecordGeometryPass_();
-		void RecordLightPass_();
+		/* pre-record the primary command buffer once and for all */
+		void PreRecord_();
+
+		/* primary command buffer -> deffered shader fbo pass */
+		void RecordDeferredOffscreen_();
+
+		/* primary command buffer -> computer shader pass */
+		void RecordCompute_();
+
+		/* primary command buffer -> final rendering && presentation pass */
+		void RecordPresentation_();
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -91,11 +97,13 @@ namespace luna
 		TextShader* m_text_shader = nullptr;
 		GausianBlur1DShader* m_gausianblur_shader = nullptr;
 
-		/* recording purpose */
+		/* rendering recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_finalpass_cmdbuffers;
 		VkCommandBuffer m_deferred_cmdbuffer = VK_NULL_HANDLE;
-		std::vector<VkCommandBuffer> m_secondary_cmdbuffers;
+		VkCommandBuffer m_geometry_secondary_cmdbuff;
+		
+		/* computing recording purpose */
 		VkCommandPool m_comp_cmdpool = VK_NULL_HANDLE;
 		VkCommandBuffer m_comp_cmdbuffer = VK_NULL_HANDLE;
 

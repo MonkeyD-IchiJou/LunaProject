@@ -40,4 +40,14 @@ namespace luna
 		m_model = {};
 		m_transpose_inverse_model = {};
 	}
+
+	bool operator==(const TransformationComponent & n1, const TransformationComponent & n2)
+	{
+		// if both pointing in the same address, then they are the same
+		if (&n1 == &n2)
+			return true;
+		else
+			return false;
+		
+	}
 }

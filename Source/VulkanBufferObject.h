@@ -12,6 +12,7 @@ namespace luna
 		VulkanBufferObject();
 		virtual ~VulkanBufferObject();
 
+		virtual void Bind(const VkCommandBuffer& commandbuffer);
 		virtual void Draw(const VkCommandBuffer& commandbuffer);
 		virtual void DrawInstanced(const VkCommandBuffer& commandbuffer, const uint32_t& instancecount);
 		virtual void MapToDeviceMemory(const VkDevice& logicaldevice, const VkDeviceMemory& devicememory) = 0;

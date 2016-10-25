@@ -5,10 +5,12 @@
 #include "FontComponent.h"
 #include "BasicMeshComponent.h"
 
+#include "StorageData.h"
 #include "DebugLog.h"
 
 #include <typeinfo>
 #include <vector>
+#include <algorithm>
 
 namespace luna
 {
@@ -19,7 +21,7 @@ namespace luna
 		void Update()
 		{
 			// update all the components locally
-			for (auto &component : components )
+			for (auto & component : m_components)
 			{
 				component.Update();
 			}
@@ -27,7 +29,7 @@ namespace luna
 
 		T* GetComponent()
 		{
-			for ( auto &component : components )
+			for (auto & component : m_components)
 			{
 				// check which components do not have any owner, then return the one
 				if (component.GetOwner() == nullptr)
@@ -43,9 +45,9 @@ namespace luna
 
 	private:
 		/* all the components data are here */
-		std::vector<T> components;
+		std::vector<T> m_components;
 
-		/* only component manager can init my components */
+		/* only component manager can init my components and access my private members */
 		friend class ComponentManager; 
 	};
 
@@ -58,27 +60,15 @@ namespace luna
 		/* update all the components */
 		void Update();
 
-		/* get certain components */
-		template <typename T>
-		Component* GetComponent()
-		{
-			// if is a certain component type
-			if (typeid(T) == typeid(TransformationComponent))
-			{
-				return m_transformationContainer.GetComponent();
-			}
-			else if (typeid(T) == typeid(BasicMeshComponent))
-			{
-				return m_basicmeshContainer.GetComponent();
-			}
-			else if (typeid(T) == typeid(FontComponent))
-			{
-				return m_fontContainer.GetComponent();
-			}
+		/* fill up the rendering datas */
+		void GetRenderingData(std::vector<RenderingInfo>& renderinfos);
 
-			// if cannot find anything
-			return nullptr;
-		}
+		/* fill up the fonts instance data */
+		void GetFontInstanceData(std::vector<FontInstanceData>& fontinstancedatas);
+
+	private:
+		void StoreNewRenderingData_(BasicMeshComponent* mesh, std::vector<RenderingInfo>& renderdatas, RenderingInfo& rd);
+		void StoreRenderingData_(BasicMeshComponent* mesh, RenderingInfo& rd);
 
 	private:
 		/* all the transformation components are here */
@@ -89,6 +79,9 @@ namespace luna
 
 		/* all the font components are here */
 		ComponentData<FontComponent> m_fontContainer;
+
+		/* only entity class can access my components freely */
+		friend class Entity;
 	};
 }
 

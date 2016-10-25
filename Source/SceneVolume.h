@@ -12,6 +12,7 @@ namespace luna
 		virtual ~SceneVolume();
 
 		virtual	Entity* GetAvailableEntity_() = 0;
+		std::vector<Entity*> m_availableEntities;
 	};
 }
 

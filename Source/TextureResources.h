@@ -8,11 +8,13 @@
 namespace luna
 {
 	class VulkanImageBufferObject;
+	class Font;
 
 	class TextureResources
 	{
 	public:
 		std::vector<VulkanImageBufferObject*> Textures;
+		std::vector<Font*> Fonts;
 
 	public:
 		/* Singleton class implementation */
