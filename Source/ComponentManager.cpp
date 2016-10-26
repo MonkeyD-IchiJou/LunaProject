@@ -18,6 +18,8 @@ namespace luna
 		m_transformationContainer.m_components.resize(MAX_COMPONENTS);
 		m_basicmeshContainer.m_components.resize(MAX_COMPONENTS);
 		m_fontContainer.m_components.resize(MAX_COMPONENTS);
+		m_cameraContainer.m_components.resize(MAX_COMPONENTS);
+		m_scriptContainer.m_components.resize(MAX_COMPONENTS);
 	}
 
 	ComponentManager::~ComponentManager()
@@ -27,9 +29,11 @@ namespace luna
 
 	void ComponentManager::Update()
 	{
-		m_transformationContainer.Update();
 		m_basicmeshContainer.Update();
 		m_fontContainer.Update();
+		m_scriptContainer.Update();
+		m_transformationContainer.Update();
+		m_cameraContainer.Update();
 	}
 
 	void ComponentManager::GetRenderingData(std::vector<RenderingInfo>& renderinfos)
@@ -159,6 +163,19 @@ namespace luna
 					fid.fontMaterials[2] = material.outlinecolor; // outline color
 					fid.fontMaterials[3] = glm::vec4(material.borderOffset, 0.f, 0.f); // border offset
 				}
+			}
+		}
+	}
+
+	void ComponentManager::GetMainCamData(UBOData & maincamdata)
+	{
+		for (auto& cam : m_cameraContainer.m_components)
+		{
+			if (cam.isActive() && cam.maincam)
+			{
+				maincamdata.view = cam.GetView();
+				maincamdata.proj = cam.GetProjection();
+				break;
 			}
 		}
 	}

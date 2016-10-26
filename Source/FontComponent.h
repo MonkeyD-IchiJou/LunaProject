@@ -31,10 +31,6 @@ namespace luna
 
 		std::string text = "text";
 		FontMaterial material{};
-
-	private:
-		// only used for comparison in finding
-		friend bool operator== (const FontComponent& n1, const FontComponent& n2);
 	};
 }
 

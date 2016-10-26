@@ -135,7 +135,7 @@ namespace luna
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		vkBeginCommandBuffer(m_commandbuffer, &beginInfo);
+		DebugLog::EC(vkBeginCommandBuffer(m_commandbuffer, &beginInfo));
 
 		// start the copy cmd
 		// copy the damn buffer
@@ -145,7 +145,7 @@ namespace luna
 		copyregion.size = m_uboTotalSize;
 		vkCmdCopyBuffer(m_commandbuffer, m_staging_buffer.buffer, m_main_buffer.buffer, 1, &copyregion);
 
-		vkEndCommandBuffer(m_commandbuffer);
+		DebugLog::EC(vkEndCommandBuffer(m_commandbuffer));
 
 		// then submit this to the graphics queue to execute it
 		// now execute the command buffer
@@ -154,8 +154,9 @@ namespace luna
 		submitinfo.commandBufferCount = 1;
 		submitinfo.pCommandBuffers = &m_commandbuffer;
 
-		vkQueueSubmit(Renderer::getInstance()->GetGraphicQueue(), 1, &submitinfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(Renderer::getInstance()->GetGraphicQueue());
+		auto queue = Renderer::getInstance()->GetGraphicQueue();
+		DebugLog::EC(vkQueueSubmit(queue, 1, &submitinfo, VK_NULL_HANDLE));
+		DebugLog::EC(vkQueueWaitIdle(queue));
 	}
 
 	UBO::~UBO()

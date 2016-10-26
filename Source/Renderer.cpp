@@ -610,8 +610,7 @@ namespace luna
 
 	void Renderer::Render()
 	{
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
-		m_submitInfo.pWaitDstStageMask = &waitStages[0]; // wait until draw finish
+		m_submitInfo.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
 
 		// get the available image to render with
 		uint32_t imageindex = 0;
@@ -630,14 +629,14 @@ namespace luna
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
 		// finalpass submit
-		m_submitInfo.pWaitDstStageMask = &waitStages[1]; // wait until compute finish
+		m_submitInfo.pWaitDstStageMask = &m_waitStages[1]; // wait until compute finish
 		m_submitInfo.pWaitSemaphores = &m_compute_computeComplete;
 		m_submitInfo.pSignalSemaphores = &m_finalpass_renderComplete;
 		m_submitInfo.pCommandBuffers = &m_finalpass_cmdbuffer;
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
 		// final image submiting on the screen
-		m_submitInfo.pWaitDstStageMask = &waitStages[0]; // wait until finalpass finish
+		m_submitInfo.pWaitDstStageMask = &m_waitStages[0]; // wait until finalpass finish
 		m_submitInfo.pWaitSemaphores = &m_finalpass_renderComplete; // wait for someone render finish
 		m_submitInfo.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
 		m_submitInfo.pCommandBuffers = &m_presentation_cmdbuffers[imageindex];

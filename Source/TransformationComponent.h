@@ -4,7 +4,6 @@
 #include "Component.h"
 
 #include <glm\glm.hpp>
-#include <iostream>
 
 namespace luna
 {
@@ -29,9 +28,6 @@ namespace luna
 	private:
 		glm::mat4 m_model = {};
 		glm::mat4 m_transpose_inverse_model = {};
-
-		// only used for comparison in finding
-		friend bool operator== (const TransformationComponent& n1, const TransformationComponent& n2);
 	};
 }
 

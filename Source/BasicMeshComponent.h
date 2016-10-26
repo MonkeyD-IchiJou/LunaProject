@@ -25,10 +25,6 @@ namespace luna
 
 		eMODELS meshID = eMODELS::MAX_MODELS;
 		BasicMeshMaterial material = {};
-
-	private:
-		// only used for comparison in finding
-		friend bool operator== (const BasicMeshComponent& n1, const BasicMeshComponent& n2);
 	};
 }
 

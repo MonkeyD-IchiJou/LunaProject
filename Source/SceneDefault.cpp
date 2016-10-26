@@ -3,11 +3,7 @@
 #include "DebugLog.h"
 #include "Renderer.h"
 
-#define GLM_FORCE_RADIANS
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm\glm.hpp>
-
-#include "WinNative.h"
 
 namespace luna
 {
@@ -30,23 +26,22 @@ namespace luna
 		/* update all the components locally */
 		m_componentmanager->Update();
 
-		/* prepare rendering instance datas */ 
 		std::vector<InstanceData> instancedatas;
-		UpdateInstanceData_(instancedatas);
-		m_renderer->SubmitGeometryDatas(instancedatas);
-
-		/* font data */
 		std::vector<FontInstanceData> fontinstancedatas;
-		m_componentmanager->GetFontInstanceData(fontinstancedatas);
-		m_renderer->SubmitFontInstDatas(fontinstancedatas);
+		UBOData maincamdata{};
 
+		/* prepare rendering instance datas */
+		GetInstanceData_(instancedatas);
+		
+		/* font data */
+		m_componentmanager->GetFontInstanceData(fontinstancedatas);
+		
 		/* view and projection mat4 update */
-		WinNative* win = WinNative::getInstance();
-		UBOData data{};
-		data.view = glm::lookAt(glm::vec3(2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-		data.proj = glm::perspective(glm::radians(45.f), win->getWinSizeX() / static_cast<float>(win->getWinSizeY()), 0.1f, 10.0f);
-		data.proj[1][1] *= -1.f;
-		m_renderer->SubmitMainCamDatas(data);
+		m_componentmanager->GetMainCamData(maincamdata);
+
+		m_renderer->SubmitGeometryDatas(instancedatas);
+		m_renderer->SubmitFontInstDatas(fontinstancedatas);
+		m_renderer->SubmitMainCamDatas(maincamdata);
 
 		// rmb to re-record the command buffer again if m_renderinfos is different
 		m_renderer->RecordGeometryPass(m_renderinfos);
@@ -58,24 +53,23 @@ namespace luna
 		/* update all the components locally */
 		m_componentmanager->Update();
 
+		std::vector<InstanceData> instancedatas;
+		std::vector<FontInstanceData> fontinstancedatas;
+		UBOData maincamdata{};
+
 		/* prepare rendering instance datas */ 
 		// every frame gather all the transformation info for the mesh
-		std::vector<InstanceData> instancedatas;
-		UpdateInstanceData_(instancedatas);
-		m_renderer->SubmitGeometryDatas(instancedatas); // expensive
+		GetInstanceData_(instancedatas);
 
 		/* font data */
-		std::vector<FontInstanceData> fontinstancedatas;
 		m_componentmanager->GetFontInstanceData(fontinstancedatas);
-		m_renderer->SubmitFontInstDatas(fontinstancedatas); // expensive
-
+		
 		/* view and projection mat4 update */
-		WinNative* win = WinNative::getInstance();
-		UBOData data{};
-		data.view = glm::lookAt(glm::vec3(2.f, 2.f, -5.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-		data.proj = glm::perspective(glm::radians(45.f), win->getWinSizeX() / static_cast<float>(win->getWinSizeY()), 0.1f, 10.0f);
-		data.proj[1][1] *= -1.f;
-		m_renderer->SubmitMainCamDatas(data); // expensive
+		m_componentmanager->GetMainCamData(maincamdata);
+
+		m_renderer->SubmitGeometryDatas(instancedatas); // expensive
+		m_renderer->SubmitFontInstDatas(fontinstancedatas); // expensive
+		m_renderer->SubmitMainCamDatas(maincamdata); // expensive
 	}
 
 	void SceneDefault::Render()
@@ -105,6 +99,7 @@ namespace luna
 			basicmeshc->meshID = eMODELS::CUBE_MODEL;
 			basicmeshc->material.color = glm::vec4(1.f, 0.f, 0.f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BOX_TEX;
+			entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE);
 			m_availableEntities.push_back(entity);
 		}
 
@@ -127,6 +122,7 @@ namespace luna
 			basicmeshc->meshID = eMODELS::BUNNY_MODEL;
 			basicmeshc->material.color = glm::vec4(1.f, 0.f, 0.f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
+			entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE);
 			m_availableEntities.push_back(entity);
 		}
 
@@ -174,6 +170,15 @@ namespace luna
 			fontc->material.edge = 0.15f;
 			fontc->material.borderwidth = 0.5f;
 			fontc->material.borderedge = 0.15f;
+			m_availableEntities.push_back(entity);
+		}
+
+		{
+			Entity* entity = GetAvailableEntity_();
+			entity->Awake("main camera", m_componentmanager);
+			entity->transformation->position = glm::vec3(-2.f, 2.f, -5.f);
+			CameraComponent* camc = dynamic_cast<CameraComponent*>(entity->AddComponent(COMPONENT_ATYPE::CAMERA_ACTYPE));
+			camc->maincam = true;
 			m_availableEntities.push_back(entity);
 		}
 	}

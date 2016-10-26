@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="BasicMesh.h" />
     <ClInclude Include="BasicMeshComponent.h" />
+    <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
     <ClInclude Include="Entity.h" />
@@ -37,6 +38,7 @@
     <ClInclude Include="platform.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="ScriptComponent.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneDefault.h" />
     <ClInclude Include="SceneMedium.h" />
@@ -66,6 +68,7 @@
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp" />
     <ClCompile Include="BasicMeshComponent.cpp" />
+    <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="Entity.cpp" />
@@ -89,6 +92,7 @@
     <ClCompile Include="ModelResources.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
+    <ClCompile Include="ScriptComponent.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneDefault.cpp" />
     <ClCompile Include="SceneMedium.cpp" />

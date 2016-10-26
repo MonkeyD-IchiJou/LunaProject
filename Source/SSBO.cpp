@@ -129,19 +129,19 @@ namespace luna
 	void SSBO::CopyToDeviceMemory_()
 	{
 		// immediately start recording this command buffer
-		vkBeginCommandBuffer(m_commandbuffer, &m_beginInfo);
+		DebugLog::EC(vkBeginCommandBuffer(m_commandbuffer, &m_beginInfo));
 
 		// start the copy cmd
 		// copy the damn buffer
 		m_copyregion.size = m_currentSize;
 		vkCmdCopyBuffer(m_commandbuffer, m_staging_buffer.buffer, m_main_buffer.buffer, 1, &m_copyregion);
 
-		vkEndCommandBuffer(m_commandbuffer);
+		DebugLog::EC(vkEndCommandBuffer(m_commandbuffer));
 
 		// then submit this to the graphics queue to execute it
 		// now execute the command buffer
-		vkQueueSubmit(m_queue, 1, &m_submitinfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(m_queue);
+		DebugLog::EC(vkQueueSubmit(m_queue, 1, &m_submitinfo, VK_NULL_HANDLE));
+		DebugLog::EC(vkQueueWaitIdle(m_queue));
 	}
 
 	void SSBO::BufferDeInit_()

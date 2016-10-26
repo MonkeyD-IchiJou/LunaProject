@@ -4,6 +4,8 @@
 #include "TransformationComponent.h"
 #include "FontComponent.h"
 #include "BasicMeshComponent.h"
+#include "CameraComponent.h"
+#include "ScriptComponent.h"
 
 #include "StorageData.h"
 #include "DebugLog.h"
@@ -66,6 +68,9 @@ namespace luna
 		/* fill up the fonts instance data */
 		void GetFontInstanceData(std::vector<FontInstanceData>& fontinstancedatas);
 
+		/* get main camera data */
+		void GetMainCamData(UBOData& maincamdata);
+
 	private:
 		void StoreNewRenderingData_(BasicMeshComponent* mesh, std::vector<RenderingInfo>& renderdatas, RenderingInfo& rd);
 		void StoreRenderingData_(BasicMeshComponent* mesh, RenderingInfo& rd);
@@ -79,6 +84,12 @@ namespace luna
 
 		/* all the font components are here */
 		ComponentData<FontComponent> m_fontContainer;
+
+		/* all the camera components are here */
+		ComponentData<CameraComponent> m_cameraContainer;
+
+		/* all the script components are here */
+		ComponentData<ScriptComponent> m_scriptContainer;
 
 		/* only entity class can access my components freely */
 		friend class Entity;

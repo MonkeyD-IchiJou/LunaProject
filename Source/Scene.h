@@ -35,7 +35,7 @@ namespace luna
 		virtual void DeInit_() = 0;
 
 		/* fill up the instance datas */
-		void UpdateInstanceData_(std::vector<InstanceData>& instancedatas);
+		void GetInstanceData_(std::vector<InstanceData>& instancedatas);
 
 	protected:
 		/* every scene has its own name */

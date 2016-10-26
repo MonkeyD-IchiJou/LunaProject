@@ -19,7 +19,7 @@ namespace luna
 		}
 	}
 
-	void Scene::UpdateInstanceData_(std::vector<InstanceData>& instancedatas)
+	void Scene::GetInstanceData_(std::vector<InstanceData>& instancedatas)
 	{
 		// store another vector just for the instance data
 		instancedatas.resize(RenderingInfo::totalcounter);

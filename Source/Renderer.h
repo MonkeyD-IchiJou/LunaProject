@@ -146,7 +146,9 @@ namespace luna
 		SSBO* m_instance_ssbo = nullptr;
 		SSBO* m_fontinstance_ssbo = nullptr;
 
+		// local cache
 		VkSubmitInfo m_submitInfo{};
+		VkPipelineStageFlags m_waitStages[2] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
 
 		static std::once_flag m_sflag;
 		static Renderer* m_instance;

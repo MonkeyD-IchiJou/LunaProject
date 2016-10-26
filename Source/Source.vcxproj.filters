@@ -121,6 +121,12 @@
     <Filter Include="Source Files\Resources\Entities">
       <UniqueIdentifier>{0ea3f1f9-ad65-48b0-9f41-acce90b1fd3c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Resources\Components\Scripts">
+      <UniqueIdentifier>{721c55b0-5086-427e-8b72-9b64acca5c81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\Components\Scripts">
+      <UniqueIdentifier>{bf740a76-60dd-4564-b23b-8d18019d03d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BasicMesh.h">
@@ -276,6 +282,12 @@
     <ClInclude Include="SimpleShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="CameraComponent.h">
+      <Filter>Header Files\Resources\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptComponent.h">
+      <Filter>Header Files\Resources\Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLog.cpp">
@@ -421,6 +433,12 @@
     </ClCompile>
     <ClCompile Include="SimpleShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraComponent.cpp">
+      <Filter>Source Files\Resources\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptComponent.cpp">
+      <Filter>Source Files\Resources\Components</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
