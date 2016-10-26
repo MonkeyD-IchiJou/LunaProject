@@ -4,6 +4,7 @@ D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V deferred.frag -o deferred_frag
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V screenquad.vert -o screenquad_vert.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V dirlightsubpass.frag -o dirlightsubpass_frag.spv
 
+D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V simpleshader.frag -o simpleshader_frag.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V finalpass.frag -o finalpass_frag.spv
 
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V text.vert -o text_vert.spv
