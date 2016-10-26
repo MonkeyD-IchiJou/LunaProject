@@ -219,9 +219,6 @@
     <ClInclude Include="DeferredFBO.h">
       <Filter>Header Files\Resources\FBOs</Filter>
     </ClInclude>
-    <ClInclude Include="FinalFBO.h">
-      <Filter>Header Files\Resources\FBOs</Filter>
-    </ClInclude>
     <ClInclude Include="Framebuffer.h">
       <Filter>Header Files\Resources\FBOs\Base</Filter>
     </ClInclude>
@@ -269,6 +266,15 @@
     </ClInclude>
     <ClInclude Include="SceneMedium.h">
       <Filter>Header Files\Resources\Scenes\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="PresentationFBO.h">
+      <Filter>Header Files\Resources\FBOs</Filter>
+    </ClInclude>
+    <ClInclude Include="FinalFBO.h">
+      <Filter>Header Files\Resources\FBOs</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -350,9 +356,6 @@
     <ClCompile Include="DeferredFBO.cpp">
       <Filter>Source Files\Resources\FBOs</Filter>
     </ClCompile>
-    <ClCompile Include="FinalFBO.cpp">
-      <Filter>Source Files\Resources\FBOs</Filter>
-    </ClCompile>
     <ClCompile Include="Framebuffer.cpp">
       <Filter>Source Files\Resources\FBOs\Base</Filter>
     </ClCompile>
@@ -409,6 +412,15 @@
     </ClCompile>
     <ClCompile Include="SceneMedium.cpp">
       <Filter>Source Files\Resources\Scenes\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="PresentationFBO.cpp">
+      <Filter>Source Files\Resources\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="FinalFBO.cpp">
+      <Filter>Source Files\Resources\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -17,6 +17,7 @@
     <ClInclude Include="ComponentManager.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="enum_c.h" />
+    <ClInclude Include="FinalFBO.h" />
     <ClInclude Include="FontComponent.h" />
     <ClInclude Include="GausianBlur1DShader.h" />
     <ClInclude Include="DebugLog.h" />
@@ -24,7 +25,7 @@
     <ClInclude Include="DeferredShader.h" />
     <ClInclude Include="DescriptorTool.h" />
     <ClInclude Include="DirLightPassShader.h" />
-    <ClInclude Include="FinalFBO.h" />
+    <ClInclude Include="PresentationFBO.h" />
     <ClInclude Include="FinalPassShader.h" />
     <ClInclude Include="FixedPipelineCreationInfo.h" />
     <ClInclude Include="Font.h" />
@@ -43,6 +44,7 @@
     <ClInclude Include="SceneVolume.h" />
     <ClInclude Include="ScreenQuadMesh.h" />
     <ClInclude Include="ShaderProgram.h" />
+    <ClInclude Include="SimpleShader.h" />
     <ClInclude Include="SkyBoxShader.h" />
     <ClInclude Include="SSBO.h" />
     <ClInclude Include="StorageData.h" />
@@ -67,6 +69,7 @@
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="FinalFBO.cpp" />
     <ClCompile Include="FontComponent.cpp" />
     <ClCompile Include="GausianBlur1DShader.cpp" />
     <ClCompile Include="DebugLog.cpp" />
@@ -74,7 +77,7 @@
     <ClCompile Include="DeferredShader.cpp" />
     <ClCompile Include="DescriptorTool.cpp" />
     <ClCompile Include="DirLightPassShader.cpp" />
-    <ClCompile Include="FinalFBO.cpp" />
+    <ClCompile Include="PresentationFBO.cpp" />
     <ClCompile Include="FinalPassShader.cpp" />
     <ClCompile Include="FixedPipelineCreationInfo.cpp" />
     <ClCompile Include="Font.cpp" />
@@ -93,6 +96,7 @@
     <ClCompile Include="SceneVolume.cpp" />
     <ClCompile Include="ScreenQuadMesh.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="SimpleShader.cpp" />
     <ClCompile Include="SkyBoxShader.cpp" />
     <ClCompile Include="SSBO.cpp" />
     <ClCompile Include="TextShader.cpp" />

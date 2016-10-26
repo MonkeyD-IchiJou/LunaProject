@@ -1,5 +1,5 @@
-#ifndef FINAL_FBO_H
-#define FINAL_FBO_H
+#ifndef FINAL_PASS_FBO_H
+#define FINAL_PASS_FBO_H
 
 #include "Framebuffer.h"
 #include <mutex>
@@ -29,6 +29,7 @@ namespace luna
 		static inline VkRenderPass getRenderPass() { return m_renderpass; }
 
 	protected:
+		void CreateAttachments_();
 		void CreateRenderPass_() override;
 
 	private:
@@ -40,4 +41,3 @@ namespace luna
 }
 
 #endif
-

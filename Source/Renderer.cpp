@@ -1,6 +1,5 @@
 #include "Renderer.h"
 #include "DebugLog.h"
-#include <array>
 
 #include "VulkanSwapchain.h"
 #include "SSBO.h"
@@ -8,11 +7,13 @@
 
 #include "DeferredFBO.h"
 #include "FinalFBO.h"
+#include "PresentationFBO.h"
 
 #include "DeferredShader.h"
 #include "SkyBoxShader.h"
 #include "DirLightPassShader.h"
 #include "FinalPassShader.h"
+#include "SimpleShader.h"
 #include "TextShader.h"
 #include "GausianBlur1DShader.h"
 
@@ -22,16 +23,14 @@
 #include "VulkanImageBufferObject.h"
 #include "enum_c.h"
 
-#include "WinNative.h"
-#include "Font.h"
-
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm\glm.hpp>
 
 #define BASE_RESOLUTION_X 1280
 #define BASE_RESOLUTION_Y 720
-static int32_t totaltext = 0;
+#define MAX_INSTANCEDATA 100
+#define MAX_FONTDATA 256
 
 namespace luna
 {
@@ -55,57 +54,8 @@ namespace luna
 
 			// ubo and ssbo that are unique to this renderer
 			m_ubo = new UBO();
-			m_instance_ssbo = new SSBO(100 * sizeof(InstanceData)); // 100 different models reserve
-			m_fontinstance_ssbo = new SSBO(256 * sizeof(FontInstanceData)); // 256 different characters reserve
-
-			{
-				WinNative* win = WinNative::getInstance();
-
-				std::string str = "NEON GENESIS EVANGELION";
-				auto font = texrsc->Fonts[FONT_EVA];
-
-				glm::mat4 proj = glm::ortho(0.f, (float)win->getWinSizeX(), (float)win->getWinSizeY(), 0.f); // scale with screen size
-				glm::mat4 parentT = glm::translate(glm::mat4(), glm::vec3(5.f, 720.f, 0.f));
-				glm::mat4 parentR = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 0, 1.f));
-				glm::mat4 parentS = glm::scale(glm::mat4(), glm::vec3(400.f, 400.f, 1.f));
-
-				glm::vec2 cursor = { 0.f, 0.0f };
-
-				totaltext = static_cast<int32_t>(str.size());
-				std::vector<FontInstanceData> fontinstancedata(totaltext);
-
-				for (int i = 0; i < totaltext; ++i)
-				{
-					FontInstanceData& fid = fontinstancedata[i];
-					const vulkanchar& vc = font->vulkanChars[str[i]];
-
-					// calc the top left hand corner position
-					glm::vec2 toplefthandcorner = glm::vec2(cursor.x + vc.xoffset, cursor.y + vc.yoffset);
-
-					// then find the correct position relative with the left hand corner
-					glm::vec2 position = { toplefthandcorner.x + vc.halfsize.x, toplefthandcorner.y - vc.halfsize.y };
-
-					glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(position, 0.f));
-					glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(vc.size, 1.f));
-
-					fid.transformation = proj * parentT * parentR * parentS * t * s;
-					fid.uv[0] = vc.uv[0];
-					fid.uv[1] = vc.uv[1];
-					fid.uv[2] = vc.uv[2];
-					fid.uv[3] = vc.uv[3];
-
-					// next cursor pointing at
-					cursor.x += vc.xadvance;
-
-					// materials set up 
-					fid.fontMaterials[0] = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f); // color
-					fid.fontMaterials[1] = glm::vec4(0.45f, 0.15f, 0.5f, 0.15f); // properties
-					fid.fontMaterials[2] = glm::vec4(0.55f, 0.23f, 0.1f, 0.f); // outline color
-					fid.fontMaterials[3] = glm::vec4(0.0015f, 0.000f, 0.f, 0.f); // border offset
-				}
-
-				m_fontinstance_ssbo->Update(fontinstancedata);
-			}
+			m_instance_ssbo = new SSBO(MAX_INSTANCEDATA * sizeof(InstanceData)); // 100 different models reserve
+			m_fontinstance_ssbo = new SSBO(MAX_FONTDATA * sizeof(FontInstanceData)); // 256 different characters reserve
 
 			// swap chain and final fbo creation
 			// create the swap chain for presenting images
@@ -122,12 +72,18 @@ namespace luna
 			VkSemaphoreCreateInfo semaphore_createInfo{};
 			semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_finalpass_renderComplete));
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentpass_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_deferred_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_compute_computeComplete));
-
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_finalpass_renderComplete));
+			
 			// pre record the fixed primary command buffers
 			PreRecord_();
+
+			m_submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			m_submitInfo.commandBufferCount = 1;
+			m_submitInfo.signalSemaphoreCount = 1;
+			m_submitInfo.waitSemaphoreCount = 1;
 		}
 	}
 
@@ -146,29 +102,34 @@ namespace luna
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
+		// final pass fbo
+		m_final_fbo = new FinalFBO();
+		m_final_fbo->Clear(clearvalue, FINAL_FBOATTs::COLOR_ATTACHMENT);
+		m_final_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
+
 		// create framebuffer for each swapchain images
 		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
-		m_finalpass_fbos.resize(m_swapchain->getImageCount());
-		for (int i = 0; i < m_finalpass_fbos.size(); i++)
+		m_presentation_fbos.resize(m_swapchain->getImageCount());
+		for (int i = 0; i < m_presentation_fbos.size(); i++)
 		{
-			m_finalpass_fbos[i] = new FinalFBO();
-			m_finalpass_fbos[i]->SetAttachment(
+			m_presentation_fbos[i] = new PresentationFBO();
+			m_presentation_fbos[i]->SetAttachment(
 				m_swapchain->m_buffers[i].image, 
 				m_swapchain->m_buffers[i].imageview, 
 				m_swapchain->getColorFormat(), 
-				FINAL_FBOATTs::COLOR_ATTACHMENT
+				PRESENT_FBOATTs::COLOR_ATTACHMENT
 			);
-			m_finalpass_fbos[i]->Clear(clearvalue, FINAL_FBOATTs::COLOR_ATTACHMENT);
-			m_finalpass_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
+			m_presentation_fbos[i]->Clear(clearvalue, PRESENT_FBOATTs::COLOR_ATTACHMENT);
+			m_presentation_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
 		}
 
 		TextureResources* texrsc = TextureResources::getInstance();
 		
 		// available textures for the shader descriptors
 		std::vector<VulkanImageBufferObject*> totalDiffTex(3);
-		totalDiffTex[0] = texrsc->getInstance()->Textures[eTEXTURES::BLACK_2D_RGBA];
-		totalDiffTex[1] = texrsc->getInstance()->Textures[eTEXTURES::BASIC_2D_BC2];
-		totalDiffTex[2] = texrsc->getInstance()->Textures[eTEXTURES::BASIC_2D_RGBA8];
+		totalDiffTex[0] = texrsc->Textures[eTEXTURES::BLACK_2D_RGBA];
+		totalDiffTex[1] = texrsc->Textures[eTEXTURES::BASIC_2D_BC2];
+		totalDiffTex[2] = texrsc->Textures[eTEXTURES::BASIC_2D_RGBA8];
 
 		// deferred shader init
 		m_deferred_shader = new DeferredShader();
@@ -177,15 +138,15 @@ namespace luna
 
 		// skybox shader init
 		m_skybox_shader = new SkyBoxShader();
-		m_skybox_shader->SetDescriptors(m_ubo, texrsc->getInstance()->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_BC3]);
+		m_skybox_shader->SetDescriptors(m_ubo, texrsc->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_BC3]);
 		m_skybox_shader->Init(DeferredFBO::getRenderPass());
 
 		// dirlight shader init
 		m_dirlightpass_shader = new DirLightPassShader();
 		m_dirlightpass_shader->SetDescriptors(
-			texrsc->getInstance()->Textures[eTEXTURES::WORLDPOS_ATTACHMENT_RGBA16F],
-			texrsc->getInstance()->Textures[eTEXTURES::WORLDNORM_ATTACHMENT_RGBA16F],
-			texrsc->getInstance()->Textures[eTEXTURES::ALBEDO_ATTACHMENT_RGBA16F]
+			texrsc->Textures[eTEXTURES::WORLDPOS_ATTACHMENT_RGBA16F],
+			texrsc->Textures[eTEXTURES::WORLDNORM_ATTACHMENT_RGBA16F],
+			texrsc->Textures[eTEXTURES::ALBEDO_ATTACHMENT_RGBA16F]
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
@@ -206,6 +167,11 @@ namespace luna
 		m_text_shader = new TextShader();
 		m_text_shader->SetDescriptors(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
 		m_text_shader->Init(FinalFBO::getRenderPass());
+
+		// simple shader init 
+		m_simple_shader = new SimpleShader();
+		m_simple_shader->SetDescriptors(texrsc->Textures[eTEXTURES::LDRTEX_ATTACHMENT_RGBA8]);
+		m_simple_shader->Init(PresentationFBO::getRenderPass());
 	}
 
 	void Renderer::CreateCommandBuffers_()
@@ -214,31 +180,37 @@ namespace luna
 		VkCommandPoolCreateInfo commandPool_createinfo{};
 		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
 
 		// command buffers creation
-		m_finalpass_cmdbuffers.resize(m_finalpass_fbos.size());
+		m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
 		VkCommandBufferAllocateInfo buffer_allocateInfo{};
 		buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		buffer_allocateInfo.commandPool = m_commandPool;
-		buffer_allocateInfo.commandBufferCount = (uint32_t)m_finalpass_cmdbuffers.size();
+		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
 		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_finalpass_cmdbuffers.data()));
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
 
 		buffer_allocateInfo.commandBufferCount = 1;
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_finalpass_cmdbuffer));
 
-		// secondary command buffer
-		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		// secondary command buffer creation
+		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_secondary_commandPool));
+
+		buffer_allocateInfo.commandPool = m_secondary_commandPool;
 		buffer_allocateInfo.commandBufferCount = 1;
+		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_geometry_secondary_cmdbuff));
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_font_secondary_cmdbuff));
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_secondary_cmdbuff));
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_skybox_secondary_cmdbuff));
 
 		// Separate command pool as queue family for compute may be different than graphics
 		VkCommandPoolCreateInfo cmdPoolInfo = {};
 		cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		cmdPoolInfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &cmdPoolInfo, nullptr, &m_comp_cmdpool));
 
 		// Create a command buffer for compute operations
@@ -251,7 +223,7 @@ namespace luna
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &cmdBufAllocateInfo, &m_comp_cmdbuffer));
 	}
 
-	void Renderer::RecordGeometryPass(std::vector<RenderingInfo>& renderinfos)
+	void Renderer::RecordGeometryPass(const std::vector<RenderingInfo>& renderinfos)
 	{
 		auto mr = ModelResources::getInstance();
 
@@ -288,47 +260,136 @@ namespace luna
 			vkCmdSetStencilReference(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
 
 			// record the first renderinfo first
-			m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, 1);
+			const auto& ri = renderinfos[0];
+			m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, ri.textureID);
 			m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, 0);
-			mr->Models[renderinfos[0].modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfos[0].instancedatas.size()));
+			auto offset = ri.instancedatas.size();
+			mr->Models[ri.modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(offset));
 
 			// record the rest renderinfo
 			for (int i = 1; i < totalrenderinfosize; ++i)
 			{
-				auto& renderinfo = renderinfos[i];
+				const auto& renderinfo = renderinfos[i];
 
-				m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, 1);
-				m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfos[i-1].instancedatas.size()));
+				m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, renderinfo.textureID);
+				m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(offset));
 				mr->Models[renderinfo.modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfo.instancedatas.size()));
+
+				offset += renderinfo.instancedatas.size();
 			}
 		}
-
-		// draw skybox last
-		m_skybox_shader->Bind(m_geometry_secondary_cmdbuff);
-		m_skybox_shader->SetViewPort(m_geometry_secondary_cmdbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
-
-		vkCmdSetStencilReference(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
-		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
-		auto s = glm::scale(glm::mat4(), glm::vec3(5.f, 5.f, 5.f));
-		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
-		m_skybox_shader->LoadModel(m_geometry_secondary_cmdbuff, t * s * r);
-		mr->Models[SKYBOX_MODEL]->Draw(m_geometry_secondary_cmdbuff);
 
 		// end geometry pass cmd buff
 		vkEndCommandBuffer(m_geometry_secondary_cmdbuff);
 	}
 
+	void Renderer::RecordSkybox_()
+	{
+		VkCommandBufferInheritanceInfo inheritanceinfo{};
+		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
+		inheritanceinfo.subpass = 0;
+		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
+		inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = &inheritanceinfo;
+
+		// start recording the geometry pass command buffer
+		vkBeginCommandBuffer(m_skybox_secondary_cmdbuff, &beginInfo);
+
+		// draw skybox last
+		m_skybox_shader->Bind(m_skybox_secondary_cmdbuff);
+		m_skybox_shader->SetViewPort(m_skybox_secondary_cmdbuff, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(m_skybox_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(m_skybox_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+
+		vkCmdSetStencilReference(m_skybox_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
+		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
+		auto s = glm::scale(glm::mat4(), glm::vec3(5.f, 5.f, 5.f));
+		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
+		m_skybox_shader->LoadModel(m_skybox_secondary_cmdbuff, t * s * r);
+		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(m_skybox_secondary_cmdbuff);
+
+		// end geometry pass cmd buff
+		vkEndCommandBuffer(m_skybox_secondary_cmdbuff);
+	}
+
+	void Renderer::RecordUIPass(const uint32_t & totaltext)
+	{
+		vkResetCommandBuffer(m_font_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferInheritanceInfo inheritanceinfo{};
+		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceinfo.framebuffer = m_final_fbo->getFramebuffer();
+		inheritanceinfo.subpass = 0;
+		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
+		inheritanceinfo.renderPass = FinalFBO::getRenderPass();
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = &inheritanceinfo;
+
+		// just to double make sure that the shader update the latest size of the ssbo
+		m_text_shader->UpdateDescriptor(m_fontinstance_ssbo); 
+
+		// start recording the geometry pass command buffer
+		vkBeginCommandBuffer(m_font_secondary_cmdbuff, &beginInfo);
+
+		if (totaltext > 0)
+		{
+			// bind the ui related shaders
+			m_text_shader->Bind(m_font_secondary_cmdbuff);
+			m_text_shader->SetViewPort(m_font_secondary_cmdbuff, m_final_fbo->getResolution());
+			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(m_font_secondary_cmdbuff, totaltext);
+		}
+
+		vkEndCommandBuffer(m_font_secondary_cmdbuff);
+	}
+
+	void Renderer::RecordSecondaryOffscreen_()
+	{
+		vkResetCommandBuffer(m_offscreen_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferInheritanceInfo inheritanceinfo{};
+		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceinfo.framebuffer = m_final_fbo->getFramebuffer();
+		inheritanceinfo.subpass = 0;
+		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
+		inheritanceinfo.renderPass = FinalFBO::getRenderPass();
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = &inheritanceinfo;
+
+		// start recording the geometry pass command buffer
+		vkBeginCommandBuffer(m_offscreen_secondary_cmdbuff, &beginInfo);
+
+		// bind the shader pipeline stuff
+		m_finalpass_shader->Bind(m_offscreen_secondary_cmdbuff);
+		m_finalpass_shader->SetViewPort(m_offscreen_secondary_cmdbuff, m_final_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_offscreen_secondary_cmdbuff);
+
+		vkEndCommandBuffer(m_offscreen_secondary_cmdbuff);
+	}
+
 	void Renderer::PreRecord_()
 	{
-		// dummy record secondary buffer
+		// dummy record secondary buffers
 		std::vector<RenderingInfo> temp;
 		RecordGeometryPass(temp);
+		RecordUIPass(0);
+		RecordSkybox_();
+		RecordSecondaryOffscreen_();
 
 		// primary command buffers, record once and for all
 		RecordDeferredOffscreen_();
 		RecordCompute_();
+		RecordFinalOffscreen_();
 		RecordPresentation_();
 	}
 
@@ -347,8 +408,9 @@ namespace luna
 		m_deferred_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the geometry pass
-		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_geometry_secondary_cmdbuff);
-
+		VkCommandBuffer secondary_cmdbuff[] = {m_geometry_secondary_cmdbuff, m_skybox_secondary_cmdbuff};
+		vkCmdExecuteCommands(m_deferred_cmdbuffer, 2, secondary_cmdbuff);
+		
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
 			m_deferred_cmdbuffer, 
@@ -474,11 +536,32 @@ namespace luna
 		DebugLog::EC(vkEndCommandBuffer(m_comp_cmdbuffer));
 	}
 
+	void Renderer::RecordFinalOffscreen_()
+	{
+		// begin init
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		// start recording the offscreen command buffers
+		vkBeginCommandBuffer(m_finalpass_cmdbuffer, &beginInfo);
+
+		m_final_fbo->Bind(m_finalpass_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		// execute the secondary command buffers
+		VkCommandBuffer secondarycommandbuffer[] = { m_offscreen_secondary_cmdbuff, m_font_secondary_cmdbuff };
+		vkCmdExecuteCommands(m_finalpass_cmdbuffer, 2, secondarycommandbuffer);
+
+		// unbind the fbo
+		m_final_fbo->UnBind(m_finalpass_cmdbuffer);
+
+		// finish recording
+		DebugLog::EC(vkEndCommandBuffer(m_finalpass_cmdbuffer));
+	}
+
 	void luna::Renderer::RecordPresentation_()
 	{	
-		// just to double make sure that the shader update the latest size of the ssbo
-		m_text_shader->UpdateDescriptor(m_fontinstance_ssbo); 
-
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -486,78 +569,82 @@ namespace luna
 
 		// can record the command buffer liao
 		// these command buffer is for the final rendering and final presentation on the screen 
-		for (size_t i = 0; i < m_finalpass_cmdbuffers.size(); ++i)
+		for (size_t i = 0; i < m_presentation_cmdbuffers.size(); ++i)
 		{
-			const VkCommandBuffer& commandbuffer = m_finalpass_cmdbuffers[i];
-			FinalFBO* finalfbo = m_finalpass_fbos[i];
+			const VkCommandBuffer& commandbuffer = m_presentation_cmdbuffers[i];
+			PresentationFBO* presentfbo = m_presentation_fbos[i];
 
 			vkBeginCommandBuffer(commandbuffer, &beginInfo);
 
 			// starting a render pass 
 			// bind the fbo
-			finalfbo->Bind(commandbuffer);
+			presentfbo->Bind(commandbuffer);
 
-			// bind the shader pipeline stuff
-			m_finalpass_shader->Bind(commandbuffer);
-			m_finalpass_shader->SetViewPort(commandbuffer, finalfbo->getResolution());
+			// draw a quad to present on screen
+			m_simple_shader->Bind(commandbuffer);
+			m_simple_shader->SetViewPort(commandbuffer, presentfbo->getResolution());
 			ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuffer);
 
-			// bind the ui related shaders
-			m_text_shader->Bind(commandbuffer);
-			m_text_shader->SetViewPort(commandbuffer, finalfbo->getResolution());
-			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(commandbuffer, totaltext);
-
 			// unbind the fbo
-			finalfbo->UnBind(commandbuffer);
+			presentfbo->UnBind(commandbuffer);
 
 			// finish recording
 			DebugLog::EC(vkEndCommandBuffer(commandbuffer));
 		}
 	}
 
-	void Renderer::UploadDatas(UBOData& ubo, std::vector<InstanceData>& instancedatas, std::vector<FontInstanceData>& fontinstancedatas)
+	void Renderer::SubmitGeometryDatas(const std::vector<InstanceData>& instancedatas)
+	{
+		m_instance_ssbo->Update(instancedatas);
+	}
+
+	void Renderer::SubmitFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas)
+	{
+		m_fontinstance_ssbo->Update(fontinstancedatas);
+	}
+
+	void Renderer::SubmitMainCamDatas(const UBOData & ubo)
 	{
 		m_ubo->Update(ubo);
-		m_instance_ssbo->Update(instancedatas);
-		//m_fontinstance_ssbo->Update(fontinstancedatas);
 	}
 
 	void Renderer::Render()
 	{
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.waitSemaphoreCount = 1;
-		VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		VkPipelineStageFlags waitStages2[1] = { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
-		submitInfo.pWaitDstStageMask = waitStages; // wait until draw finish
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
+		m_submitInfo.pWaitDstStageMask = &waitStages[0]; // wait until draw finish
 
 		// get the available image to render with
 		uint32_t imageindex = 0;
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
 		// subpass submit
-		submitInfo.pWaitSemaphores = &m_presentComplete; // wait for someone render finish
-		submitInfo.pSignalSemaphores = &m_deferred_renderComplete; // will inform the next one, when i render finish
-		submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
+		m_submitInfo.pWaitSemaphores = &m_presentComplete; // wait for someone render finish
+		m_submitInfo.pSignalSemaphores = &m_deferred_renderComplete; // will inform the next one, when i render finish
+		m_submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
 		// compute1 submit
-		submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait until deferred rendering finish
-		submitInfo.pSignalSemaphores = &m_compute_computeComplete; // will inform the next one, when i compute finish
-		submitInfo.pCommandBuffers = &m_comp_cmdbuffer;
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
+		m_submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait until deferred rendering finish
+		m_submitInfo.pSignalSemaphores = &m_compute_computeComplete; // will inform the next one, when i compute finish
+		m_submitInfo.pCommandBuffers = &m_comp_cmdbuffer;
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
-		// final image submiting after present finish on the screen
-		submitInfo.pWaitDstStageMask = waitStages2; // wait until compute finish
-		submitInfo.pWaitSemaphores = &m_compute_computeComplete; // wait for someone render finish
-		submitInfo.pSignalSemaphores = &m_finalpass_renderComplete; // will tell the swap chain to present, when i render finish
-		submitInfo.pCommandBuffers = &m_finalpass_cmdbuffers[imageindex];
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &submitInfo, VK_NULL_HANDLE));
+		// finalpass submit
+		m_submitInfo.pWaitDstStageMask = &waitStages[1]; // wait until compute finish
+		m_submitInfo.pWaitSemaphores = &m_compute_computeComplete;
+		m_submitInfo.pSignalSemaphores = &m_finalpass_renderComplete;
+		m_submitInfo.pCommandBuffers = &m_finalpass_cmdbuffer;
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
+
+		// final image submiting on the screen
+		m_submitInfo.pWaitDstStageMask = &waitStages[0]; // wait until finalpass finish
+		m_submitInfo.pWaitSemaphores = &m_finalpass_renderComplete; // wait for someone render finish
+		m_submitInfo.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
+		m_submitInfo.pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
 		// present it on the screen pls
-		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_finalpass_renderComplete));
+		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));
 	}
 
 	void Renderer::CleanUpResources()
@@ -625,6 +712,13 @@ namespace luna
 			m_finalpass_shader = nullptr;
 		}
 
+		if (m_simple_shader != nullptr)
+		{
+			m_simple_shader->Destroy();
+			delete m_simple_shader;
+			m_simple_shader = nullptr;
+		}
+
 		if (m_text_shader!= nullptr)
 		{
 			m_text_shader->Destroy();
@@ -639,7 +733,14 @@ namespace luna
 			m_deferred_fbo = nullptr;
 		}
 
-		for (auto &fbo : m_finalpass_fbos)
+		if (m_final_fbo != nullptr)
+		{
+			m_final_fbo->Destroy();
+			delete m_final_fbo;
+			m_final_fbo = nullptr;
+		}
+
+		for (auto &fbo : m_presentation_fbos)
 		{
 			if (fbo != nullptr)
 			{
@@ -648,7 +749,7 @@ namespace luna
 				fbo = nullptr;
 			}
 		}
-		m_finalpass_fbos.clear();
+		m_presentation_fbos.clear();
 
 		if (m_swapchain != nullptr)
 		{
@@ -662,10 +763,10 @@ namespace luna
 			vkDestroySemaphore(m_logicaldevice, m_presentComplete, nullptr);
 			m_presentComplete = VK_NULL_HANDLE;
 		}
-		if (m_finalpass_renderComplete != VK_NULL_HANDLE)
+		if (m_presentpass_renderComplete != VK_NULL_HANDLE)
 		{
-			vkDestroySemaphore(m_logicaldevice, m_finalpass_renderComplete, nullptr);
-			m_finalpass_renderComplete = VK_NULL_HANDLE;
+			vkDestroySemaphore(m_logicaldevice, m_presentpass_renderComplete, nullptr);
+			m_presentpass_renderComplete = VK_NULL_HANDLE;
 		}
 		if (m_deferred_renderComplete != VK_NULL_HANDLE)
 		{
@@ -677,6 +778,11 @@ namespace luna
 			vkDestroySemaphore(m_logicaldevice, m_compute_computeComplete, nullptr);
 			m_compute_computeComplete = VK_NULL_HANDLE;
 		}
+		if (m_finalpass_renderComplete != VK_NULL_HANDLE)
+		{
+			vkDestroySemaphore(m_logicaldevice, m_finalpass_renderComplete, nullptr);
+			m_finalpass_renderComplete = VK_NULL_HANDLE;
+		}
 		
 		if (m_commandPool != VK_NULL_HANDLE)
 		{
@@ -687,6 +793,11 @@ namespace luna
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_comp_cmdpool, nullptr);
 			m_comp_cmdpool = VK_NULL_HANDLE;
+		}
+		if (m_secondary_commandPool != VK_NULL_HANDLE)
+		{
+			vkDestroyCommandPool(m_logicaldevice, m_secondary_commandPool, nullptr);
+			m_secondary_commandPool = VK_NULL_HANDLE;
 		}
 	}
 }

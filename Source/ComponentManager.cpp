@@ -112,10 +112,13 @@ namespace luna
 		// scale with screen size
 		glm::mat4 proj = glm::ortho(0.f, (float)win->getWinSizeX(), (float)win->getWinSizeY(), 0.f);
 		glm::vec2 cursor = {};
+		glm::vec2 toplefthandcorner = {};
+		glm::vec2 position = {};
 
 		for (auto & fontcomponent : m_fontContainer.m_components)
 		{
-			if (fontcomponent.GetOwner() != nullptr && fontcomponent.isActive() == true)
+			const auto owner = fontcomponent.GetOwner();
+			if (owner != nullptr && fontcomponent.isActive() == true)
 			{
 				const auto &str = fontcomponent.text;
 				const auto &material = fontcomponent.material;
@@ -124,20 +127,24 @@ namespace luna
 				for (int i = 0; i < str.size(); ++i)
 				{
 					fontinstancedatas.push_back(FontInstanceData());
-					auto& fid = fontinstancedatas[i];
+					auto& fid = fontinstancedatas.back();
+					toplefthandcorner = {};
+					position = {};
 
 					const vulkanchar& vc = font->vulkanChars[str[i]];
 
 					// calc the top left hand corner position
-					glm::vec2 toplefthandcorner = glm::vec2(cursor.x + vc.xoffset, cursor.y + vc.yoffset);
+					toplefthandcorner.x = cursor.x + vc.xoffset;
+					toplefthandcorner.y = cursor.y + vc.yoffset;
 
 					// then find the correct position relative with the left hand corner
-					glm::vec2 position = { toplefthandcorner.x + vc.halfsize.x, toplefthandcorner.y - vc.halfsize.y };
+					position = { toplefthandcorner.x + vc.halfsize.x, toplefthandcorner.y - vc.halfsize.y };
 
-					glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(position, 0.f));
-					glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(vc.size, 1.f));
+					fid.transformation = proj * 
+						owner->transformation->GetModel() * 
+						glm::translate(glm::mat4(), glm::vec3(position, 0.f)) * 
+						glm::scale(glm::mat4(), glm::vec3(vc.size, 1.f));
 
-					fid.transformation = proj * fontcomponent.GetOwner()->transformation->GetModel() * t * s;
 					fid.uv[0] = vc.uv[0];
 					fid.uv[1] = vc.uv[1];
 					fid.uv[2] = vc.uv[2];

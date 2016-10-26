@@ -1,8 +1,10 @@
 #include "FinalFBO.h"
 #include "DebugLog.h"
-#include <array>
-#include "VulkanImageBufferObject.h"
+#include "TextureResources.h"
+#include "VulkanTexture2D.h"
 #include "enum_c.h"
+
+#include <array>
 
 namespace luna
 {
@@ -68,9 +70,27 @@ namespace luna
 		vkCmdBeginRenderPass(commandbuffer, &m_renderPassInfo, subpasscontent);
 	}
 
+	void FinalFBO::CreateAttachments_()
+	{
+		TextureResources* texrsc = TextureResources::getInstance();
+		VulkanImageBufferObject** imageattachment = nullptr; // image attachment mapping
+
+		// ldr output color attachment
+		imageattachment = &texrsc->Textures[eTEXTURES::LDRTEX_ATTACHMENT_RGBA8];
+		*imageattachment = new VulkanTexture2D(
+			m_resolution.width, m_resolution.height, 
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		);
+		SetAttachment(*imageattachment, FINAL_FBOATTs::COLOR_ATTACHMENT);
+	}
+
 	void FinalFBO::CreateRenderPass_()
 	{
 		auto lambda = [&]() {
+
+			CreateAttachments_();
 
 			VkAttachmentDescription attachmentDesc{};
 
@@ -78,11 +98,11 @@ namespace luna
 				attachmentDesc.format = m_attachments[FINAL_FBOATTs::COLOR_ATTACHMENT].format;
 				attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 				attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this image so that i can present it on the screen
+				attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this image
 				attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-				attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // images to be presented in the swap chain
+				attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // images to be used in other shaders
 			}
 
 			VkSubpassDescription subPass{};
@@ -99,8 +119,8 @@ namespace luna
 			{
 				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 				dependency.dstSubpass = 0; // index 0 refer to our subPass .. which is the first and only one
-				dependency.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; // need to wait for the swap chain to finsh reading the image
-				dependency.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; // reading in the last pipeline stage
+				dependency.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+				dependency.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 				dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 				dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			}

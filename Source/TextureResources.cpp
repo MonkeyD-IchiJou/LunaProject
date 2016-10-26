@@ -31,6 +31,8 @@ namespace luna
 		Textures[BASIC_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/texturearray_bc3.ktx");
 		Textures[YOKOHOMO_CUBEMAP_BC3] = new VulkanTextureCube(getAssetPath() + "Textures/cubemap_yokohama.ktx");
 		
+		/* attachments images will be auto init by fbos */
+		Textures[LDRTEX_ATTACHMENT_RGBA8] = nullptr;
 		Textures[WORLDPOS_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[WORLDNORM_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[ALBEDO_ATTACHMENT_RGBA16F] = nullptr;

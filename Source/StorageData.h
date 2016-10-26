@@ -30,7 +30,7 @@ namespace luna
 	struct RenderingInfo
 	{
 		eMODELS modelID = MAX_MODELS;
-		eTEXTURES textureID = MAXTEX_NAME_TYPE_FORMAT;
+		MESH_TEX textureID = MAX_MESH_TEX;
 		std::vector<BasicMeshComponent*> instancedatas{};
 
 		static int totalcounter;

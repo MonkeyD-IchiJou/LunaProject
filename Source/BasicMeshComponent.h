@@ -9,7 +9,7 @@ namespace luna
 {
 	struct BasicMeshMaterial
 	{
-		eTEXTURES textureID = eTEXTURES::MAXTEX_NAME_TYPE_FORMAT;
+		MESH_TEX textureID = MESH_TEX::MAX_MESH_TEX;
 		glm::vec4 color = {};
 	};
 
