@@ -46,9 +46,9 @@ namespace luna
 		m_renderer->MapMainCamDatas(maincamdata);
 
 		// rmb to re-record the command buffer again if m_renderinfos is different
-		m_renderer->RecordTransferData();
-		m_renderer->RecordGeometryPass(m_renderinfos);
-		m_renderer->RecordUIPass(static_cast<uint32_t>(fontinstancedatas.size()));
+		m_renderer->RecordTransferData_Secondary();
+		m_renderer->RecordGeometryPass_Secondary(m_renderinfos);
+		m_renderer->RecordUIPass_Secondary(static_cast<uint32_t>(fontinstancedatas.size()));
 	}
 
 	void SceneDefault::Update()

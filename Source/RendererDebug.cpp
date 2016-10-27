@@ -89,7 +89,7 @@ namespace luna
 		m_instance_layers.push_back("VK_LAYER_LUNARG_parameter_validation");
 		m_instance_layers.push_back("VK_LAYER_LUNARG_object_tracker");
 		m_instance_layers.push_back("VK_LAYER_LUNARG_image");
-		m_instance_layers.push_back("VK_LAYER_LUNARG_core_validation"); // this bastard cause memory leak 
+		//m_instance_layers.push_back("VK_LAYER_LUNARG_core_validation"); // this bastard cause memory leak 
 		m_instance_layers.push_back("VK_LAYER_LUNARG_swapchain");
 		m_instance_layers.push_back("VK_LAYER_GOOGLE_unique_objects");
 		m_instance_exts.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);

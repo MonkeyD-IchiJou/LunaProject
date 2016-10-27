@@ -15,7 +15,6 @@
 #include "FinalPassShader.h"
 #include "SimpleShader.h"
 #include "TextShader.h"
-#include "GausianBlur1DShader.h"
 
 #include "ModelResources.h"
 #include "Model.h"
@@ -40,6 +39,21 @@ namespace luna
 	Renderer::Renderer()
 	{
 		// vulkan instance and logical device will be created in the parents constructor
+	}
+
+	void Renderer::MapGeometryDatas(const std::vector<InstanceData>& instancedatas)
+	{
+		m_instance_ssbo->Update(instancedatas);
+	}
+
+	void Renderer::MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas)
+	{
+		m_fontinstance_ssbo->Update(fontinstancedatas);
+	}
+
+	void Renderer::MapMainCamDatas(const UBOData & ubo)
+	{
+		m_ubo->Update(ubo);
 	}
 
 	void Renderer::CreateResources()
@@ -72,19 +86,11 @@ namespace luna
 			VkSemaphoreCreateInfo semaphore_createInfo{};
 			semaphore_createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentComplete));
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_offscreen_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_presentpass_renderComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_deferred_renderComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_compute_computeComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_finalpass_renderComplete));
-			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_transferComplete));
 
 			// pre record the fixed primary command buffers
 			PreRecord_();
-
-			m_submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			m_submitInfo.commandBufferCount = 1;
-			m_submitInfo.signalSemaphoreCount = 1;
-			m_submitInfo.waitSemaphoreCount = 1;
 		}
 	}
 
@@ -151,100 +157,90 @@ namespace luna
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
-		// gausian blur shader init
-		m_gausianblur_shader = new GausianBlur1DShader();
-		m_gausianblur_shader->SetDescriptors(
-			texrsc->Textures[eTEXTURES::HORBLUR_2D_RGBA16F], 
-			texrsc->Textures[eTEXTURES::VERTBLUR_2D_RGBA16F]
-		);
-		m_gausianblur_shader->Init(nullptr);
-
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
-		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HORBLUR_2D_RGBA16F]);
+		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
 		m_finalpass_shader->Init(FinalFBO::getRenderPass());
-
-		// text shader init
-		m_text_shader = new TextShader();
-		m_text_shader->SetDescriptors(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
-		m_text_shader->Init(FinalFBO::getRenderPass());
 
 		// simple shader init 
 		m_simple_shader = new SimpleShader();
 		m_simple_shader->SetDescriptors(texrsc->Textures[eTEXTURES::LDRTEX_ATTACHMENT_RGBA8]);
 		m_simple_shader->Init(PresentationFBO::getRenderPass());
+
+		// text shader init
+		m_text_shader = new TextShader();
+		m_text_shader->SetDescriptors(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
+		m_text_shader->Init(FinalFBO::getRenderPass());
 	}
 
 	void Renderer::CreateCommandBuffers_()
 	{
 		// create the command pool first
-		VkCommandPoolCreateInfo commandPool_createinfo{};
-		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+		{
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
 
-		// command buffers creation
-		m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
-		VkCommandBufferAllocateInfo buffer_allocateInfo{};
-		buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		buffer_allocateInfo.commandPool = m_commandPool;
-		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
-		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
-		buffer_allocateInfo.commandBufferCount = 1;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_finalpass_cmdbuffer));
+			m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
+
+			// command buffers creation
+			VkCommandBufferAllocateInfo buffer_allocateInfo{};
+			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			buffer_allocateInfo.commandPool = m_commandPool;
+			buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
+			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
+			buffer_allocateInfo.commandBufferCount = 1;
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_finalpass_cmdbuffer));
+		}
 		
-		// secondary command buffer creation
-		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_secondary_commandPool));
+		{
+			// secondary command buffer creation
+			// it is able to reset the command buffer
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_secondary_commandPool));
 
-		buffer_allocateInfo.commandPool = m_secondary_commandPool;
-		buffer_allocateInfo.commandBufferCount = 1;
-		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_geometry_secondary_cmdbuff));
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_font_secondary_cmdbuff));
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_secondary_cmdbuff));
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_skybox_secondary_cmdbuff));
-		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_transferbuffer_cmdbuff));
-		
-		// Separate command pool as queue family for compute may be different than graphics
-		VkCommandPoolCreateInfo cmdPoolInfo = {};
-		cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cmdPoolInfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &cmdPoolInfo, nullptr, &m_comp_cmdpool));
-
-		// Create a command buffer for compute operations
-		VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
-		cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		cmdBufAllocateInfo.commandPool = m_comp_cmdpool;
-		cmdBufAllocateInfo.commandBufferCount = 1;
-		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &cmdBufAllocateInfo, &m_comp_cmdbuffer));
+			VkCommandBufferAllocateInfo buffer_allocateInfo{};
+			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			buffer_allocateInfo.commandPool = m_secondary_commandPool;
+			buffer_allocateInfo.commandBufferCount = 1;
+			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_geometry_secondary_cmdbuff));
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_font_secondary_cmdbuff));
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_secondary_cmdbuff));
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_skybox_secondary_cmdbuff));
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_transferdata_secondary_cmdbuff));
+		}
 	}
 
-	void Renderer::RecordTransferData()
+	void Renderer::RecordTransferData_Secondary()
 	{
 		// NOTE: I need to rerecord this command buffer if the transfer size exceed the expectation size !!
-		vkResetCommandBuffer(m_transferbuffer_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(m_transferdata_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferInheritanceInfo inheritanceinfo{};
+		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
+		beginInfo.pInheritanceInfo = &inheritanceinfo;
 
-		DebugLog::EC(vkBeginCommandBuffer(m_transferbuffer_cmdbuff, &beginInfo));
+		DebugLog::EC(vkBeginCommandBuffer(m_transferdata_secondary_cmdbuff, &beginInfo));
 
-		m_instance_ssbo->Record(m_transferbuffer_cmdbuff);
-		m_fontinstance_ssbo->Record(m_transferbuffer_cmdbuff);
-		m_ubo->Record(m_transferbuffer_cmdbuff);
+		m_instance_ssbo->Record(m_transferdata_secondary_cmdbuff);
+		m_fontinstance_ssbo->Record(m_transferdata_secondary_cmdbuff);
+		m_ubo->Record(m_transferdata_secondary_cmdbuff);
 
-		DebugLog::EC(vkEndCommandBuffer(m_transferbuffer_cmdbuff));
+		DebugLog::EC(vkEndCommandBuffer(m_transferdata_secondary_cmdbuff));
 	}
 
-	void Renderer::RecordGeometryPass(const std::vector<RenderingInfo>& renderinfos)
+	void Renderer::RecordGeometryPass_Secondary(const std::vector<RenderingInfo>& renderinfos)
 	{
 		auto mr = ModelResources::getInstance();
 
@@ -304,8 +300,10 @@ namespace luna
 		vkEndCommandBuffer(m_geometry_secondary_cmdbuff);
 	}
 
-	void Renderer::RecordSkybox_()
+	void Renderer::RecordSkybox__Secondary_()
 	{
+		vkResetCommandBuffer(m_skybox_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
@@ -338,7 +336,7 @@ namespace luna
 		vkEndCommandBuffer(m_skybox_secondary_cmdbuff);
 	}
 
-	void Renderer::RecordUIPass(const uint32_t & totaltext)
+	void Renderer::RecordUIPass_Secondary(const uint32_t & totaltext)
 	{
 		vkResetCommandBuffer(m_font_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
@@ -371,7 +369,7 @@ namespace luna
 		vkEndCommandBuffer(m_font_secondary_cmdbuff);
 	}
 
-	void Renderer::RecordSecondaryOffscreen_()
+	void Renderer::RecordSecondaryOffscreen__Secondary_()
 	{
 		vkResetCommandBuffer(m_offscreen_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
@@ -400,24 +398,20 @@ namespace luna
 
 	void Renderer::PreRecord_()
 	{
-		// pre record the transfer process
-		RecordTransferData();
-
 		// dummy record secondary buffers
 		std::vector<RenderingInfo> temp;
-		RecordGeometryPass(temp);
-		RecordUIPass(0);
-		RecordSkybox_();
-		RecordSecondaryOffscreen_();
+		RecordTransferData_Secondary();
+		RecordGeometryPass_Secondary(temp);
+		RecordSkybox__Secondary_();
+		RecordUIPass_Secondary(0);
+		RecordSecondaryOffscreen__Secondary_();
 
 		// primary command buffers, record once and for all
-		RecordDeferredOffscreen_();
-		RecordCompute_();
-		RecordFinalOffscreen_();
-		RecordPresentation_();
+		RecordOffscreen_Primary_();
+		RecordPresentation_Primary_();
 	}
 
-	void luna::Renderer::RecordDeferredOffscreen_()
+	void luna::Renderer::RecordOffscreen_Primary_()
 	{
 		// begin init
 		VkCommandBufferBeginInfo beginInfo{};
@@ -427,6 +421,9 @@ namespace luna
 
 		// start recording the offscreen command buffers
 		DebugLog::EC(vkBeginCommandBuffer(m_deferred_cmdbuffer, &beginInfo));
+
+		// transfer data to gpu first
+		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_transferdata_secondary_cmdbuff);
 
 		// bind the fbo
 		m_deferred_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -456,135 +453,21 @@ namespace luna
 		// unbind the fbo
 		m_deferred_fbo->UnBind(m_deferred_cmdbuffer);
 
+		// another render pass
+		m_final_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		// execute the secondary command buffers
+		VkCommandBuffer secondarycommandbuffer[] = { m_offscreen_secondary_cmdbuff, m_font_secondary_cmdbuff };
+		vkCmdExecuteCommands(m_deferred_cmdbuffer, 2, secondarycommandbuffer);
+
+		// unbind the fbo
+		m_final_fbo->UnBind(m_deferred_cmdbuffer);
+
 		// finish recording
 		DebugLog::EC(vkEndCommandBuffer(m_deferred_cmdbuffer));
 	}
 
-	void Renderer::RecordCompute_()
-	{
-		// begin init
-
-		// will blit the HDR image to smaller texture .. for bluring later
-		VkImageSubresourceLayers srcsubrsc{};
-		srcsubrsc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		srcsubrsc.baseArrayLayer = 0;
-		srcsubrsc.mipLevel = 0; // at miplevel 0
-		srcsubrsc.layerCount = 1; // only got one mipmap
-
-		VkImageSubresourceLayers dstsubrsc{};
-		dstsubrsc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		dstsubrsc.baseArrayLayer = 0;
-		dstsubrsc.mipLevel = 0; // at miplevel 0
-		dstsubrsc.layerCount = 1; // only got one mipmap
-
-		VulkanImageBufferObject* srcimg = TextureResources::getInstance()->Textures[HDRTEX_ATTACHMENT_RGBA16F];
-		VulkanImageBufferObject* dstimg = TextureResources::getInstance()->Textures[HORBLUR_2D_RGBA16F];
-
-		VkImageBlit region{};
-		region.srcOffsets[1].x = srcimg->getWidth();
-		region.srcOffsets[1].y = srcimg->getHeight();
-		region.srcOffsets[1].z = 1;
-		region.srcSubresource = srcsubrsc;
-
-		region.dstOffsets[1].x = dstimg->getWidth();
-		region.dstOffsets[1].y = dstimg->getHeight();
-		region.dstOffsets[1].z = 1;
-		region.dstSubresource = dstsubrsc;
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		DebugLog::EC(vkBeginCommandBuffer(m_comp_cmdbuffer, &beginInfo));
-
-		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
-			m_comp_cmdbuffer, srcimg->getImage(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
-			VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-		);
-
-		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
-			m_comp_cmdbuffer, dstimg->getImage(),
-			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-		);
-
-		vkCmdBlitImage(
-			m_comp_cmdbuffer,
-			srcimg->getImage(),
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			dstimg->getImage(),
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&region,
-			VK_FILTER_LINEAR);
-
-		// change back to optimal layout
-		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
-			m_comp_cmdbuffer, srcimg->getImage(),
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-		);
-
-		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
-			m_comp_cmdbuffer, dstimg->getImage(),
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-		);
-
-		auto resolution = glm::ivec2(dstimg->getWidth(), dstimg->getHeight());
-		auto workgroup = glm::ivec2(resolution.x / 16, resolution.y / 16);
-
-		// start compute blur 
-		m_gausianblur_shader->Bind(m_comp_cmdbuffer);
-		m_gausianblur_shader->LoadResolution(m_comp_cmdbuffer, glm::ivec2(resolution.x, resolution.y));
-
-		for (int i = 0; i < 16; ++i)
-		{
-			// verticle pass
-			m_gausianblur_shader->BindDescriptorSet(m_comp_cmdbuffer, 0);
-			m_gausianblur_shader->LoadBlurDirection(m_comp_cmdbuffer, glm::ivec2(0, 1));
-			vkCmdDispatch(m_comp_cmdbuffer, workgroup.x, workgroup.y, 1);
-
-			// horizontal pass again
-			m_gausianblur_shader->BindDescriptorSet(m_comp_cmdbuffer, 1);
-			m_gausianblur_shader->LoadBlurDirection(m_comp_cmdbuffer, glm::ivec2(1, 0));
-			vkCmdDispatch(m_comp_cmdbuffer, workgroup.x, workgroup.y, 1);
-		}
-
-		DebugLog::EC(vkEndCommandBuffer(m_comp_cmdbuffer));
-	}
-
-	void Renderer::RecordFinalOffscreen_()
-	{
-		// begin init
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		// start recording the offscreen command buffers
-		vkBeginCommandBuffer(m_finalpass_cmdbuffer, &beginInfo);
-
-		m_final_fbo->Bind(m_finalpass_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-		// execute the secondary command buffers
-		VkCommandBuffer secondarycommandbuffer[] = { m_offscreen_secondary_cmdbuff, m_font_secondary_cmdbuff };
-		vkCmdExecuteCommands(m_finalpass_cmdbuffer, 2, secondarycommandbuffer);
-
-		// unbind the fbo
-		m_final_fbo->UnBind(m_finalpass_cmdbuffer);
-
-		// finish recording
-		DebugLog::EC(vkEndCommandBuffer(m_finalpass_cmdbuffer));
-	}
-
-	void luna::Renderer::RecordPresentation_()
+	void luna::Renderer::RecordPresentation_Primary_()
 	{	
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -617,60 +500,33 @@ namespace luna
 		}
 	}
 
-	void Renderer::MapGeometryDatas(const std::vector<InstanceData>& instancedatas)
-	{
-		m_instance_ssbo->Update(instancedatas);
-	}
-
-	void Renderer::MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas)
-	{
-		m_fontinstance_ssbo->Update(fontinstancedatas);
-	}
-
-	void Renderer::MapMainCamDatas(const UBOData & ubo)
-	{
-		m_ubo->Update(ubo);
-	}
-
 	void Renderer::Render()
 	{
-		m_submitInfo.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-
 		// get the available image to render with
 		uint32_t imageindex = 0;
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
-		// data transfer submit
-		m_submitInfo.pWaitSemaphores = &m_presentComplete; // wait for someone render finish
-		m_submitInfo.pSignalSemaphores = &m_transferComplete; 
-		m_submitInfo.pCommandBuffers = &m_transferbuffer_cmdbuff;
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
+		VkSubmitInfo submitInfo[2] = {};
+		submitInfo[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo[0].commandBufferCount = 1;
+		submitInfo[0].signalSemaphoreCount = 1;
+		submitInfo[0].waitSemaphoreCount = 1;
+		submitInfo[0].pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitInfo[0].pWaitSemaphores = &m_presentComplete; 
+		submitInfo[0].pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
+		submitInfo[0].pCommandBuffers = &m_deferred_cmdbuffer;
 
-		// subpass submit
-		m_submitInfo.pWaitSemaphores = &m_transferComplete; 
-		m_submitInfo.pSignalSemaphores = &m_deferred_renderComplete; // will inform the next one, when i render finish
-		m_submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
+		submitInfo[1].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo[1].commandBufferCount = 1;
+		submitInfo[1].signalSemaphoreCount = 1;
+		submitInfo[1].waitSemaphoreCount = 1;
+		submitInfo[1].pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitInfo[1].pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
+		submitInfo[1].pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
+		submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
 
-		// compute1 submit
-		m_submitInfo.pWaitSemaphores = &m_deferred_renderComplete; // wait until deferred rendering finish
-		m_submitInfo.pSignalSemaphores = &m_compute_computeComplete; // will inform the next one, when i compute finish
-		m_submitInfo.pCommandBuffers = &m_comp_cmdbuffer;
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
-
-		// finalpass submit
-		m_submitInfo.pWaitDstStageMask = &m_waitStages[1]; // wait until compute finish
-		m_submitInfo.pWaitSemaphores = &m_compute_computeComplete;
-		m_submitInfo.pSignalSemaphores = &m_finalpass_renderComplete;
-		m_submitInfo.pCommandBuffers = &m_finalpass_cmdbuffer;
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
-
-		// final image submiting on the screen
-		m_submitInfo.pWaitDstStageMask = &m_waitStages[0]; // wait until finalpass finish
-		m_submitInfo.pWaitSemaphores = &m_finalpass_renderComplete; // wait for someone render finish
-		m_submitInfo.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
-		m_submitInfo.pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
+		// submit all the queues
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, submitInfo, VK_NULL_HANDLE));
 
 		// present it on the screen pls
 		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));
@@ -725,13 +581,6 @@ namespace luna
 			m_dirlightpass_shader->Destroy();
 			delete m_dirlightpass_shader;
 			m_dirlightpass_shader = nullptr;
-		}
-
-		if (m_gausianblur_shader != nullptr)
-		{
-			m_gausianblur_shader->Destroy();
-			delete m_gausianblur_shader;
-			m_gausianblur_shader = nullptr;
 		}
 
 		if (m_finalpass_shader != nullptr)
@@ -797,25 +646,10 @@ namespace luna
 			vkDestroySemaphore(m_logicaldevice, m_presentpass_renderComplete, nullptr);
 			m_presentpass_renderComplete = VK_NULL_HANDLE;
 		}
-		if (m_deferred_renderComplete != VK_NULL_HANDLE)
+		if (m_offscreen_renderComplete != VK_NULL_HANDLE)
 		{
-			vkDestroySemaphore(m_logicaldevice, m_deferred_renderComplete, nullptr);
-			m_deferred_renderComplete = VK_NULL_HANDLE;
-		}
-		if (m_compute_computeComplete != VK_NULL_HANDLE)
-		{
-			vkDestroySemaphore(m_logicaldevice, m_compute_computeComplete, nullptr);
-			m_compute_computeComplete = VK_NULL_HANDLE;
-		}
-		if (m_finalpass_renderComplete != VK_NULL_HANDLE)
-		{
-			vkDestroySemaphore(m_logicaldevice, m_finalpass_renderComplete, nullptr);
-			m_finalpass_renderComplete = VK_NULL_HANDLE;
-		}
-		if (m_transferComplete != VK_NULL_HANDLE)
-		{
-			vkDestroySemaphore(m_logicaldevice, m_transferComplete, nullptr);
-			m_transferComplete = VK_NULL_HANDLE;
+			vkDestroySemaphore(m_logicaldevice, m_offscreen_renderComplete, nullptr);
+			m_offscreen_renderComplete = VK_NULL_HANDLE;
 		}
 		
 		if (m_commandPool != VK_NULL_HANDLE)
@@ -823,11 +657,7 @@ namespace luna
 			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
 			m_commandPool = VK_NULL_HANDLE;
 		}
-		if (m_comp_cmdpool != VK_NULL_HANDLE)
-		{
-			vkDestroyCommandPool(m_logicaldevice, m_comp_cmdpool, nullptr);
-			m_comp_cmdpool = VK_NULL_HANDLE;
-		}
+		
 		if (m_secondary_commandPool != VK_NULL_HANDLE)
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_secondary_commandPool, nullptr);
@@ -835,3 +665,105 @@ namespace luna
 		}
 	}
 }
+
+/*
+void Renderer::RecordCompute_()
+{
+// begin init
+
+// will blit the HDR image to smaller texture .. for bluring later
+VkImageSubresourceLayers srcsubrsc{};
+srcsubrsc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+srcsubrsc.baseArrayLayer = 0;
+srcsubrsc.mipLevel = 0; // at miplevel 0
+srcsubrsc.layerCount = 1; // only got one mipmap
+
+VkImageSubresourceLayers dstsubrsc{};
+dstsubrsc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+dstsubrsc.baseArrayLayer = 0;
+dstsubrsc.mipLevel = 0; // at miplevel 0
+dstsubrsc.layerCount = 1; // only got one mipmap
+
+VulkanImageBufferObject* srcimg = TextureResources::getInstance()->Textures[HDRTEX_ATTACHMENT_RGBA16F];
+VulkanImageBufferObject* dstimg = TextureResources::getInstance()->Textures[HORBLUR_2D_RGBA16F];
+
+VkImageBlit region{};
+region.srcOffsets[1].x = srcimg->getWidth();
+region.srcOffsets[1].y = srcimg->getHeight();
+region.srcOffsets[1].z = 1;
+region.srcSubresource = srcsubrsc;
+
+region.dstOffsets[1].x = dstimg->getWidth();
+region.dstOffsets[1].y = dstimg->getHeight();
+region.dstOffsets[1].z = 1;
+region.dstSubresource = dstsubrsc;
+
+VkCommandBufferBeginInfo beginInfo{};
+beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+beginInfo.pInheritanceInfo = nullptr;
+
+DebugLog::EC(vkBeginCommandBuffer(m_comp_cmdbuffer, &beginInfo));
+
+VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+m_comp_cmdbuffer, srcimg->getImage(),
+VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+);
+
+VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+m_comp_cmdbuffer, dstimg->getImage(),
+VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+);
+
+vkCmdBlitImage(
+m_comp_cmdbuffer,
+srcimg->getImage(),
+VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+dstimg->getImage(),
+VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+1,
+&region,
+VK_FILTER_LINEAR
+);
+
+// change back to optimal layout
+VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+m_comp_cmdbuffer, srcimg->getImage(),
+VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
+VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+);
+
+VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+m_comp_cmdbuffer, dstimg->getImage(),
+VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+);
+
+auto resolution = glm::ivec2(dstimg->getWidth(), dstimg->getHeight());
+auto workgroup = glm::ivec2(resolution.x / 16, resolution.y / 16);
+
+// start compute blur 
+m_gausianblur_shader->Bind(m_comp_cmdbuffer);
+m_gausianblur_shader->LoadResolution(m_comp_cmdbuffer, glm::ivec2(resolution.x, resolution.y));
+
+for (int i = 0; i < 16; ++i)
+{
+// verticle pass
+m_gausianblur_shader->BindDescriptorSet(m_comp_cmdbuffer, 0);
+m_gausianblur_shader->LoadBlurDirection(m_comp_cmdbuffer, glm::ivec2(0, 1));
+vkCmdDispatch(m_comp_cmdbuffer, workgroup.x, workgroup.y, 1);
+
+// horizontal pass again
+m_gausianblur_shader->BindDescriptorSet(m_comp_cmdbuffer, 1);
+m_gausianblur_shader->LoadBlurDirection(m_comp_cmdbuffer, glm::ivec2(1, 0));
+vkCmdDispatch(m_comp_cmdbuffer, workgroup.x, workgroup.y, 1);
+}
+
+DebugLog::EC(vkEndCommandBuffer(m_comp_cmdbuffer));
+}*/

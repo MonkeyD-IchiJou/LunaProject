@@ -22,7 +22,6 @@ namespace luna
 	class FinalPassShader;
 	class SimpleShader;
 	class TextShader;
-	class GausianBlur1DShader;
 
 	class Renderer :
 		public VulkanRenderer
@@ -39,14 +38,14 @@ namespace luna
 		void MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas);
 		void MapMainCamDatas(const UBOData& ubo);
 
-		/* primary command buffer -> for transfering datas to the gpu */
-		void RecordTransferData();
+		/* for transfering datas to the gpu */
+		void RecordTransferData_Secondary();
 
 		/* record the dynamic geometry pass */
-		void RecordGeometryPass(const std::vector<RenderingInfo>& renderinfos);
+		void RecordGeometryPass_Secondary(const std::vector<RenderingInfo>& renderinfos);
 
 		/* record the dynamic ui pass */
-		void RecordUIPass(const uint32_t& totaltext);
+		void RecordUIPass_Secondary(const uint32_t& totaltext);
 
 		/* submit all the queues && render everything && then present it on the screen */
 		void Render();
@@ -80,22 +79,16 @@ namespace luna
 		void PreRecord_();
 
 		/* primary command buffer -> deffered shader fbo pass */
-		void RecordDeferredOffscreen_();
+		void RecordOffscreen_Primary_();
 
 		/* secondary command buffer -> skybox pass */
-		void RecordSkybox_();
-
-		/* primary command buffer -> computer shader pass */
-		void RecordCompute_();
-
-		/* primary command buffer -> final pass, tone mapping pass */
-		void RecordFinalOffscreen_();
+		void RecordSkybox__Secondary_();
 
 		/* secondary command buffer -> final pass setting in secondary buffer */
-		void RecordSecondaryOffscreen_();
+		void RecordSecondaryOffscreen__Secondary_();
 
 		/* primary command buffer -> final rendering && presentation pass */
-		void RecordPresentation_();
+		void RecordPresentation_Primary_();
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -116,7 +109,6 @@ namespace luna
 		FinalPassShader* m_finalpass_shader = nullptr;
 		SimpleShader* m_simple_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
-		GausianBlur1DShader* m_gausianblur_shader = nullptr;
 
 		/* rendering recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
@@ -130,19 +122,12 @@ namespace luna
 		VkCommandBuffer m_font_secondary_cmdbuff = VK_NULL_HANDLE;
 		VkCommandBuffer m_offscreen_secondary_cmdbuff = VK_NULL_HANDLE;
 		VkCommandBuffer m_skybox_secondary_cmdbuff = VK_NULL_HANDLE;
-		VkCommandBuffer m_transferbuffer_cmdbuff = VK_NULL_HANDLE;
-		
-		/* computing recording purpose */
-		VkCommandPool m_comp_cmdpool = VK_NULL_HANDLE;
-		VkCommandBuffer m_comp_cmdbuffer = VK_NULL_HANDLE;
+		VkCommandBuffer m_transferdata_secondary_cmdbuff = VK_NULL_HANDLE;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;
 		VkSemaphore m_presentpass_renderComplete = VK_NULL_HANDLE;
-		VkSemaphore m_deferred_renderComplete = VK_NULL_HANDLE;
-		VkSemaphore m_compute_computeComplete = VK_NULL_HANDLE;
-		VkSemaphore m_finalpass_renderComplete = VK_NULL_HANDLE;
-		VkSemaphore m_transferComplete = VK_NULL_HANDLE;
+		VkSemaphore m_offscreen_renderComplete = VK_NULL_HANDLE;
 
 		/* a universal UBO */
 		UBO* m_ubo = nullptr;
@@ -152,7 +137,6 @@ namespace luna
 		SSBO* m_fontinstance_ssbo = nullptr;
 
 		// local cache
-		VkSubmitInfo m_submitInfo{};
 		VkPipelineStageFlags m_waitStages[2] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
 
 		static std::once_flag m_sflag;
