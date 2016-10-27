@@ -1,8 +1,6 @@
 #include "ScriptComponent.h"
 
-#include "Entity.h"
-#include "TransformationComponent.h"
-#include <glm\glm.hpp>
+#include "Script.h"
 
 namespace luna
 {
@@ -12,6 +10,11 @@ namespace luna
 
 	ScriptComponent::~ScriptComponent()
 	{
+		if (script != nullptr)
+		{
+			delete script;
+			script = nullptr;
+		}
 	}
 
 	void ScriptComponent::Update()
@@ -19,9 +22,7 @@ namespace luna
 		// only update the component when is active
 		if (m_active)
 		{
-			auto t = m_owner->transformation;
-			t->rotation.x = 0.f; t->rotation.y = 1.f; t->rotation.x = 0.f;
-			t->rotation.w += 0.1f;
+			script->Update(this->GetOwner());
 		}
 	}
 
@@ -29,5 +30,11 @@ namespace luna
 	{
 		this->m_owner = nullptr;
 		this->m_active = false;
+
+		if (script != nullptr)
+		{
+			delete script;
+			script = nullptr;
+		}
 	}
 }

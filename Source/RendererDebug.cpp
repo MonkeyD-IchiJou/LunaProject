@@ -38,34 +38,22 @@ namespace luna
 		VulkanDebugCallback(VkDebugReportFlagsEXT msg_flags, VkDebugReportObjectTypeEXT obj_type, uint64_t src_obj,
 			size_t location, int32_t msg_code, const char* layer_prefix, const char* msg, void* user_data)
 	{
-		std::ostringstream stream;
-		stream << "(VKDBG) ";
-
-		if (msg_flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-			stream << "INFO | ";
-
 		if (msg_flags &  VK_DEBUG_REPORT_WARNING_BIT_EXT)
-			stream << "WARNING | ";
-
-		if (msg_flags &  VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-			stream << "PERFORMANCE | ";
-
-		if (msg_flags &  VK_DEBUG_REPORT_ERROR_BIT_EXT)
-			stream << "ERROR | ";
-
-		if (msg_flags &  VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-			stream << "DEBUG | ";
-
-		stream << " @[" << layer_prefix << "]: " << msg << std::endl;
-
-		//DebugLog::print(stream.str().c_str());
+		{
+			DebugLog::printL(msg);
+		}
 
 		if (msg_flags &  VK_DEBUG_REPORT_ERROR_BIT_EXT)
 		{
+			std::ostringstream stream;
+			stream << "(VKDBG) ERROR | @[" << layer_prefix << "]: " << msg << std::endl;
+
 #ifdef _WIN32
 			MessageBox(NULL, stream.str().c_str(), "Vulkan Error!", 0);
 #endif
 			DebugLog::throwEx(stream.str().c_str());
+
+			return true;
 		}
 
 		return false;
@@ -94,14 +82,16 @@ namespace luna
 		m_debuginfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		m_debuginfo.pfnCallback = VulkanDebugCallback;
 		m_debuginfo.flags =
-			VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
-			VK_DEBUG_REPORT_WARNING_BIT_EXT |
-			VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
-			VK_DEBUG_REPORT_ERROR_BIT_EXT |
-			VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+			VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
 
 		// store the layers extensions for later vulkan Instance creation
-		m_instance_layers.push_back("VK_LAYER_LUNARG_standard_validation");
+		m_instance_layers.push_back("VK_LAYER_GOOGLE_threading");
+		m_instance_layers.push_back("VK_LAYER_LUNARG_parameter_validation");
+		m_instance_layers.push_back("VK_LAYER_LUNARG_object_tracker");
+		m_instance_layers.push_back("VK_LAYER_LUNARG_image");
+		m_instance_layers.push_back("VK_LAYER_LUNARG_core_validation"); // this bastard cause memory leak 
+		m_instance_layers.push_back("VK_LAYER_LUNARG_swapchain");
+		m_instance_layers.push_back("VK_LAYER_GOOGLE_unique_objects");
 		m_instance_exts.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
 

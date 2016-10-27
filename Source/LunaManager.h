@@ -39,6 +39,10 @@ namespace luna
 		void Init_();
 		void DeInit_();
 
+		void GameRun_();
+		void GameLoop_();
+		void InputRun_();
+
 		LunaManager();
 		~LunaManager() {/* do nothing */}
 

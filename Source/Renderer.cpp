@@ -76,7 +76,8 @@ namespace luna
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_deferred_renderComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_compute_computeComplete));
 			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_finalpass_renderComplete));
-			
+			DebugLog::EC(vkCreateSemaphore(m_logicaldevice, &semaphore_createInfo, nullptr, &m_transferComplete));
+
 			// pre record the fixed primary command buffers
 			PreRecord_();
 
@@ -160,7 +161,7 @@ namespace luna
 
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
-		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
+		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HORBLUR_2D_RGBA16F]);
 		m_finalpass_shader->Init(FinalFBO::getRenderPass());
 
 		// text shader init
@@ -190,11 +191,10 @@ namespace luna
 		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
 		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
-
 		buffer_allocateInfo.commandBufferCount = 1;
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_finalpass_cmdbuffer));
-
+		
 		// secondary command buffer creation
 		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_secondary_commandPool));
@@ -206,7 +206,9 @@ namespace luna
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_font_secondary_cmdbuff));
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_secondary_cmdbuff));
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_skybox_secondary_cmdbuff));
-
+		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_transferbuffer_cmdbuff));
+		
 		// Separate command pool as queue family for compute may be different than graphics
 		VkCommandPoolCreateInfo cmdPoolInfo = {};
 		cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -221,6 +223,25 @@ namespace luna
 		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
 		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &cmdBufAllocateInfo, &m_comp_cmdbuffer));
+	}
+
+	void Renderer::RecordTransferData()
+	{
+		// NOTE: I need to rerecord this command buffer if the transfer size exceed the expectation size !!
+		vkResetCommandBuffer(m_transferbuffer_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		DebugLog::EC(vkBeginCommandBuffer(m_transferbuffer_cmdbuff, &beginInfo));
+
+		m_instance_ssbo->Record(m_transferbuffer_cmdbuff);
+		m_fontinstance_ssbo->Record(m_transferbuffer_cmdbuff);
+		m_ubo->Record(m_transferbuffer_cmdbuff);
+
+		DebugLog::EC(vkEndCommandBuffer(m_transferbuffer_cmdbuff));
 	}
 
 	void Renderer::RecordGeometryPass(const std::vector<RenderingInfo>& renderinfos)
@@ -379,6 +400,9 @@ namespace luna
 
 	void Renderer::PreRecord_()
 	{
+		// pre record the transfer process
+		RecordTransferData();
+
 		// dummy record secondary buffers
 		std::vector<RenderingInfo> temp;
 		RecordGeometryPass(temp);
@@ -402,7 +426,7 @@ namespace luna
 		beginInfo.pInheritanceInfo = nullptr;
 
 		// start recording the offscreen command buffers
-		vkBeginCommandBuffer(m_deferred_cmdbuffer, &beginInfo);
+		DebugLog::EC(vkBeginCommandBuffer(m_deferred_cmdbuffer, &beginInfo));
 
 		// bind the fbo
 		m_deferred_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -477,7 +501,7 @@ namespace luna
 		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
 			m_comp_cmdbuffer, srcimg->getImage(),
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
 		);
 
@@ -593,17 +617,17 @@ namespace luna
 		}
 	}
 
-	void Renderer::SubmitGeometryDatas(const std::vector<InstanceData>& instancedatas)
+	void Renderer::MapGeometryDatas(const std::vector<InstanceData>& instancedatas)
 	{
 		m_instance_ssbo->Update(instancedatas);
 	}
 
-	void Renderer::SubmitFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas)
+	void Renderer::MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas)
 	{
 		m_fontinstance_ssbo->Update(fontinstancedatas);
 	}
 
-	void Renderer::SubmitMainCamDatas(const UBOData & ubo)
+	void Renderer::MapMainCamDatas(const UBOData & ubo)
 	{
 		m_ubo->Update(ubo);
 	}
@@ -616,8 +640,14 @@ namespace luna
 		uint32_t imageindex = 0;
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
-		// subpass submit
+		// data transfer submit
 		m_submitInfo.pWaitSemaphores = &m_presentComplete; // wait for someone render finish
+		m_submitInfo.pSignalSemaphores = &m_transferComplete; 
+		m_submitInfo.pCommandBuffers = &m_transferbuffer_cmdbuff;
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
+
+		// subpass submit
+		m_submitInfo.pWaitSemaphores = &m_transferComplete; 
 		m_submitInfo.pSignalSemaphores = &m_deferred_renderComplete; // will inform the next one, when i render finish
 		m_submitInfo.pCommandBuffers = &m_deferred_cmdbuffer;
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
@@ -781,6 +811,11 @@ namespace luna
 		{
 			vkDestroySemaphore(m_logicaldevice, m_finalpass_renderComplete, nullptr);
 			m_finalpass_renderComplete = VK_NULL_HANDLE;
+		}
+		if (m_transferComplete != VK_NULL_HANDLE)
+		{
+			vkDestroySemaphore(m_logicaldevice, m_transferComplete, nullptr);
+			m_transferComplete = VK_NULL_HANDLE;
 		}
 		
 		if (m_commandPool != VK_NULL_HANDLE)

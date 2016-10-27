@@ -34,10 +34,13 @@ namespace luna
 		/* delete swap chain, fbo, shaders and renderpass, etc */
 		void CleanUpResources() override;
 
-		/* update all the necessary datas to the gpu */
-		void SubmitGeometryDatas(const std::vector<InstanceData>& instancedatas);
-		void SubmitFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas);
-		void SubmitMainCamDatas(const UBOData& ubo);
+		/* update all the necessary datas to the host-visible buffer */
+		void MapGeometryDatas(const std::vector<InstanceData>& instancedatas);
+		void MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas);
+		void MapMainCamDatas(const UBOData& ubo);
+
+		/* primary command buffer -> for transfering datas to the gpu */
+		void RecordTransferData();
 
 		/* record the dynamic geometry pass */
 		void RecordGeometryPass(const std::vector<RenderingInfo>& renderinfos);
@@ -120,14 +123,15 @@ namespace luna
 		std::vector<VkCommandBuffer> m_presentation_cmdbuffers;
 		VkCommandBuffer m_deferred_cmdbuffer = VK_NULL_HANDLE;
 		VkCommandBuffer m_finalpass_cmdbuffer = VK_NULL_HANDLE;
-
+		
 		/* dynamic recording purpose */
 		VkCommandPool m_secondary_commandPool = VK_NULL_HANDLE;
 		VkCommandBuffer m_geometry_secondary_cmdbuff = VK_NULL_HANDLE;
 		VkCommandBuffer m_font_secondary_cmdbuff = VK_NULL_HANDLE;
 		VkCommandBuffer m_offscreen_secondary_cmdbuff = VK_NULL_HANDLE;
 		VkCommandBuffer m_skybox_secondary_cmdbuff = VK_NULL_HANDLE;
-
+		VkCommandBuffer m_transferbuffer_cmdbuff = VK_NULL_HANDLE;
+		
 		/* computing recording purpose */
 		VkCommandPool m_comp_cmdpool = VK_NULL_HANDLE;
 		VkCommandBuffer m_comp_cmdbuffer = VK_NULL_HANDLE;
@@ -138,6 +142,7 @@ namespace luna
 		VkSemaphore m_deferred_renderComplete = VK_NULL_HANDLE;
 		VkSemaphore m_compute_computeComplete = VK_NULL_HANDLE;
 		VkSemaphore m_finalpass_renderComplete = VK_NULL_HANDLE;
+		VkSemaphore m_transferComplete = VK_NULL_HANDLE;
 
 		/* a universal UBO */
 		UBO* m_ubo = nullptr;

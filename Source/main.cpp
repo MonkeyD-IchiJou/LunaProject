@@ -1,6 +1,8 @@
 #include "DebugLog.h"
 #include "LunaManager.h"
 
+#include <thread>
+
 #if _DEBUG
 /* console window enable when i want to debug */
 int main()

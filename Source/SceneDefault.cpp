@@ -3,6 +3,7 @@
 #include "DebugLog.h"
 #include "Renderer.h"
 
+#include "RotateScript.h"
 #include <glm\glm.hpp>
 
 namespace luna
@@ -39,11 +40,13 @@ namespace luna
 		/* view and projection mat4 update */
 		m_componentmanager->GetMainCamData(maincamdata);
 
-		m_renderer->SubmitGeometryDatas(instancedatas);
-		m_renderer->SubmitFontInstDatas(fontinstancedatas);
-		m_renderer->SubmitMainCamDatas(maincamdata);
+		// update to buffer objects
+		m_renderer->MapGeometryDatas(instancedatas);
+		m_renderer->MapFontInstDatas(fontinstancedatas);
+		m_renderer->MapMainCamDatas(maincamdata);
 
 		// rmb to re-record the command buffer again if m_renderinfos is different
+		m_renderer->RecordTransferData();
 		m_renderer->RecordGeometryPass(m_renderinfos);
 		m_renderer->RecordUIPass(static_cast<uint32_t>(fontinstancedatas.size()));
 	}
@@ -57,19 +60,21 @@ namespace luna
 		std::vector<FontInstanceData> fontinstancedatas;
 		UBOData maincamdata{};
 
-		/* prepare rendering instance datas */ 
+		/* prepare Frame Packets datas !! */ 
+
 		// every frame gather all the transformation info for the mesh
 		GetInstanceData_(instancedatas);
 
-		/* font data */
+		// gather font data
 		m_componentmanager->GetFontInstanceData(fontinstancedatas);
 		
-		/* view and projection mat4 update */
+		// view and projection mat4 update
 		m_componentmanager->GetMainCamData(maincamdata);
 
-		m_renderer->SubmitGeometryDatas(instancedatas); // expensive
-		m_renderer->SubmitFontInstDatas(fontinstancedatas); // expensive
-		m_renderer->SubmitMainCamDatas(maincamdata); // expensive
+		// update to buffer objects
+		m_renderer->MapGeometryDatas(instancedatas);
+		m_renderer->MapFontInstDatas(fontinstancedatas);
+		m_renderer->MapMainCamDatas(maincamdata);
 	}
 
 	void SceneDefault::Render()
@@ -99,7 +104,8 @@ namespace luna
 			basicmeshc->meshID = eMODELS::CUBE_MODEL;
 			basicmeshc->material.color = glm::vec4(1.f, 0.f, 0.f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BOX_TEX;
-			entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE);
+			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
+			script->script = new RotateScript();
 			m_availableEntities.push_back(entity);
 		}
 
@@ -111,6 +117,8 @@ namespace luna
 			basicmeshc->meshID = eMODELS::BUNNY_MODEL;
 			basicmeshc->material.color = glm::vec4(0.f, 1.f, 0.f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
+			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
+			script->script = new RotateScript();
 			m_availableEntities.push_back(entity);
 		}
 
@@ -122,7 +130,6 @@ namespace luna
 			basicmeshc->meshID = eMODELS::BUNNY_MODEL;
 			basicmeshc->material.color = glm::vec4(1.f, 0.f, 0.f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
-			entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE);
 			m_availableEntities.push_back(entity);
 		}
 

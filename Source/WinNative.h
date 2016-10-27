@@ -31,6 +31,7 @@ namespace luna
 #if VK_USE_PLATFORM_WIN32_KHR
 		auto getWin32_Instance() const { return m_win32_instance; }
 		auto getHWND() const { return m_win32_handle; }
+		LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 		// close the window 

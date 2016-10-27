@@ -288,6 +288,12 @@
     <ClInclude Include="ScriptComponent.h">
       <Filter>Header Files\Resources\Components</Filter>
     </ClInclude>
+    <ClInclude Include="Script.h">
+      <Filter>Header Files\Resources\Components\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="RotateScript.h">
+      <Filter>Header Files\Resources\Components\Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLog.cpp">
@@ -439,6 +445,12 @@
     </ClCompile>
     <ClCompile Include="ScriptComponent.cpp">
       <Filter>Source Files\Resources\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Script.cpp">
+      <Filter>Source Files\Resources\Components\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="RotateScript.cpp">
+      <Filter>Source Files\Resources\Components\Scripts</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

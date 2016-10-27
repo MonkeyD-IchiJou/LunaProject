@@ -1,10 +1,12 @@
-#ifndef ROTATE_SCRIPT_H
-#define ROTATE_SCRIPT_H
+#ifndef SCRIPT_COMPONENT_H
+#define SCRIPT_COMPONENT_H
 
 #include "Component.h"
 
 namespace luna
 {
+	class Script;
+
 	class ScriptComponent :
 		public Component
 	{
@@ -14,6 +16,8 @@ namespace luna
 
 		void Update() override;
 		void Reset() override;
+
+		Script* script = nullptr;
 	};
 }
 

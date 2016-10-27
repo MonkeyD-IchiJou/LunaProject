@@ -38,6 +38,8 @@
     <ClInclude Include="platform.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RotateScript.h" />
+    <ClInclude Include="Script.h" />
     <ClInclude Include="ScriptComponent.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneDefault.h" />
@@ -92,6 +94,8 @@
     <ClCompile Include="ModelResources.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererDebug.cpp" />
+    <ClCompile Include="RotateScript.cpp" />
+    <ClCompile Include="Script.cpp" />
     <ClCompile Include="ScriptComponent.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneDefault.cpp" />

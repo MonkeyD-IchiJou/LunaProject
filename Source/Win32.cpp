@@ -5,7 +5,34 @@
 #if VK_USE_PLATFORM_WIN32_KHR
 namespace luna
 {
-	LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+	LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+	{
+		// TODO: mouse scolling input
+
+		// pointer to the window data
+		WinNative * pwin = reinterpret_cast<WinNative*>(
+			GetWindowLongPtrW(hwnd, GWLP_USERDATA)
+			);
+
+		return pwin->WindowProc(hwnd, msg, wparam, lparam);
+	}
+
+	LRESULT WinNative::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+	{
+		switch (msg)
+		{
+		case WM_DESTROY:
+			close();
+			PostQuitMessage(0);
+			break;
+
+		default:
+			return DefWindowProc(hwnd, msg, wparam, lparam);
+			break;
+		}
+
+		return 0;
+	}
 
 	void WinNative::InitOSWindow_()
 	{
@@ -68,72 +95,6 @@ namespace luna
 		ShowWindow(m_win32_handle, SW_SHOW);
 		SetForegroundWindow(m_win32_handle);
 		SetFocus(m_win32_handle);
-	}
-
-	LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-	{
-		// TODO: mouse scolling input
-
-		// pointer to the window data
-		WinNative * pwin = reinterpret_cast<WinNative*>(
-				GetWindowLongPtrW(hwnd, GWLP_USERDATA)
-				);
-
-		switch (msg)
-		{
-		case WM_SIZE:
-
-			break;
-
-		case WM_KEYDOWN:
-
-			break;
-			 
-		case WM_CHAR:
-
-			break;
-
-		case WM_KEYUP:
-
-			break;
-
-		case WM_LBUTTONDBLCLK:
-
-			break;
-
-		case WM_LBUTTONDOWN:
-
-			break;
-
-		case WM_LBUTTONUP:
-
-			break;
-
-		case WM_RBUTTONDBLCLK:
-
-			break;
-
-		case WM_RBUTTONDOWN:
-
-			break;
-
-		case WM_RBUTTONUP:
-
-			break;
-
-		case WM_CLOSE:
-			pwin->close();
-			break;
-
-		case WM_DESTROY:
-			break;
-			
-		default:
-			return DefWindowProc(hwnd, msg, wparam, lparam);
-			break;
-		}
-
-		return 0;
 	}
 
 	void WinNative::InitOSWindowSurface_()

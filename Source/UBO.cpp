@@ -10,25 +10,29 @@ namespace luna
 
 		m_uboTotalSize = sizeof(UBOData);
 
-		// give it the offset 
-		m_uboOffset = 0;
-
 		BufferInit_();
-		CommandBufferInit_();
 	}
 
 	void UBO::Update(const UBOData & ubodata)
 	{
 		// update the new ubo data 
-
 		/* begin to record the latest ubo info into the staged device memory */
 		void* data = nullptr;
 		vkMapMemory(m_logicaldevice, m_staging_mem, 0, m_uboTotalSize, 0, &data);
 		memcpy(data, &ubodata, (size_t)m_uboTotalSize);
 		vkUnmapMemory(m_logicaldevice, m_staging_mem);
+	}
 
-		/* then copy into the main buffer */
-		CopyToDeviceMemory_();
+	void UBO::Record(const VkCommandBuffer cmdbuff)
+	{
+		// start the copy cmd
+		// copy the damn buffer
+		VkBufferCopy copyregion{};
+		copyregion.srcOffset = 0;
+		copyregion.dstOffset = 0;
+		copyregion.size = m_uboTotalSize;
+
+		vkCmdCopyBuffer(cmdbuff, m_staging_buffer.buffer, m_main_buffer.buffer, 1, &copyregion);
 	}
 
 	void UBO::BufferInit_()
@@ -107,65 +111,8 @@ namespace luna
 		}
 	}
 
-	void UBO::CommandBufferInit_()
-	{
-		/* create the command pool first */
-		VkCommandPoolCreateInfo commandPool_createinfo{};
-		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPool_createinfo.queueFamilyIndex = Renderer::getInstance()->GetQueueFamilyIndices().graphicsFamily;
-
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
-
-		// command buffer creation
-		{
-			VkCommandBufferAllocateInfo buffer_allocateInfo{};
-			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			buffer_allocateInfo.commandPool = m_commandPool;
-			buffer_allocateInfo.commandBufferCount = 1;
-			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_commandbuffer));
-		}
-	}
-
-	void UBO::CopyToDeviceMemory_()
-	{
-		// immediately start recording this command buffer
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		DebugLog::EC(vkBeginCommandBuffer(m_commandbuffer, &beginInfo));
-
-		// start the copy cmd
-		// copy the damn buffer
-		VkBufferCopy copyregion{};
-		copyregion.srcOffset = 0;
-		copyregion.dstOffset = 0;
-		copyregion.size = m_uboTotalSize;
-		vkCmdCopyBuffer(m_commandbuffer, m_staging_buffer.buffer, m_main_buffer.buffer, 1, &copyregion);
-
-		DebugLog::EC(vkEndCommandBuffer(m_commandbuffer));
-
-		// then submit this to the graphics queue to execute it
-		// now execute the command buffer
-		VkSubmitInfo submitinfo{};
-		submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitinfo.commandBufferCount = 1;
-		submitinfo.pCommandBuffers = &m_commandbuffer;
-
-		auto queue = Renderer::getInstance()->GetGraphicQueue();
-		DebugLog::EC(vkQueueSubmit(queue, 1, &submitinfo, VK_NULL_HANDLE));
-		DebugLog::EC(vkQueueWaitIdle(queue));
-	}
-
 	UBO::~UBO()
 	{
-		if (m_commandPool != VK_NULL_HANDLE)
-		{
-			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
-		}
-
 		if (m_staging_buffer.buffer != VK_NULL_HANDLE)
 		{
 			vkDestroyBuffer(m_logicaldevice, m_staging_buffer.buffer, nullptr);
