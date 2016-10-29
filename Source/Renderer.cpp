@@ -192,7 +192,7 @@ namespace luna
 			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
 			buffer_allocateInfo.commandBufferCount = 1;
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_deferred_cmdbuffer));
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_cmdbuffer));
 			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_finalpass_cmdbuffer));
 		}
 		
@@ -420,51 +420,51 @@ namespace luna
 		beginInfo.pInheritanceInfo = nullptr;
 
 		// start recording the offscreen command buffers
-		DebugLog::EC(vkBeginCommandBuffer(m_deferred_cmdbuffer, &beginInfo));
+		DebugLog::EC(vkBeginCommandBuffer(m_offscreen_cmdbuffer, &beginInfo));
 
 		// transfer data to gpu first
-		vkCmdExecuteCommands(m_deferred_cmdbuffer, 1, &m_transferdata_secondary_cmdbuff);
+		vkCmdExecuteCommands(m_offscreen_cmdbuffer, 1, &m_transferdata_secondary_cmdbuff);
 
 		// bind the fbo
-		m_deferred_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		m_deferred_fbo->Bind(m_offscreen_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the geometry pass
 		VkCommandBuffer secondary_cmdbuff[] = {m_geometry_secondary_cmdbuff, m_skybox_secondary_cmdbuff};
-		vkCmdExecuteCommands(m_deferred_cmdbuffer, 2, secondary_cmdbuff);
+		vkCmdExecuteCommands(m_offscreen_cmdbuffer, 2, secondary_cmdbuff);
 		
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
-			m_deferred_cmdbuffer, 
+			m_offscreen_cmdbuffer, 
 			VK_SUBPASS_CONTENTS_INLINE
 		);
 
 		// execute all the light passes
 
 		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(m_deferred_cmdbuffer);
-		m_dirlightpass_shader->SetViewPort(m_deferred_cmdbuffer, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(m_deferred_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_deferred_cmdbuffer);
+		m_dirlightpass_shader->Bind(m_offscreen_cmdbuffer);
+		m_dirlightpass_shader->SetViewPort(m_offscreen_cmdbuffer, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(m_offscreen_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(m_offscreen_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(m_offscreen_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_offscreen_cmdbuffer);
 
 		// combined with those not lightpass geometry
 
 		// unbind the fbo
-		m_deferred_fbo->UnBind(m_deferred_cmdbuffer);
+		m_deferred_fbo->UnBind(m_offscreen_cmdbuffer);
 
 		// another render pass
-		m_final_fbo->Bind(m_deferred_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		m_final_fbo->Bind(m_offscreen_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the secondary command buffers
 		VkCommandBuffer secondarycommandbuffer[] = { m_offscreen_secondary_cmdbuff, m_font_secondary_cmdbuff };
-		vkCmdExecuteCommands(m_deferred_cmdbuffer, 2, secondarycommandbuffer);
+		vkCmdExecuteCommands(m_offscreen_cmdbuffer, 2, secondarycommandbuffer);
 
 		// unbind the fbo
-		m_final_fbo->UnBind(m_deferred_cmdbuffer);
+		m_final_fbo->UnBind(m_offscreen_cmdbuffer);
 
 		// finish recording
-		DebugLog::EC(vkEndCommandBuffer(m_deferred_cmdbuffer));
+		DebugLog::EC(vkEndCommandBuffer(m_offscreen_cmdbuffer));
 	}
 
 	void luna::Renderer::RecordPresentation_Primary_()
@@ -507,23 +507,26 @@ namespace luna
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
 		VkSubmitInfo submitInfo[2] = {};
-		submitInfo[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo[0].commandBufferCount = 1;
-		submitInfo[0].signalSemaphoreCount = 1;
-		submitInfo[0].waitSemaphoreCount = 1;
-		submitInfo[0].pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-		submitInfo[0].pWaitSemaphores = &m_presentComplete; 
-		submitInfo[0].pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
-		submitInfo[0].pCommandBuffers = &m_deferred_cmdbuffer;
 
-		submitInfo[1].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo[1].commandBufferCount = 1;
-		submitInfo[1].signalSemaphoreCount = 1;
-		submitInfo[1].waitSemaphoreCount = 1;
-		submitInfo[1].pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-		submitInfo[1].pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
-		submitInfo[1].pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
-		submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
+		auto& submitinfo0 = submitInfo[0];
+		submitinfo0.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitinfo0.commandBufferCount = 1;
+		submitinfo0.signalSemaphoreCount = 1;
+		submitinfo0.waitSemaphoreCount = 1;
+		submitinfo0.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitinfo0.pWaitSemaphores = &m_presentComplete; 
+		submitinfo0.pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
+		submitinfo0.pCommandBuffers = &m_offscreen_cmdbuffer;
+
+		auto& submitinfo1 = submitInfo[1];
+		submitinfo1.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitinfo1.commandBufferCount = 1;
+		submitinfo1.signalSemaphoreCount = 1;
+		submitinfo1.waitSemaphoreCount = 1;
+		submitinfo1.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitinfo1.pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
+		submitinfo1.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
+		submitinfo1.pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
 
 		// submit all the queues
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, submitInfo, VK_NULL_HANDLE));

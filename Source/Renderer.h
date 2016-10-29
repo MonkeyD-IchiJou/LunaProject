@@ -113,7 +113,7 @@ namespace luna
 		/* rendering recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_presentation_cmdbuffers;
-		VkCommandBuffer m_deferred_cmdbuffer = VK_NULL_HANDLE;
+		VkCommandBuffer m_offscreen_cmdbuffer = VK_NULL_HANDLE;
 		VkCommandBuffer m_finalpass_cmdbuffer = VK_NULL_HANDLE;
 		
 		/* dynamic recording purpose */

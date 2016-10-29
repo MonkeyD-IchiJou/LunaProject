@@ -27,7 +27,6 @@ enum eMODELS
 	FONT_MODEL,
 	BOXES_MODEL,
 	BUNNY_MODEL,
-	TYRA_MODEL,
 	CUBE_MODEL,
 	SKYBOX_MODEL,
 	MAX_MODELS
@@ -69,6 +68,15 @@ enum eFONTS
 {
 	FONT_EVA = 0,
 	MAX_FONT
+};
+
+enum LUNA_KEY
+{
+	LN_LEFT = 0x25,
+	LN_UP = 0x26,
+	LN_RIGHT = 0x27,
+	LN_DOWN = 0x28,
+	MAX_LN_KEY = 256
 };
 
 #endif

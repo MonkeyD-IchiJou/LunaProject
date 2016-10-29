@@ -36,6 +36,13 @@ namespace luna
 		static int totalcounter;
 	};
 	
+	struct FramePacket
+	{
+		std::vector<RenderingInfo> renderinfos;
+		std::vector<InstanceData> instancedatas;
+		std::vector<FontInstanceData> fontinstancedatas;
+		UBOData maincamdata{};
+	};
 }
 
 #endif

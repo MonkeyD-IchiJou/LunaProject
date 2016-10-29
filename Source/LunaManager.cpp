@@ -52,13 +52,26 @@ namespace luna
 	void LunaManager::GameLoop_()
 	{
 		using clock = std::chrono::steady_clock;
-		std::chrono::nanoseconds lag(0);
 		clock::time_point time_start = clock::now();
 
-#if VK_USE_PLATFORM_WIN32_KHR
+		auto renderer = luna::Renderer::getInstance();
+
+		FramePacket framepacket{};
 
 		// scene early update first
-		m_scene->EarlyUpdate();
+		m_scene->EarlyUpdate(framepacket);
+
+		// update to buffer objects
+		renderer->MapGeometryDatas(framepacket.instancedatas);
+		renderer->MapFontInstDatas(framepacket.fontinstancedatas);
+		renderer->MapMainCamDatas(framepacket.maincamdata);
+
+		// rmb to re-record the command buffer again if m_renderinfos is different
+		renderer->RecordTransferData_Secondary();
+		renderer->RecordGeometryPass_Secondary(framepacket.renderinfos);
+		renderer->RecordUIPass_Secondary(static_cast<uint32_t>(framepacket.fontinstancedatas.size()));
+
+#if VK_USE_PLATFORM_WIN32_KHR
 
 		auto window = luna::WinNative::getInstance();
 
@@ -71,15 +84,12 @@ namespace luna
 			time_start = clock::now(); 
 
 			// update game logic
-			m_scene->Update();
+			m_scene->Update(framepacket);
 
 			// begin to render everything and present it on screen
-			m_scene->Render();
+			renderer->Render();
 
-			// late update after render 
-			m_scene->LateUpdate();
-
-			DebugLog::printL(std::chrono::duration_cast<std::chrono::milliseconds>(delta_time).count());
+			DebugLog::printL(delta_time.count());
 		}
 #endif
 	}
@@ -97,7 +107,7 @@ namespace luna
 			if (bRet == -1)
 			{
 				// handle the error and possibly exit
-				DebugLog::printL("windows input error");
+				DebugLog::throwEx("windows input error");
 			}
 			else
 			{

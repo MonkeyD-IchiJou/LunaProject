@@ -19,71 +19,44 @@ namespace luna
 		DeInit_();
 	}
 
-	void SceneDefault::EarlyUpdate()
+	void SceneDefault::EarlyUpdate(FramePacket& framepacket)
 	{
-		// every time when new entity is allocated with basicmesh to render, must renew the renderdatas again
-		m_componentmanager->GetRenderingData(m_renderinfos);
-		
-		/* update all the components locally */
-		m_componentmanager->Update();
-
-		std::vector<InstanceData> instancedatas;
-		std::vector<FontInstanceData> fontinstancedatas;
-		UBOData maincamdata{};
-
-		/* prepare rendering instance datas */
-		GetInstanceData_(instancedatas);
-		
-		/* font data */
-		m_componentmanager->GetFontInstanceData(fontinstancedatas);
-		
-		/* view and projection mat4 update */
-		m_componentmanager->GetMainCamData(maincamdata);
-
-		// update to buffer objects
-		m_renderer->MapGeometryDatas(instancedatas);
-		m_renderer->MapFontInstDatas(fontinstancedatas);
-		m_renderer->MapMainCamDatas(maincamdata);
-
-		// rmb to re-record the command buffer again if m_renderinfos is different
-		m_renderer->RecordTransferData_Secondary();
-		m_renderer->RecordGeometryPass_Secondary(m_renderinfos);
-		m_renderer->RecordUIPass_Secondary(static_cast<uint32_t>(fontinstancedatas.size()));
-	}
-
-	void SceneDefault::Update()
-	{
-		/* update all the components locally */
-		m_componentmanager->Update();
-
-		std::vector<InstanceData> instancedatas;
-		std::vector<FontInstanceData> fontinstancedatas;
-		UBOData maincamdata{};
-
 		/* prepare Frame Packets datas !! */ 
 
+		// every time when new entity is allocated with basicmesh to render, must renew the renderdatas again
+		m_componentmanager->GetRenderingData(framepacket.renderinfos);
+
+		/* update all the components locally */
+		m_componentmanager->Update();
+
 		// every frame gather all the transformation info for the mesh
-		GetInstanceData_(instancedatas);
+		GetInstanceData_(framepacket.instancedatas, framepacket.renderinfos);
 
 		// gather font data
-		m_componentmanager->GetFontInstanceData(fontinstancedatas);
+		m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
+
+		// view and projection mat4 update
+		m_componentmanager->GetMainCamData(framepacket.maincamdata);
+	}
+
+	void SceneDefault::Update(FramePacket& framepacket)
+	{
+		/* prepare Frame Packets datas !! */ 
+
+		// every time when new entity is allocated with basicmesh to render, must renew the renderdatas again
+		m_componentmanager->GetRenderingData(framepacket.renderinfos);
+
+		/* update all the components locally */
+		m_componentmanager->Update();
+
+		// every frame gather all the transformation info for the mesh
+		GetInstanceData_(framepacket.instancedatas, framepacket.renderinfos);
+
+		// gather font data
+		m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
 		
 		// view and projection mat4 update
-		m_componentmanager->GetMainCamData(maincamdata);
-
-		// update to buffer objects
-		m_renderer->MapGeometryDatas(instancedatas);
-		m_renderer->MapFontInstDatas(fontinstancedatas);
-		m_renderer->MapMainCamDatas(maincamdata);
-	}
-
-	void SceneDefault::Render()
-	{
-		m_renderer->Render();
-	}
-
-	void SceneDefault::LateUpdate()
-	{
+		m_componentmanager->GetMainCamData(framepacket.maincamdata);
 	}
 
 	void SceneDefault::Init_()

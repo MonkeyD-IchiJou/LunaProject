@@ -7,7 +7,6 @@ namespace luna
 {
 	Scene::Scene()
 	{
-		m_renderer = Renderer::getInstance();
 	}
 
 	Scene::~Scene()
@@ -19,16 +18,16 @@ namespace luna
 		}
 	}
 
-	void Scene::GetInstanceData_(std::vector<InstanceData>& instancedatas)
+	void Scene::GetInstanceData_(std::vector<InstanceData>& instancedatas, const std::vector<RenderingInfo>& renderinfos)
 	{
 		// store another vector just for the instance data
 		instancedatas.resize(RenderingInfo::totalcounter);
 		int count = 0;
 		InstanceData instancedata = {};
 
-		for (int i = 0; i < m_renderinfos.size(); ++i)
+		for (int i = 0; i < renderinfos.size(); ++i)
 		{
-			const auto& renderdata = m_renderinfos[i];
+			const auto& renderdata = renderinfos[i];
 
 			for (int j = 0; j < renderdata.instancedatas.size(); ++j, ++count)
 			{

@@ -72,8 +72,8 @@ namespace luna
 		void GetMainCamData(UBOData& maincamdata);
 
 	private:
-		void StoreNewRenderingData_(BasicMeshComponent* mesh, std::vector<RenderingInfo>& renderdatas, RenderingInfo& rd);
-		void StoreRenderingData_(BasicMeshComponent* mesh, RenderingInfo& rd);
+		static void StoreNewRenderingData_(BasicMeshComponent* mesh, std::vector<RenderingInfo>& renderdatas, RenderingInfo& rd);
+		static void StoreRenderingData_(BasicMeshComponent* mesh, RenderingInfo& rd);
 
 	private:
 		/* all the transformation components are here */

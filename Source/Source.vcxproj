@@ -26,6 +26,7 @@
     <ClInclude Include="DeferredShader.h" />
     <ClInclude Include="DescriptorTool.h" />
     <ClInclude Include="DirLightPassShader.h" />
+    <ClInclude Include="Input.h" />
     <ClInclude Include="PresentationFBO.h" />
     <ClInclude Include="FinalPassShader.h" />
     <ClInclude Include="FixedPipelineCreationInfo.h" />
@@ -82,6 +83,7 @@
     <ClCompile Include="DeferredShader.cpp" />
     <ClCompile Include="DescriptorTool.cpp" />
     <ClCompile Include="DirLightPassShader.cpp" />
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="PresentationFBO.cpp" />
     <ClCompile Include="FinalPassShader.cpp" />
     <ClCompile Include="FixedPipelineCreationInfo.cpp" />

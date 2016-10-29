@@ -38,7 +38,6 @@ namespace luna
 		Models[eMODELS::FONT_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_FONT);
 		Models[eMODELS::BOXES_MODEL] = new Model(getAssetPath() + "Models/boxes.lrl");
 		Models[eMODELS::BUNNY_MODEL] = new Model(getAssetPath() + "Models/bunny.lrl");
-		Models[eMODELS::TYRA_MODEL] = new Model(getAssetPath() + "Models/tyra.lrl");
 		Models[eMODELS::CUBE_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_CUBE);
 		Models[eMODELS::SKYBOX_MODEL] = new Model(ePRIMITIVE_MESH::PRIMITIVE_SKYBOX);
 

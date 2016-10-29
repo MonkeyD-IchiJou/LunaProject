@@ -32,8 +32,8 @@ namespace luna
 		m_basicmeshContainer.Update();
 		m_fontContainer.Update();
 		m_scriptContainer.Update();
-		m_transformationContainer.Update();
 		m_cameraContainer.Update();
+		m_transformationContainer.Update(); // transformation always the last one to update
 	}
 
 	void ComponentManager::GetRenderingData(std::vector<RenderingInfo>& renderinfos)
@@ -46,9 +46,7 @@ namespace luna
 			// rmb to set it back to 0 if restarting
 			RenderingInfo::totalcounter = 0;
 
-			auto totalrenderdatasize = renderinfos.size();
-
-			if(totalrenderdatasize > 0)
+			if(renderinfos.size() > 0)
 				renderinfos.clear();
 
 			// reserve the datas

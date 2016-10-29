@@ -16,16 +16,10 @@ namespace luna
 		virtual ~Scene();
 
 		/* load datas to renderer and prepare everything before update every frame */
-		virtual void EarlyUpdate() = 0;
+		virtual void EarlyUpdate(FramePacket& framepacket) = 0;
 
 		/* scene update objects transformation, physics, AI, secondary command buffer, every frame */
-		virtual void Update() = 0;
-
-		/* scene render every frame */
-		virtual void Render() = 0;
-
-		/* scene update after rendering on the screen */
-		virtual void LateUpdate() = 0;
+		virtual void Update(FramePacket& framepacket) = 0;
 
 	protected:
 		/* scene necessary init */
@@ -35,7 +29,7 @@ namespace luna
 		virtual void DeInit_() = 0;
 
 		/* fill up the instance datas */
-		void GetInstanceData_(std::vector<InstanceData>& instancedatas);
+		static void GetInstanceData_(std::vector<InstanceData>& instancedatas, const std::vector<RenderingInfo>& renderinfos);
 
 	protected:
 		/* every scene has its own name */
@@ -43,12 +37,6 @@ namespace luna
 
 		/* component manager contains all the components */
 		ComponentManager* m_componentmanager = nullptr;
-
-		/* render datas grouping for renderer later */
-		std::vector<RenderingInfo> m_renderinfos;
-
-		/* every scenes will have a renderer */
-		Renderer* m_renderer = nullptr;
 	};
 }
 #endif // !SCENE_H
