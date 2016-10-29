@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <atomic>
 
 namespace luna
 {
@@ -14,10 +15,10 @@ namespace luna
 	class WinNative
 	{
 	public:
-		inline auto getWinSizeX() const { return m_win_size_x; }
-		inline auto getWinSizeY() const { return m_win_size_y; }
-		inline auto getWinPosX() const { return m_win_pos_x; }
-		inline auto getWinPosY() const { return m_win_pos_y; }
+		inline uint32_t getWinSizeX() const { return m_win_size_x; }
+		inline uint32_t getWinSizeY() const { return m_win_size_y; }
+		inline uint32_t getWinPosX() const { return m_win_pos_x; }
+		inline uint32_t getWinPosY() const { return m_win_pos_y; }
 		inline auto getName() const { return m_win_name; }
 		inline bool isClose() const { return m_close; }
 		inline auto getSurface() const { return m_surface; }
@@ -78,10 +79,12 @@ namespace luna
 		
 	private:
 
-		uint32_t m_win_size_x = 0;
-		uint32_t m_win_size_y = 0;
-		uint32_t m_win_pos_x = 0;
-		uint32_t m_win_pos_y = 0;
+		std::atomic<uint32_t> m_win_size_x = 0;
+		std::atomic<uint32_t> m_win_size_y = 0;
+		std::atomic<uint32_t> m_win_pos_x = 0;
+		std::atomic<uint32_t> m_win_pos_y = 0;
+		std::atomic<bool> m_close = false;
+
 		std::string	m_win_name = " ";
 		
 #if VK_USE_PLATFORM_WIN32_KHR
@@ -91,8 +94,6 @@ namespace luna
 
 		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 		VkInstance m_vulkanInstance = VK_NULL_HANDLE;
-
-		bool m_close = false;
 
 		static std::once_flag m_sflag;
 		static WinNative* m_instance;
