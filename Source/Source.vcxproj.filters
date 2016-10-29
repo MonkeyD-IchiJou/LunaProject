@@ -195,9 +195,6 @@
     <ClInclude Include="Vertex.h">
       <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
-    <ClInclude Include="StorageData.h">
-      <Filter>Header Files\Resources\Storages</Filter>
-    </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>Header Files\Resources\Meshes</Filter>
     </ClInclude>
@@ -296,6 +293,15 @@
     </ClInclude>
     <ClInclude Include="Input.h">
       <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="FramePacket.h">
+      <Filter>Header Files\Resources\Storages</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandBufferPacket.h">
+      <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -456,7 +462,13 @@
       <Filter>Source Files\Resources\Components\Scripts</Filter>
     </ClCompile>
     <ClCompile Include="Input.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandBufferPacket.cpp">
+      <Filter>Source Files\Resources\Storages</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

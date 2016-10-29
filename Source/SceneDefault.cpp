@@ -19,44 +19,29 @@ namespace luna
 		DeInit_();
 	}
 
-	void SceneDefault::EarlyUpdate(FramePacket& framepacket)
+	void SceneDefault::Update(FramePacket& framepacket, std::array<JobSystem, 3>& workers)
 	{
 		/* prepare Frame Packets datas !! */ 
-
-		// every time when new entity is allocated with basicmesh to render, must renew the renderdatas again
-		m_componentmanager->GetRenderingData(framepacket.renderinfos);
 
 		/* update all the components locally */
 		m_componentmanager->Update();
 
-		// every frame gather all the transformation info for the mesh
-		GetInstanceData_(framepacket.instancedatas, framepacket.renderinfos);
-
-		// gather font data
-		m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
-
-		// view and projection mat4 update
-		m_componentmanager->GetMainCamData(framepacket.maincamdata);
-	}
-
-	void SceneDefault::Update(FramePacket& framepacket)
-	{
-		/* prepare Frame Packets datas !! */ 
-
 		// every time when new entity is allocated with basicmesh to render, must renew the renderdatas again
-		m_componentmanager->GetRenderingData(framepacket.renderinfos);
-
-		/* update all the components locally */
-		m_componentmanager->Update();
-
 		// every frame gather all the transformation info for the mesh
-		GetInstanceData_(framepacket.instancedatas, framepacket.renderinfos);
-
-		// gather font data
-		m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
+		workers[0].addJob([&]() {
+			m_componentmanager->GetRenderingData(framepacket.renderinfos);
+			GetInstanceData_(framepacket.instancedatas, framepacket.renderinfos);
+		});
 		
-		// view and projection mat4 update
-		m_componentmanager->GetMainCamData(framepacket.maincamdata);
+		// gather font data
+		workers[1].addJob([&]() {
+			m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
+			m_componentmanager->GetMainCamData(framepacket.maincamdata);
+		});
+
+		// let all workers finish their job pls
+		workers[0].wait();
+		workers[1].wait();
 	}
 
 	void SceneDefault::Init_()

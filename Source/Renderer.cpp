@@ -22,13 +22,15 @@
 #include "VulkanImageBufferObject.h"
 #include "enum_c.h"
 
+#include "CommandBufferPacket.h"
+
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm\glm.hpp>
 
 #define BASE_RESOLUTION_X 1280
 #define BASE_RESOLUTION_Y 720
-#define MAX_INSTANCEDATA 100
+#define MAX_INSTANCEDATA 200
 #define MAX_FONTDATA 256
 
 namespace luna
@@ -39,21 +41,6 @@ namespace luna
 	Renderer::Renderer()
 	{
 		// vulkan instance and logical device will be created in the parents constructor
-	}
-
-	void Renderer::MapGeometryDatas(const std::vector<InstanceData>& instancedatas)
-	{
-		m_instance_ssbo->Update(instancedatas);
-	}
-
-	void Renderer::MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas)
-	{
-		m_fontinstance_ssbo->Update(fontinstancedatas);
-	}
-
-	void Renderer::MapMainCamDatas(const UBOData & ubo)
-	{
-		m_ubo->Update(ubo);
 	}
 
 	void Renderer::CreateResources()
@@ -171,57 +158,38 @@ namespace luna
 		m_text_shader = new TextShader();
 		m_text_shader->SetDescriptors(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
 		m_text_shader->Init(FinalFBO::getRenderPass());
+
+		// just to double make sure that the shader update the latest size of the ssbo
+		m_deferred_shader->UpdateDescriptor(m_instance_ssbo);
+		// just to double make sure that the shader update the latest size of the ssbo
+		m_text_shader->UpdateDescriptor(m_fontinstance_ssbo); 
 	}
 
 	void Renderer::CreateCommandBuffers_()
 	{
-		// create the command pool first
-		{
-			VkCommandPoolCreateInfo commandPool_createinfo{};
-			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+		VkCommandPoolCreateInfo commandPool_createinfo{};
+		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
 
-			m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
+		m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
 
-			// command buffers creation
-			VkCommandBufferAllocateInfo buffer_allocateInfo{};
-			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			buffer_allocateInfo.commandPool = m_commandPool;
-			buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
-			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
-			buffer_allocateInfo.commandBufferCount = 1;
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_cmdbuffer));
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_finalpass_cmdbuffer));
-		}
-		
-		{
-			// secondary command buffer creation
-			// it is able to reset the command buffer
-			VkCommandPoolCreateInfo commandPool_createinfo{};
-			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_secondary_commandPool));
+		// command buffers creation
+		VkCommandBufferAllocateInfo buffer_allocateInfo{};
+		buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		buffer_allocateInfo.commandPool = m_commandPool;
+		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
+		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
 
-			VkCommandBufferAllocateInfo buffer_allocateInfo{};
-			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			buffer_allocateInfo.commandPool = m_secondary_commandPool;
-			buffer_allocateInfo.commandBufferCount = 1;
-			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_geometry_secondary_cmdbuff));
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_font_secondary_cmdbuff));
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_offscreen_secondary_cmdbuff));
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_skybox_secondary_cmdbuff));
-			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, &m_transferdata_secondary_cmdbuff));
-		}
+		/* each frames */
+		commandbufferpacket = new CommandBufferPacket(m_queuefamily_index.graphicsFamily, m_logicaldevice);
 	}
 
-	void Renderer::RecordTransferData_Secondary()
+	void Renderer::RecordCopyDataToOptimal_Secondary_(const VkCommandBuffer commandbuff)
 	{
 		// NOTE: I need to rerecord this command buffer if the transfer size exceed the expectation size !!
-		vkResetCommandBuffer(m_transferdata_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		DebugLog::EC(vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -231,20 +199,20 @@ namespace luna
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceinfo;
 
-		DebugLog::EC(vkBeginCommandBuffer(m_transferdata_secondary_cmdbuff, &beginInfo));
+		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
 
-		m_instance_ssbo->Record(m_transferdata_secondary_cmdbuff);
-		m_fontinstance_ssbo->Record(m_transferdata_secondary_cmdbuff);
-		m_ubo->Record(m_transferdata_secondary_cmdbuff);
+		m_instance_ssbo->Record(commandbuff);
+		m_fontinstance_ssbo->Record(commandbuff);
+		m_ubo->Record(commandbuff);
 
-		DebugLog::EC(vkEndCommandBuffer(m_transferdata_secondary_cmdbuff));
+		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
 
-	void Renderer::RecordGeometryPass_Secondary(const std::vector<RenderingInfo>& renderinfos)
+	void Renderer::RecordGeometryPass_Secondary_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos)
 	{
 		auto mr = ModelResources::getInstance();
 
-		vkResetCommandBuffer(m_geometry_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -258,11 +226,8 @@ namespace luna
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceinfo;
 
-		// just to double make sure that the shader update the latest size of the ssbo
-		m_deferred_shader->UpdateDescriptor(m_instance_ssbo);
-
 		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(m_geometry_secondary_cmdbuff, &beginInfo);
+		vkBeginCommandBuffer(commandbuff, &beginInfo);
 
 		auto totalrenderinfosize = renderinfos.size();
 
@@ -270,39 +235,39 @@ namespace luna
 		if (totalrenderinfosize > 0)
 		{
 			// bind the deferred shader
-			m_deferred_shader->Bind(m_geometry_secondary_cmdbuff);
-			m_deferred_shader->SetViewPort(m_geometry_secondary_cmdbuff, m_deferred_fbo->getResolution());
-			vkCmdSetStencilCompareMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-			vkCmdSetStencilWriteMask(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
-			vkCmdSetStencilReference(m_geometry_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
+			m_deferred_shader->Bind(commandbuff);
+			m_deferred_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+			vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+			vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+			vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
 
 			// record the first renderinfo first
 			const auto& ri = renderinfos[0];
-			m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, ri.textureID);
-			m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, 0);
+			m_deferred_shader->BindTexture(commandbuff, ri.textureID);
+			m_deferred_shader->LoadObjectOffset(commandbuff, 0);
 			auto offset = ri.instancedatas.size();
-			mr->Models[ri.modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(offset));
+			mr->Models[ri.modelID]->DrawInstanced(commandbuff, static_cast<uint32_t>(offset));
 
 			// record the rest renderinfo
 			for (int i = 1; i < totalrenderinfosize; ++i)
 			{
 				const auto& renderinfo = renderinfos[i];
 
-				m_deferred_shader->BindTexture(m_geometry_secondary_cmdbuff, renderinfo.textureID);
-				m_deferred_shader->LoadObjectOffset(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(offset));
-				mr->Models[renderinfo.modelID]->DrawInstanced(m_geometry_secondary_cmdbuff, static_cast<uint32_t>(renderinfo.instancedatas.size()));
+				m_deferred_shader->BindTexture(commandbuff, renderinfo.textureID);
+				m_deferred_shader->LoadObjectOffset(commandbuff, static_cast<uint32_t>(offset));
+				mr->Models[renderinfo.modelID]->DrawInstanced(commandbuff, static_cast<uint32_t>(renderinfo.instancedatas.size()));
 
 				offset += renderinfo.instancedatas.size();
 			}
 		}
 
 		// end geometry pass cmd buff
-		vkEndCommandBuffer(m_geometry_secondary_cmdbuff);
+		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordSkybox__Secondary_()
+	void Renderer::RecordSkybox__Secondary_(const VkCommandBuffer commandbuff)
 	{
-		vkResetCommandBuffer(m_skybox_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -317,28 +282,28 @@ namespace luna
 		beginInfo.pInheritanceInfo = &inheritanceinfo;
 
 		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(m_skybox_secondary_cmdbuff, &beginInfo);
+		vkBeginCommandBuffer(commandbuff, &beginInfo);
 
 		// draw skybox last
-		m_skybox_shader->Bind(m_skybox_secondary_cmdbuff);
-		m_skybox_shader->SetViewPort(m_skybox_secondary_cmdbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(m_skybox_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(m_skybox_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+		m_skybox_shader->Bind(commandbuff);
+		m_skybox_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
 
-		vkCmdSetStencilReference(m_skybox_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
+		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
 		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
 		auto s = glm::scale(glm::mat4(), glm::vec3(5.f, 5.f, 5.f));
 		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
-		m_skybox_shader->LoadModel(m_skybox_secondary_cmdbuff, t * s * r);
-		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(m_skybox_secondary_cmdbuff);
+		m_skybox_shader->LoadModel(commandbuff, t * s * r);
+		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(commandbuff);
 
 		// end geometry pass cmd buff
-		vkEndCommandBuffer(m_skybox_secondary_cmdbuff);
+		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordUIPass_Secondary(const uint32_t & totaltext)
+	void Renderer::RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext)
 	{
-		vkResetCommandBuffer(m_font_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -352,26 +317,23 @@ namespace luna
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceinfo;
 
-		// just to double make sure that the shader update the latest size of the ssbo
-		m_text_shader->UpdateDescriptor(m_fontinstance_ssbo); 
-
 		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(m_font_secondary_cmdbuff, &beginInfo);
+		vkBeginCommandBuffer(commandbuff, &beginInfo);
 
 		if (totaltext > 0)
 		{
 			// bind the ui related shaders
-			m_text_shader->Bind(m_font_secondary_cmdbuff);
-			m_text_shader->SetViewPort(m_font_secondary_cmdbuff, m_final_fbo->getResolution());
-			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(m_font_secondary_cmdbuff, totaltext);
+			m_text_shader->Bind(commandbuff);
+			m_text_shader->SetViewPort(commandbuff, m_final_fbo->getResolution());
+			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(commandbuff, totaltext);
 		}
 
-		vkEndCommandBuffer(m_font_secondary_cmdbuff);
+		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordSecondaryOffscreen__Secondary_()
+	void Renderer::RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff)
 	{
-		vkResetCommandBuffer(m_offscreen_secondary_cmdbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -386,32 +348,39 @@ namespace luna
 		beginInfo.pInheritanceInfo = &inheritanceinfo;
 
 		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(m_offscreen_secondary_cmdbuff, &beginInfo);
+		vkBeginCommandBuffer(commandbuff, &beginInfo);
 
 		// bind the shader pipeline stuff
-		m_finalpass_shader->Bind(m_offscreen_secondary_cmdbuff);
-		m_finalpass_shader->SetViewPort(m_offscreen_secondary_cmdbuff, m_final_fbo->getResolution());
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_offscreen_secondary_cmdbuff);
+		m_finalpass_shader->Bind(commandbuff);
+		m_finalpass_shader->SetViewPort(commandbuff, m_final_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
-		vkEndCommandBuffer(m_offscreen_secondary_cmdbuff);
+		vkEndCommandBuffer(commandbuff);
 	}
 
 	void Renderer::PreRecord_()
 	{
 		// dummy record secondary buffers
-		std::vector<RenderingInfo> temp;
-		RecordTransferData_Secondary();
-		RecordGeometryPass_Secondary(temp);
-		RecordSkybox__Secondary_();
-		RecordUIPass_Secondary(0);
-		RecordSecondaryOffscreen__Secondary_();
+		FramePacket temp{};
+		// record the command buffers and update the staging buffers
+		RecordGeometryPass_Secondary_(
+			commandbufferpacket->geometry_secondary_cmdbuff, 
+			temp.renderinfos
+		);
+		RecordUIPass_Secondary_(
+			commandbufferpacket->font_secondary_cmdbuff, 
+			0
+		);
+		RecordCopyDataToOptimal_Secondary_(commandbufferpacket->transferdata_secondary_cmdbuff);
+		RecordSkybox__Secondary_(commandbufferpacket->skybox_secondary_cmdbuff);
+		RecordSecondaryOffscreen_Secondary_(commandbufferpacket->offscreen_secondary_cmdbuff);
 
 		// primary command buffers, record once and for all
-		RecordOffscreen_Primary_();
+		RecordOffscreen_Primary_(commandbufferpacket->offscreen_cmdbuffer);
 		RecordPresentation_Primary_();
 	}
 
-	void luna::Renderer::RecordOffscreen_Primary_()
+	void luna::Renderer::RecordOffscreen_Primary_(const VkCommandBuffer commandbuff)
 	{
 		// begin init
 		VkCommandBufferBeginInfo beginInfo{};
@@ -420,51 +389,57 @@ namespace luna
 		beginInfo.pInheritanceInfo = nullptr;
 
 		// start recording the offscreen command buffers
-		DebugLog::EC(vkBeginCommandBuffer(m_offscreen_cmdbuffer, &beginInfo));
+		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
 
 		// transfer data to gpu first
-		vkCmdExecuteCommands(m_offscreen_cmdbuffer, 1, &m_transferdata_secondary_cmdbuff);
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->transferdata_secondary_cmdbuff);
 
 		// bind the fbo
-		m_deferred_fbo->Bind(m_offscreen_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		m_deferred_fbo->Bind(commandbuff, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the geometry pass
-		VkCommandBuffer secondary_cmdbuff[] = {m_geometry_secondary_cmdbuff, m_skybox_secondary_cmdbuff};
-		vkCmdExecuteCommands(m_offscreen_cmdbuffer, 2, secondary_cmdbuff);
+		VkCommandBuffer secondary_cmdbuff[] = {
+			commandbufferpacket->geometry_secondary_cmdbuff, 
+			commandbufferpacket->skybox_secondary_cmdbuff
+		};
+		vkCmdExecuteCommands(commandbuff, 2, secondary_cmdbuff);
 		
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
-			m_offscreen_cmdbuffer, 
+			commandbuff, 
 			VK_SUBPASS_CONTENTS_INLINE
 		);
 
 		// execute all the light passes
 
 		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(m_offscreen_cmdbuffer);
-		m_dirlightpass_shader->SetViewPort(m_offscreen_cmdbuffer, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(m_offscreen_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(m_offscreen_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(m_offscreen_cmdbuffer, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(m_offscreen_cmdbuffer);
+		m_dirlightpass_shader->Bind(commandbuff);
+		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		// combined with those not lightpass geometry
 
 		// unbind the fbo
-		m_deferred_fbo->UnBind(m_offscreen_cmdbuffer);
+		m_deferred_fbo->UnBind(commandbuff);
 
 		// another render pass
-		m_final_fbo->Bind(m_offscreen_cmdbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		m_final_fbo->Bind(commandbuff, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the secondary command buffers
-		VkCommandBuffer secondarycommandbuffer[] = { m_offscreen_secondary_cmdbuff, m_font_secondary_cmdbuff };
-		vkCmdExecuteCommands(m_offscreen_cmdbuffer, 2, secondarycommandbuffer);
+		VkCommandBuffer secondarycommandbuffer[] = { 
+			commandbufferpacket->offscreen_secondary_cmdbuff, 
+			commandbufferpacket->font_secondary_cmdbuff 
+		};
+		vkCmdExecuteCommands(commandbuff, 2, secondarycommandbuffer);
 
 		// unbind the fbo
-		m_final_fbo->UnBind(m_offscreen_cmdbuffer);
+		m_final_fbo->UnBind(commandbuff);
 
 		// finish recording
-		DebugLog::EC(vkEndCommandBuffer(m_offscreen_cmdbuffer));
+		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
 
 	void luna::Renderer::RecordPresentation_Primary_()
@@ -500,6 +475,36 @@ namespace luna
 		}
 	}
 
+	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<JobSystem, 3>& workers)
+	{
+		workers[0].addJob([&]() {
+			// update to staging buffers
+			m_instance_ssbo->Update(framepacket.instancedatas);
+			m_fontinstance_ssbo->Update(framepacket.fontinstancedatas);
+			m_ubo->Update(framepacket.maincamdata);
+		});
+
+		workers[1].addJob([&]() {
+			// record the command buffers and update the staging buffers
+			RecordGeometryPass_Secondary_(
+				commandbufferpacket->geometry_secondary_cmdbuff, 
+				framepacket.renderinfos
+			);
+		});
+		
+		workers[2].addJob([&]() {
+			RecordUIPass_Secondary_(
+				commandbufferpacket->font_secondary_cmdbuff,
+				static_cast<uint32_t>(framepacket.fontinstancedatas.size())
+			);
+		});
+
+		// let all workers finish their job pls
+		workers[0].wait();
+		workers[1].wait();
+		workers[2].wait();
+	}
+
 	void Renderer::Render()
 	{
 		// get the available image to render with
@@ -516,7 +521,7 @@ namespace luna
 		submitinfo0.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
 		submitinfo0.pWaitSemaphores = &m_presentComplete; 
 		submitinfo0.pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
-		submitinfo0.pCommandBuffers = &m_offscreen_cmdbuffer;
+		submitinfo0.pCommandBuffers = &commandbufferpacket->offscreen_cmdbuffer;
 
 		auto& submitinfo1 = submitInfo[1];
 		submitinfo1.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -661,10 +666,10 @@ namespace luna
 			m_commandPool = VK_NULL_HANDLE;
 		}
 		
-		if (m_secondary_commandPool != VK_NULL_HANDLE)
+		if (commandbufferpacket != nullptr)
 		{
-			vkDestroyCommandPool(m_logicaldevice, m_secondary_commandPool, nullptr);
-			m_secondary_commandPool = VK_NULL_HANDLE;
+			commandbufferpacket->Destroy(m_logicaldevice);
+			commandbufferpacket = nullptr;
 		}
 	}
 }

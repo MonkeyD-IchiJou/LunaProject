@@ -1,7 +1,7 @@
 #ifndef BASIC_SSBO_H
 #define BASIC_SSBO_H
 
-#include "StorageData.h"
+#include "FramePacket.h"
 #include "VulkanBufferData.h"
 #include <vector>
 
@@ -33,11 +33,14 @@ namespace luna
 				// IMPORTANT: need to rewrite the descriptor sets for SSBO before calling vkCmdBindDescriptorSets
 			}
 
-			/* begin to record the latest ubo info into the staged device memory */
-			void* data = nullptr;
-			vkMapMemory(m_logicaldevice, m_staging_mem, 0, static_cast<size_t>(currentsize), 0, &data);
-			memcpy(data, ssbo.data(), static_cast<size_t>(currentsize));
-			vkUnmapMemory(m_logicaldevice, m_staging_mem);
+			if (currentsize > 0)
+			{
+				/* begin to record the latest ubo info into the staged device memory */
+				void* data = nullptr;
+				vkMapMemory(m_logicaldevice, m_staging_mem, 0, static_cast<size_t>(currentsize), 0, &data);
+				memcpy(data, ssbo.data(), static_cast<size_t>(currentsize));
+				vkUnmapMemory(m_logicaldevice, m_staging_mem);
+			}
 		}
 
 		inline auto getSSBOTotalSize() const { return m_ssboTotalSize; }

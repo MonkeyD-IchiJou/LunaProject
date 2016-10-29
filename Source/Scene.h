@@ -2,7 +2,10 @@
 #define SCENE_H
 
 #include <string>
-#include "StorageData.h"
+#include <array>
+
+#include "FramePacket.h"
+#include "JobSystem.h"
 
 namespace luna
 {
@@ -15,11 +18,8 @@ namespace luna
 		Scene();
 		virtual ~Scene();
 
-		/* load datas to renderer and prepare everything before update every frame */
-		virtual void EarlyUpdate(FramePacket& framepacket) = 0;
-
 		/* scene update objects transformation, physics, AI, secondary command buffer, every frame */
-		virtual void Update(FramePacket& framepacket) = 0;
+		virtual void Update(FramePacket& framepacket, std::array<JobSystem, 3>& workers) = 0;
 
 	protected:
 		/* scene necessary init */

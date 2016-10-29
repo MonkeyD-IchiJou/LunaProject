@@ -1,7 +1,7 @@
 #ifndef BASIC_UBO_H
 #define BASIC_UBO_H
 
-#include "StorageData.h"
+#include "FramePacket.h"
 #include "VulkanBufferData.h"
 
 namespace luna

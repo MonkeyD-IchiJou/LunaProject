@@ -2,8 +2,11 @@
 #define RENDERER_H
 
 #include "VulkanRenderer.h"
-#include "StorageData.h"
+#include "FramePacket.h"
 #include <mutex>
+
+#include "JobSystem.h"
+#include <array>
 
 namespace luna
 {
@@ -23,6 +26,8 @@ namespace luna
 	class SimpleShader;
 	class TextShader;
 
+	class CommandBufferPacket;
+
 	class Renderer :
 		public VulkanRenderer
 	{
@@ -33,22 +38,11 @@ namespace luna
 		/* delete swap chain, fbo, shaders and renderpass, etc */
 		void CleanUpResources() override;
 
-		/* update all the necessary datas to the host-visible buffer */
-		void MapGeometryDatas(const std::vector<InstanceData>& instancedatas);
-		void MapFontInstDatas(const std::vector<FontInstanceData>& fontinstancedatas);
-		void MapMainCamDatas(const UBOData& ubo);
-
-		/* for transfering datas to the gpu */
-		void RecordTransferData_Secondary();
-
-		/* record the dynamic geometry pass */
-		void RecordGeometryPass_Secondary(const std::vector<RenderingInfo>& renderinfos);
-
-		/* record the dynamic ui pass */
-		void RecordUIPass_Secondary(const uint32_t& totaltext);
-
 		/* submit all the queues && render everything && then present it on the screen */
 		void Render();
+
+		/* tell the gpu what to render */
+		void RecordBuffers(const FramePacket& framepacket, std::array<JobSystem, 3>& workers);
 
 	public:
 		/* Singleton class implementation */
@@ -79,16 +73,17 @@ namespace luna
 		void PreRecord_();
 
 		/* primary command buffer -> deffered shader fbo pass */
-		void RecordOffscreen_Primary_();
-
-		/* secondary command buffer -> skybox pass */
-		void RecordSkybox__Secondary_();
-
-		/* secondary command buffer -> final pass setting in secondary buffer */
-		void RecordSecondaryOffscreen__Secondary_();
+		void RecordOffscreen_Primary_(const VkCommandBuffer commandbuff);
 
 		/* primary command buffer -> final rendering && presentation pass */
 		void RecordPresentation_Primary_();
+
+		/* dynamic secondary command buffers rerecord */
+		void RecordCopyDataToOptimal_Secondary_(const VkCommandBuffer commandbuff);
+		void RecordGeometryPass_Secondary_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
+		void RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext);
+		void RecordSkybox__Secondary_(const VkCommandBuffer commandbuff);
+		void RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff);
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -110,19 +105,10 @@ namespace luna
 		SimpleShader* m_simple_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 
-		/* rendering recording purpose */
+		/* presentation command buffer recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_presentation_cmdbuffers;
-		VkCommandBuffer m_offscreen_cmdbuffer = VK_NULL_HANDLE;
-		VkCommandBuffer m_finalpass_cmdbuffer = VK_NULL_HANDLE;
-		
-		/* dynamic recording purpose */
-		VkCommandPool m_secondary_commandPool = VK_NULL_HANDLE;
-		VkCommandBuffer m_geometry_secondary_cmdbuff = VK_NULL_HANDLE;
-		VkCommandBuffer m_font_secondary_cmdbuff = VK_NULL_HANDLE;
-		VkCommandBuffer m_offscreen_secondary_cmdbuff = VK_NULL_HANDLE;
-		VkCommandBuffer m_skybox_secondary_cmdbuff = VK_NULL_HANDLE;
-		VkCommandBuffer m_transferdata_secondary_cmdbuff = VK_NULL_HANDLE;
+		CommandBufferPacket* commandbufferpacket{};
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;

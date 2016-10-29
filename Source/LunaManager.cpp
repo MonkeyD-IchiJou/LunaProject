@@ -3,8 +3,7 @@
 #include "Renderer.h"
 #include "WinNative.h"
 #include "SceneDefault.h"
-
-
+#include "JobSystem.h"
 #include <chrono>
 
 namespace luna
@@ -56,24 +55,14 @@ namespace luna
 
 		auto renderer = luna::Renderer::getInstance();
 
+		// framepacket datas
 		FramePacket framepacket{};
-
-		// scene early update first
-		m_scene->EarlyUpdate(framepacket);
-
-		// update to buffer objects
-		renderer->MapGeometryDatas(framepacket.instancedatas);
-		renderer->MapFontInstDatas(framepacket.fontinstancedatas);
-		renderer->MapMainCamDatas(framepacket.maincamdata);
-
-		// rmb to re-record the command buffer again if m_renderinfos is different
-		renderer->RecordTransferData_Secondary();
-		renderer->RecordGeometryPass_Secondary(framepacket.renderinfos);
-		renderer->RecordUIPass_Secondary(static_cast<uint32_t>(framepacket.fontinstancedatas.size()));
 
 #if VK_USE_PLATFORM_WIN32_KHR
 
 		auto window = luna::WinNative::getInstance();
+
+		std::array<JobSystem, 3> workers{};
 
 		while (!window->isClose())
 		{
@@ -84,12 +73,15 @@ namespace luna
 			time_start = clock::now(); 
 
 			// update game logic
-			m_scene->Update(framepacket);
+			m_scene->Update(framepacket, workers);
 
-			// begin to render everything and present it on screen
+			// update the gpu
+			renderer->RecordBuffers(framepacket, workers);
+			
+			// queue submit and present it on the screen
 			renderer->Render();
 
-			DebugLog::printL(delta_time.count());
+			DebugLog::printL(std::chrono::duration_cast<std::chrono::microseconds>(delta_time).count());
 		}
 #endif
 	}
