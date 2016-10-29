@@ -1,9 +1,9 @@
-#ifndef STORAGE_DATA_H
-#define STORAGE_DATA_H
+#ifndef FRAME_PACKET_H
+#define FRAME_PACKET_H
 
+#include <vector>
 #include <glm\glm.hpp>
 #include "enum_c.h"
-#include <vector>
 
 namespace luna
 {
