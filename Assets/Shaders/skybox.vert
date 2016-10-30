@@ -29,7 +29,12 @@ layout(push_constant) uniform PushConst
 
 void main()
 {
-	gl_Position = ubo.proj * ubo.view * pushconsts.model * vec4(inPosition, 1.0);
+	mat4 view = ubo.view;
+	view[3][0] = 0.0;
+	view[3][1] = 0.0;
+	view[3][2] = 0.0;
+	
+	gl_Position = ubo.proj * view * pushconsts.model * vec4(inPosition, 1.0);
 	
 	// out texcoord
 	outUVW = inPosition;
