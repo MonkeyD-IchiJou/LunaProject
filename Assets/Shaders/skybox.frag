@@ -11,11 +11,24 @@ layout (set = 1, binding = 0) uniform samplerCube samplerCubeMap;
 layout(location = 0) in vec3 inUVW;
 
 // output as color attachment
-layout (location = 0) out vec4 outPosition;
-layout (location = 1) out vec4 outNormal;
-layout (location = 2) out vec4 outAlbedo;
+layout (location = 0) out uvec4 color0;
+layout (location = 1) out vec4 color1;
 
 void main()
 {
-	outAlbedo = texture(samplerCubeMap, inUVW);
+	uvec4 outvec0 = uvec4(0);
+	vec4 outvec1 = vec4(0);
+	
+	vec4 color = texture(samplerCubeMap, inUVW);
+	
+	outvec0.x = packHalf2x16(color.xy);
+	outvec0.y = packHalf2x16(vec2(color.z, inUVW.x));
+	outvec0.z = packHalf2x16(inUVW.yz);
+	outvec0.w = 0;
+	
+	outvec1.xyz = inUVW.xyz;
+	outvec1.w = color.a;
+	
+	color0 = outvec0;
+	color1 = outvec1;
 }
