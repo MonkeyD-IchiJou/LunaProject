@@ -20,9 +20,8 @@ namespace luna
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 
 		void SetDescriptors(
-			const VulkanImageBufferObject* samplerPos,
-			const VulkanImageBufferObject* samplerNormal,
-			const VulkanImageBufferObject* samplerAlbedo
+			const VulkanImageBufferObject* color0,
+			const VulkanImageBufferObject* color1
 		);
 
 	private:

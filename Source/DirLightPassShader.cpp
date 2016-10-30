@@ -27,36 +27,29 @@ namespace luna
 		);
 	}
 
-	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject * samplerPos, const VulkanImageBufferObject * samplerNormal, 
-		const VulkanImageBufferObject * samplerAlbedo)
+	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject* color0, const VulkanImageBufferObject* color1)
 	{
 		// 3 kind of descriptors to send to
 		// set up the layout for the shaders 
-		const int totalbinding = 3;
+		const int totalbinding = 2;
 		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
 
-		// sampler pos
+		// color0
 		layoutinfo[0].binding = 0;
 		layoutinfo[0].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		layoutinfo[0].typeflags = 1; // an image
 
-		// sampler norm
+		// color1
 		layoutinfo[1].binding = 1;
 		layoutinfo[1].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		layoutinfo[1].typeflags = 1; // an image
 
-		// sampler albedo
-		layoutinfo[2].binding = 2;
-		layoutinfo[2].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		layoutinfo[2].typeflags = 1; // an image
-
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
 
 		// create the poolsize to hold all my descriptors
-		const int totaldescriptors = 3; // total num of descriptors
+		const int totaldescriptors = 2; // total num of descriptors
 		const int totalsets = 1; // total num of descriptor sets i will have
 
 		VkDescriptorPoolSize poolSize{};
@@ -68,26 +61,20 @@ namespace luna
 		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0, 0);
 
 		// first descriptor set update
-		VkDescriptorImageInfo samplerposinfo{};
-		samplerposinfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		samplerposinfo.imageView = samplerPos->getImageView();
-		samplerposinfo.sampler = samplerPos->getSampler();
-		VkDescriptorImageInfo samplernorminfo{};
-		samplernorminfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		samplernorminfo.imageView = samplerNormal->getImageView();
-		samplernorminfo.sampler = samplerNormal->getSampler();
-		VkDescriptorImageInfo albedoinfo{};
-		albedoinfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		albedoinfo.imageView = samplerAlbedo->getImageView();
-		albedoinfo.sampler = samplerAlbedo->getSampler();
+		VkDescriptorImageInfo color0info{};
+		color0info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		color0info.imageView = color0->getImageView();
+		color0info.sampler = color0->getSampler();
+		VkDescriptorImageInfo color1info{};
+		color1info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		color1info.imageView = color1->getImageView();
+		color1info.sampler = color1->getSampler();
 
 		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
 		firstdescriptorset[0].layoutinfo = layoutinfo[0];
-		firstdescriptorset[0].imageinfo = samplerposinfo;
+		firstdescriptorset[0].imageinfo = color0info;
 		firstdescriptorset[1].layoutinfo = layoutinfo[1];
-		firstdescriptorset[1].imageinfo = samplernorminfo;
-		firstdescriptorset[2].layoutinfo = layoutinfo[2];
-		firstdescriptorset[2].imageinfo = albedoinfo;
+		firstdescriptorset[1].imageinfo = color1info;
 
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}

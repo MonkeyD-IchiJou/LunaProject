@@ -70,19 +70,19 @@ namespace luna
 			auto& position = entity->transformation->position;
 			if (input::Keys['W'].pressed == true)
 			{
-				position += direction * (speed * global::DeltaTime);
+				position += direction * ( (speed + 5.f) * global::DeltaTime);
 			}
 			if (input::Keys['A'].pressed == true)
 			{
-				position += right * (speed * global::DeltaTime);
+				position += right * ((speed + 5.f) * global::DeltaTime);
 			}
 			if (input::Keys['S'].pressed == true)
 			{
-				position -= direction * (speed * global::DeltaTime);
+				position -= direction * ((speed + 5.f) * global::DeltaTime);
 			}
 			if (input::Keys['D'].pressed == true)
 			{
-				position -= right * (speed * global::DeltaTime);
+				position -= right * ((speed + 5.f) * global::DeltaTime);
 			}
 
 			camera->target = position + direction;

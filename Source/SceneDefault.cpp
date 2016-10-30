@@ -151,7 +151,7 @@ namespace luna
 			entity->transformation->position = glm::vec3(-2.f, 2.f, -5.f);
 			CameraComponent* camc = dynamic_cast<CameraComponent*>(entity->AddComponent(COMPONENT_ATYPE::CAMERA_ACTYPE));
 			camc->maincam = true;
-			camc->farZ = 50.f;
+			camc->farZ = 100.f;
 			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
 			script->script = new CameraControlScript();
 			m_availableEntities.push_back(entity);

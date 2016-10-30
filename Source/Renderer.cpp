@@ -92,9 +92,8 @@ namespace luna
 
 		// deferred fbo with 2 subpass
 		m_deferred_fbo = new DeferredFBO();
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::WORLDPOS_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::WORLDNORM_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::ALBEDO_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR0_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
 		clearvalue.depthStencil = {1.f, 0xff};
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
@@ -142,15 +141,14 @@ namespace luna
 		// dirlight shader init
 		m_dirlightpass_shader = new DirLightPassShader();
 		m_dirlightpass_shader->SetDescriptors(
-			texrsc->Textures[eTEXTURES::WORLDPOS_ATTACHMENT_RGBA16F],
-			texrsc->Textures[eTEXTURES::WORLDNORM_ATTACHMENT_RGBA16F],
-			texrsc->Textures[eTEXTURES::ALBEDO_ATTACHMENT_RGBA16F]
+			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U],
+			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32F]
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
 		m_nonlightpass_shader = new NonLightPassShader();
 		m_nonlightpass_shader->SetDescriptors(
-			texrsc->Textures[eTEXTURES::ALBEDO_ATTACHMENT_RGBA16F]
+			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U]
 		);
 		m_nonlightpass_shader->Init(DeferredFBO::getRenderPass());
 
@@ -302,7 +300,7 @@ namespace luna
 
 		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
 		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
-		auto s = glm::scale(glm::mat4(), glm::vec3(50.f, 50.f, 50.f));
+		auto s = glm::scale(glm::mat4(), glm::vec3(100.f, 100.f, 100.f));
 		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
 		m_skybox_shader->LoadModel(commandbuff, t * s * r);
 		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(commandbuff);
