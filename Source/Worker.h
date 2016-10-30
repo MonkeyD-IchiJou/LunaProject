@@ -1,5 +1,5 @@
-#ifndef JOB_SYSTEM_H
-#define JOB_SYSTEM_H
+#ifndef WORKERTHRD_H
+#define WORKERTHRD_H
 
 #include <thread>
 #include <mutex>
@@ -8,11 +8,11 @@
 
 namespace luna
 {
-	class JobSystem
+	class Worker
 	{
 	public:
-		JobSystem();
-		~JobSystem();
+		Worker();
+		~Worker();
 		
 		// add new job to the thrd's queue
 		void addJob(std::function<void()> NewJob);

@@ -1,14 +1,14 @@
-#include "JobSystem.h"
+#include "Worker.h"
 
 namespace luna
 {
-	JobSystem::JobSystem()
+	Worker::Worker()
 	{
 		// start the thread
-		m_workerthrd = std::thread(&JobSystem::Infinite_loop_function, this);
+		m_workerthrd = std::thread(&Worker::Infinite_loop_function, this);
 	}
 
-	JobSystem::~JobSystem()
+	Worker::~Worker()
 	{
 		if (m_workerthrd.joinable())
 		{
@@ -21,7 +21,7 @@ namespace luna
 		}
 	}
 
-	void JobSystem::addJob(std::function<void()> NewJob)
+	void Worker::addJob(std::function<void()> NewJob)
 	{
 		std::lock_guard<std::mutex> lock(m_queuemutex);
 		m_jobqueues.push(NewJob);
@@ -30,7 +30,7 @@ namespace luna
 		m_condition.notify_one();
 	}
 
-	void JobSystem::wait()
+	void Worker::wait()
 	{
 		std::unique_lock<std::mutex> lock(m_queuemutex);
 		m_condition.wait(lock, [this]() { 
@@ -38,7 +38,7 @@ namespace luna
 		});
 	}
 
-	void JobSystem::Infinite_loop_function()
+	void Worker::Infinite_loop_function()
 	{
 		while (true)
 		{
