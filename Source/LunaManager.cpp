@@ -3,7 +3,8 @@
 #include "Renderer.h"
 #include "WinNative.h"
 #include "SceneDefault.h"
-#include "JobSystem.h"
+#include "Worker.h"
+#include "Global.h"
 #include <chrono>
 
 namespace luna
@@ -25,7 +26,8 @@ namespace luna
 		InputRun_();
 
 		// join back the game loop thread
-		GameThread.join();
+		if(GameThread.joinable())
+			GameThread.join();
 	}
 
 	void LunaManager::GameRun_()
@@ -58,16 +60,17 @@ namespace luna
 		// framepacket datas
 		FramePacket framepacket{};
 
+		// i have 3 workers waiting to do jobs
+		std::array<Worker, 3> workers{};
+
 #if VK_USE_PLATFORM_WIN32_KHR
 
 		auto window = luna::WinNative::getInstance();
 
-		std::array<JobSystem, 3> workers{};
-
 		while (!window->isClose())
 		{
-			// calc how much time have elapsed from prev frame
-			auto delta_time = clock::now() - time_start;
+			// get the prev frame time elapsed
+			global::DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - time_start).count() / 1000000.f;
 
 			// start of this frame
 			time_start = clock::now(); 
@@ -80,8 +83,6 @@ namespace luna
 			
 			// queue submit and present it on the screen
 			renderer->Render();
-
-			DebugLog::printL(std::chrono::duration_cast<std::chrono::microseconds>(delta_time).count());
 		}
 #endif
 	}

@@ -5,7 +5,7 @@
 #include "FramePacket.h"
 #include <mutex>
 
-#include "JobSystem.h"
+#include "Worker.h"
 #include <array>
 
 namespace luna
@@ -25,6 +25,7 @@ namespace luna
 	class FinalPassShader;
 	class SimpleShader;
 	class TextShader;
+	class NonLightPassShader;
 
 	class CommandBufferPacket;
 
@@ -42,7 +43,7 @@ namespace luna
 		void Render();
 
 		/* tell the gpu what to render */
-		void RecordBuffers(const FramePacket& framepacket, std::array<JobSystem, 3>& workers);
+		void RecordBuffers(const FramePacket& framepacket, std::array<Worker, 3>& workers);
 
 	public:
 		/* Singleton class implementation */
@@ -101,6 +102,7 @@ namespace luna
 		DeferredShader* m_deferred_shader = nullptr;
 		SkyBoxShader* m_skybox_shader = nullptr;
 		DirLightPassShader* m_dirlightpass_shader = nullptr;
+		NonLightPassShader* m_nonlightpass_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		SimpleShader* m_simple_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
@@ -123,6 +125,7 @@ namespace luna
 		SSBO* m_fontinstance_ssbo = nullptr;
 
 		// local cache
+		VkSubmitInfo m_submitInfo[2];
 		VkPipelineStageFlags m_waitStages[2] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
 
 		static std::once_flag m_sflag;

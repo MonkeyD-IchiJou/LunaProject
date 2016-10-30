@@ -36,7 +36,7 @@ namespace luna
 		template<typename T>
 		T * findComponentT(void)
 		{
-			for (auto &x : containerC)
+			for (auto &x : m_componentsContainer)
 			{
 				if (T* temp = dynamic_cast<T*>(x))
 				{

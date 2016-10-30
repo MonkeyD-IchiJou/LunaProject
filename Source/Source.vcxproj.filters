@@ -294,14 +294,26 @@
     <ClInclude Include="Input.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="JobSystem.h">
-      <Filter>Header Files\System</Filter>
-    </ClInclude>
     <ClInclude Include="FramePacket.h">
       <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
     <ClInclude Include="CommandBufferPacket.h">
       <Filter>Header Files\Resources\Storages</Filter>
+    </ClInclude>
+    <ClInclude Include="Worker.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="TextChangeScript.h">
+      <Filter>Header Files\Resources\Components\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraControlScript.h">
+      <Filter>Header Files\Resources\Components\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="NonLightPassShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -464,11 +476,23 @@
     <ClCompile Include="Input.cpp">
       <Filter>Source Files\System</Filter>
     </ClCompile>
-    <ClCompile Include="JobSystem.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
     <ClCompile Include="CommandBufferPacket.cpp">
       <Filter>Source Files\Resources\Storages</Filter>
+    </ClCompile>
+    <ClCompile Include="Worker.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="TextChangeScript.cpp">
+      <Filter>Source Files\Resources\Components\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="Global.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraControlScript.cpp">
+      <Filter>Source Files\Resources\Components\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="NonLightPassShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -38,7 +38,7 @@ namespace luna
 	
 	struct FramePacket
 	{
-		std::vector<RenderingInfo> renderinfos;
+		std::vector<RenderingInfo>* renderinfos = nullptr;
 		std::vector<InstanceData> instancedatas;
 		std::vector<FontInstanceData> fontinstancedatas;
 		UBOData maincamdata{};

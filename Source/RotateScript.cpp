@@ -5,6 +5,7 @@
 
 #include "Input.h"
 #include "enum_c.h"
+#include "Global.h"
 
 #include "DebugLog.h"
 
@@ -20,19 +21,17 @@ namespace luna
 
 	void RotateScript::Update(Entity * entity)
 	{
-		//DebugLog::printL(input::Keys['A'].pressed);
-
-		if (input::Mouse.leftclick == true)
-		{
-			auto t = entity->transformation;
-			t->rotation.x = 0.f; t->rotation.y = 1.f; t->rotation.x = 0.f;
-			t->rotation.w += 0.1f;
-		}
-
-		if (input::Keys['\r'].pressed == true)
-		{
-			auto t = entity->transformation;
-			t->position.x += 0.001f;
-		}
+		auto t = entity->transformation;
+		t->eulerangles.x += 50.0f * global::DeltaTime;
+		t->eulerangles.y += 50.0f * global::DeltaTime;
+		t->eulerangles.z += 50.0f * global::DeltaTime;
+	
+		if (t->eulerangles.x > 360.f)
+			t->eulerangles.x -= 360.f;
+		if (t->eulerangles.y > 360.f)
+			t->eulerangles.y -= 360.f;
+		if (t->eulerangles.z > 360.f)
+			t->eulerangles.z -= 360.f;
+		
 	}
 }

@@ -5,7 +5,7 @@
 #include <array>
 
 #include "FramePacket.h"
-#include "JobSystem.h"
+#include "Worker.h"
 
 namespace luna
 {
@@ -19,7 +19,7 @@ namespace luna
 		virtual ~Scene();
 
 		/* scene update objects transformation, physics, AI, secondary command buffer, every frame */
-		virtual void Update(FramePacket& framepacket, std::array<JobSystem, 3>& workers) = 0;
+		virtual void Update(FramePacket& framepacket, std::array<Worker, 3>& workers) = 0;
 
 	protected:
 		/* scene necessary init */
@@ -37,6 +37,9 @@ namespace luna
 
 		/* component manager contains all the components */
 		ComponentManager* m_componentmanager = nullptr;
+
+		/* all the mesh render info */
+		std::vector<RenderingInfo> m_renderinfos;
 	};
 }
 #endif // !SCENE_H

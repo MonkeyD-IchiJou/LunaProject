@@ -12,6 +12,7 @@
 #include "DeferredShader.h"
 #include "SkyBoxShader.h"
 #include "DirLightPassShader.h"
+#include "NonLightPassShader.h"
 #include "FinalPassShader.h"
 #include "SimpleShader.h"
 #include "TextShader.h"
@@ -30,7 +31,7 @@
 
 #define BASE_RESOLUTION_X 1280
 #define BASE_RESOLUTION_Y 720
-#define MAX_INSTANCEDATA 200
+#define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
 
 namespace luna
@@ -41,6 +42,9 @@ namespace luna
 	Renderer::Renderer()
 	{
 		// vulkan instance and logical device will be created in the parents constructor
+
+		m_submitInfo[0] = {};
+		m_submitInfo[1] = {};
 	}
 
 	void Renderer::CreateResources()
@@ -144,6 +148,12 @@ namespace luna
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
+		m_nonlightpass_shader = new NonLightPassShader();
+		m_nonlightpass_shader->SetDescriptors(
+			texrsc->Textures[eTEXTURES::ALBEDO_ATTACHMENT_RGBA16F]
+		);
+		m_nonlightpass_shader->Init(DeferredFBO::getRenderPass());
+
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
 		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
@@ -239,7 +249,7 @@ namespace luna
 			m_deferred_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
 			vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
 			vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
-			vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value
+			vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value 1
 
 			// record the first renderinfo first
 			const auto& ri = renderinfos[0];
@@ -292,7 +302,7 @@ namespace luna
 
 		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
 		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
-		auto s = glm::scale(glm::mat4(), glm::vec3(5.f, 5.f, 5.f));
+		auto s = glm::scale(glm::mat4(), glm::vec3(50.f, 50.f, 50.f));
 		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
 		m_skybox_shader->LoadModel(commandbuff, t * s * r);
 		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(commandbuff);
@@ -362,10 +372,11 @@ namespace luna
 	{
 		// dummy record secondary buffers
 		FramePacket temp{};
+		std::vector<RenderingInfo> renderinfos;
 		// record the command buffers and update the staging buffers
 		RecordGeometryPass_Secondary_(
 			commandbufferpacket->geometry_secondary_cmdbuff, 
-			temp.renderinfos
+			renderinfos
 		);
 		RecordUIPass_Secondary_(
 			commandbufferpacket->font_secondary_cmdbuff, 
@@ -378,6 +389,25 @@ namespace luna
 		// primary command buffers, record once and for all
 		RecordOffscreen_Primary_(commandbufferpacket->offscreen_cmdbuffer);
 		RecordPresentation_Primary_();
+
+		auto& submitinfo0 = m_submitInfo[0];
+		submitinfo0.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitinfo0.commandBufferCount = 1;
+		submitinfo0.signalSemaphoreCount = 1;
+		submitinfo0.waitSemaphoreCount = 1;
+		submitinfo0.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitinfo0.pWaitSemaphores = &m_presentComplete; 
+		submitinfo0.pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
+		submitinfo0.pCommandBuffers = &commandbufferpacket->offscreen_cmdbuffer;
+
+		auto& submitinfo1 = m_submitInfo[1];
+		submitinfo1.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitinfo1.commandBufferCount = 1;
+		submitinfo1.signalSemaphoreCount = 1;
+		submitinfo1.waitSemaphoreCount = 1;
+		submitinfo1.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitinfo1.pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
+		submitinfo1.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
 	}
 
 	void luna::Renderer::RecordOffscreen_Primary_(const VkCommandBuffer commandbuff)
@@ -417,10 +447,13 @@ namespace luna
 		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
 		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
 		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // stencil value to compare with
+		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
 		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		// combined with those not lightpass geometry
+		m_nonlightpass_shader->Bind(commandbuff);
+		m_nonlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
@@ -475,24 +508,23 @@ namespace luna
 		}
 	}
 
-	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<JobSystem, 3>& workers)
+	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<Worker, 3>& workers)
 	{
 		workers[0].addJob([&]() {
+			// record the command buffers and update the staging buffers
+			RecordGeometryPass_Secondary_(
+				commandbufferpacket->geometry_secondary_cmdbuff, 
+				*framepacket.renderinfos
+			);
+		});
+		
+		workers[1].addJob([&]() {
+
 			// update to staging buffers
 			m_instance_ssbo->Update(framepacket.instancedatas);
 			m_fontinstance_ssbo->Update(framepacket.fontinstancedatas);
 			m_ubo->Update(framepacket.maincamdata);
-		});
 
-		workers[1].addJob([&]() {
-			// record the command buffers and update the staging buffers
-			RecordGeometryPass_Secondary_(
-				commandbufferpacket->geometry_secondary_cmdbuff, 
-				framepacket.renderinfos
-			);
-		});
-		
-		workers[2].addJob([&]() {
 			RecordUIPass_Secondary_(
 				commandbufferpacket->font_secondary_cmdbuff,
 				static_cast<uint32_t>(framepacket.fontinstancedatas.size())
@@ -502,7 +534,6 @@ namespace luna
 		// let all workers finish their job pls
 		workers[0].wait();
 		workers[1].wait();
-		workers[2].wait();
 	}
 
 	void Renderer::Render()
@@ -511,30 +542,10 @@ namespace luna
 		uint32_t imageindex = 0;
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
-		VkSubmitInfo submitInfo[2] = {};
-
-		auto& submitinfo0 = submitInfo[0];
-		submitinfo0.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitinfo0.commandBufferCount = 1;
-		submitinfo0.signalSemaphoreCount = 1;
-		submitinfo0.waitSemaphoreCount = 1;
-		submitinfo0.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-		submitinfo0.pWaitSemaphores = &m_presentComplete; 
-		submitinfo0.pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
-		submitinfo0.pCommandBuffers = &commandbufferpacket->offscreen_cmdbuffer;
-
-		auto& submitinfo1 = submitInfo[1];
-		submitinfo1.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitinfo1.commandBufferCount = 1;
-		submitinfo1.signalSemaphoreCount = 1;
-		submitinfo1.waitSemaphoreCount = 1;
-		submitinfo1.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-		submitinfo1.pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
-		submitinfo1.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
-		submitinfo1.pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
+		m_submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
 
 		// submit all the queues
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, submitInfo, VK_NULL_HANDLE));
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, m_submitInfo, VK_NULL_HANDLE));
 
 		// present it on the screen pls
 		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));
@@ -589,6 +600,13 @@ namespace luna
 			m_dirlightpass_shader->Destroy();
 			delete m_dirlightpass_shader;
 			m_dirlightpass_shader = nullptr;
+		}
+
+		if (m_nonlightpass_shader != nullptr)
+		{
+			m_nonlightpass_shader->Destroy();
+			delete m_nonlightpass_shader;
+			m_nonlightpass_shader = nullptr;
 		}
 
 		if (m_finalpass_shader != nullptr)

@@ -14,6 +14,7 @@
     <ClInclude Include="BasicMesh.h" />
     <ClInclude Include="BasicMeshComponent.h" />
     <ClInclude Include="CameraComponent.h" />
+    <ClInclude Include="CameraControlScript.h" />
     <ClInclude Include="CommandBufferPacket.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
@@ -27,8 +28,11 @@
     <ClInclude Include="DeferredShader.h" />
     <ClInclude Include="DescriptorTool.h" />
     <ClInclude Include="DirLightPassShader.h" />
+    <ClInclude Include="Global.h" />
     <ClInclude Include="Input.h" />
-    <ClInclude Include="JobSystem.h" />
+    <ClInclude Include="NonLightPassShader.h" />
+    <ClInclude Include="TextChangeScript.h" />
+    <ClInclude Include="Worker.h" />
     <ClInclude Include="PresentationFBO.h" />
     <ClInclude Include="FinalPassShader.h" />
     <ClInclude Include="FixedPipelineCreationInfo.h" />
@@ -74,6 +78,7 @@
     <ClCompile Include="BasicMesh.cpp" />
     <ClCompile Include="BasicMeshComponent.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
+    <ClCompile Include="CameraControlScript.cpp" />
     <ClCompile Include="CommandBufferPacket.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
@@ -86,8 +91,11 @@
     <ClCompile Include="DeferredShader.cpp" />
     <ClCompile Include="DescriptorTool.cpp" />
     <ClCompile Include="DirLightPassShader.cpp" />
+    <ClCompile Include="Global.cpp" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="JobSystem.cpp" />
+    <ClCompile Include="NonLightPassShader.cpp" />
+    <ClCompile Include="TextChangeScript.cpp" />
+    <ClCompile Include="Worker.cpp" />
     <ClCompile Include="PresentationFBO.cpp" />
     <ClCompile Include="FinalPassShader.cpp" />
     <ClCompile Include="FixedPipelineCreationInfo.cpp" />
