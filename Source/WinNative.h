@@ -35,6 +35,12 @@ namespace luna
 		LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
+#if VK_USE_PLATFORM_ANDROID_KHR
+		
+		
+
+#endif // VK_USE_PLATFORM_ANDROID_KHR
+
 		// close the window 
 		inline void close() { m_close = true; }
 

@@ -1,15 +1,24 @@
 #include "DebugLog.h"
 #include "LunaManager.h"
+#include "Global.h"
 
 #if _DEBUG
 /* console window enable when i want to debug */
 int main()
-#else
+{
+
+#elif VK_USE_PLATFORM_WIN32_KHR
 /* release build for Window */
 int CALLBACK WinMain( _In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow )
+{
+
+#elif VK_USE_PLATFORM_ANDROID_KHR
+/* release build for android */
+void android_main(android_app* pApplication)
+{
+
 #endif
 
-{
 	auto lunaManager = luna::LunaManager::getInstance();
 	
 #if _DEBUG 

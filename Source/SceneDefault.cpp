@@ -148,7 +148,7 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("main camera", m_componentmanager);
-			entity->transformation->position = glm::vec3(-2.f, 2.f, -5.f);
+			entity->transformation->position = glm::vec3(-15.f, 5.f, -15.f);
 			CameraComponent* camc = dynamic_cast<CameraComponent*>(entity->AddComponent(COMPONENT_ATYPE::CAMERA_ACTYPE));
 			camc->maincam = true;
 			camc->farZ = 100.f;
