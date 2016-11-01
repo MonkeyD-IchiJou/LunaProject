@@ -50,19 +50,10 @@ namespace gli
 #include "texture_cube.hpp"
 #include "texture_cube_array.hpp"
 
-#include "sampler1d.hpp"
-#include "sampler1d_array.hpp"
-#include "sampler2d.hpp"
-#include "sampler2d_array.hpp"
-#include "sampler3d.hpp"
-#include "sampler_cube.hpp"
-#include "sampler_cube_array.hpp"
-
 #include "duplicate.hpp"
 #include "view.hpp"
 #include "comparison.hpp"
 
-#include "reduce.hpp"
 #include "transform.hpp"
 
 #include "load.hpp"
