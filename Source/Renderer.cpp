@@ -123,10 +123,9 @@ namespace luna
 		TextureResources* texrsc = TextureResources::getInstance();
 		
 		// available textures for the shader descriptors
-		std::vector<VulkanImageBufferObject*> totalDiffTex(3);
+		std::vector<VulkanImageBufferObject*> totalDiffTex(2);
 		totalDiffTex[0] = texrsc->Textures[eTEXTURES::BLACK_2D_RGBA];
-		totalDiffTex[1] = texrsc->Textures[eTEXTURES::BASIC_2D_BC2];
-		totalDiffTex[2] = texrsc->Textures[eTEXTURES::BASIC_2D_RGBA8];
+		totalDiffTex[1] = texrsc->Textures[eTEXTURES::BASIC_2D_RGBA8];
 
 		// deferred shader init
 		m_deferred_shader = new DeferredShader();
@@ -135,7 +134,7 @@ namespace luna
 
 		// skybox shader init
 		m_skybox_shader = new SkyBoxShader();
-		m_skybox_shader->SetDescriptors(m_ubo, texrsc->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_BC3]);
+		m_skybox_shader->SetDescriptors(m_ubo, texrsc->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_RGBA8]);
 		m_skybox_shader->Init(DeferredFBO::getRenderPass());
 
 		// dirlight shader init

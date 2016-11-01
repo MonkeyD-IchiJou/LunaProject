@@ -30,7 +30,10 @@ namespace luna
 #if _DEBUG
 			std::cout << format;
 #endif //BUILD_ENABLE_DEBUG
+
 		}
+
+		static void printFF(const char* pMessage, ...);
 
 		static void throwEx(const char* format)
 		{

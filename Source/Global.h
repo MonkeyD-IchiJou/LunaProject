@@ -4,10 +4,6 @@
 #include "platform.h"
 #include <atomic>
 
-#if VK_USE_PLATFORM_ANDROID_KHR
-#include <android_native_app_glue.h>
-#endif
-
 namespace luna
 {
 	namespace global

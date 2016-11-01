@@ -7,7 +7,27 @@ namespace luna
 {
 	VulkanTextureCube::VulkanTextureCube(const std::string& filename)
 	{
+#if defined(__ANDROID__)
+
+		// Textures are stored inside the apk on Android (compressed)
+		// So they need to be loaded via the asset manager
+		AAsset* asset = AAssetManager_open(global::androidApplication->activity->assetManager, filename.c_str(), AASSET_MODE_STREAMING);
+		if (asset == nullptr)
+			DebugLog::printFF("failed to open file!");
+
+		size_t size = AAsset_getLength(asset);
+		if(size <= 0)
+			DebugLog::printFF("file size is less than zero");
+
+		void *textureData = malloc(size);
+		AAsset_read(asset, textureData, size);
+		AAsset_close(asset);
+
+		gli::texture_cube tex(gli::load((const char*)textureData, size));
+
+#else
 		gli::texture_cube tex(gli::load(filename));
+#endif
 
 		m_format = (VkFormat)tex.format();
 		m_texsize = tex.size();

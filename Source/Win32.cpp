@@ -175,23 +175,23 @@ namespace luna
 		vkCreateWin32SurfaceKHR(m_vulkanInstance, &createInfo, nullptr, &m_surface);
 	}
 
-	auto WinNative::setWinSizeX(const uint32_t & val)
+	void WinNative::setWinSizeX(const uint32_t & val)
 	{
 	}
 
-	auto WinNative::setWinSizeY(const uint32_t & val)
+	void WinNative::setWinSizeY(const uint32_t & val)
 	{
 	}
 
-	auto WinNative::setWinPosX(const uint32_t & val)
+	void WinNative::setWinPosX(const uint32_t & val)
 	{
 	}
 
-	auto WinNative::setWinPosY(const uint32_t & val)
+	void WinNative::setWinPosY(const uint32_t & val)
 	{
 	}
 
-	auto WinNative::setName(const std::string & name)
+	void WinNative::setName(const std::string & name)
 	{
 	}
 

@@ -16,6 +16,14 @@ int CALLBACK WinMain( _In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _I
 /* release build for android */
 void android_main(android_app* pApplication)
 {
+	// makes sure native glue is not stripped by the linker
+	app_dummy();
+
+	// pointer to the android application
+	luna::global::androidApplication = pApplication;
+
+	// must init the vulkan first
+	InitVulkan();
 
 #endif
 

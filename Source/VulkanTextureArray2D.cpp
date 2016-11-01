@@ -7,8 +7,28 @@ namespace luna
 {
 	VulkanTextureArray2D::VulkanTextureArray2D(const std::string& filename)
 	{
+#if defined(__ANDROID__)
+
+		// Textures are stored inside the apk on Android (compressed)
+		// So they need to be loaded via the asset manager
+		AAsset* asset = AAssetManager_open(global::androidApplication->activity->assetManager, filename.c_str(), AASSET_MODE_STREAMING);
+		if (asset == nullptr)
+			DebugLog::printFF("failed to open file!");
+
+		size_t size = AAsset_getLength(asset);
+		if(size <= 0)
+			DebugLog::printFF("file size is less than zero");
+
+		void *textureData = malloc(size);
+		AAsset_read(asset, textureData, size);
+		AAsset_close(asset);
+
+		gli::texture2d_array tex(gli::load((const char*)textureData, size));
+
+#else
 		// load the texture first
 		gli::texture2d_array tex(gli::load(filename));
+#endif
 		m_layers = static_cast<uint32_t>(tex.layers());
 
 		// if there is only 1 layers, error 

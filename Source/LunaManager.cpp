@@ -63,11 +63,14 @@ namespace luna
 		// i have 3 workers waiting to do jobs
 		std::array<Worker, 3> workers{};
 
-#if VK_USE_PLATFORM_WIN32_KHR
-
 		auto window = luna::WinNative::getInstance();
 
+#if VK_USE_PLATFORM_ANDROID_KHR 
+		while (window->getFocus())
+
+#elif VK_USE_PLATFORM_WIN32_KHR
 		while (!window->isClose())
+#endif
 		{
 			// get the prev frame time elapsed
 			global::DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - time_start).count() / 1000000.f;
@@ -84,12 +87,11 @@ namespace luna
 			// queue submit and present it on the screen
 			renderer->Render();
 		}
-#endif
 	}
 
 	void LunaManager::InputRun_()
 	{
-		auto window = luna::WinNative::getInstance();
+		auto win = luna::WinNative::getInstance();
 
 #if VK_USE_PLATFORM_WIN32_KHR
 		MSG msg;
@@ -108,6 +110,33 @@ namespace luna
 				DispatchMessage(&msg); 
 			}
 		}
+#else
+
+		int32_t result = 0;
+		int32_t events = 0;
+		android_poll_source* source = nullptr;
+		android_app* androidapp = luna::global::androidApplication;
+
+		// event processing loop
+		while ((result = ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0)
+		{
+			// an even has to be processed
+			if (source != nullptr)
+			{
+				//luna::DebugLog::printFF("Processing an event");
+				source->process(androidapp, source);
+			}
+
+			// application is getting destroyed
+			if (androidapp->destroyRequested != 0)
+			{
+				luna::DebugLog::printFF("Exiting event loop");
+				return;
+			}
+		}
+
+		luna::DebugLog::printFF("Destroy liao");
+
 #endif
 	}
 

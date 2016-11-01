@@ -4,7 +4,8 @@
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fstream>
+
+#include "IOManager.h"
 
 namespace luna
 {
@@ -18,9 +19,22 @@ namespace luna
 
 	void Font::LoadFonts(const std::string& fileName, const float& texwidth, const float& texheight)
 	{
+#if defined(__ANDROID__)
+
+		// Font description file is stored inside the apk
+		// So we need to load it using the asset manager
+		std::vector<char> buffer;
+		IO::LoadFile(path, buffer);
+
+		std::stringbuf sbuf(buffer.data());
+		std::istream istream(&sbuf);
+
+#else
 		std::filebuf fileBuffer;
 		fileBuffer.open(fileName, std::ios::in);
 		std::istream istream(&fileBuffer);
+
+#endif
 
 		if (!istream.good())
 		{

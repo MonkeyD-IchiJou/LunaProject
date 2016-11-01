@@ -19,26 +19,25 @@ namespace luna
 		inline uint32_t getWinSizeY() const { return m_win_size_y; }
 		inline uint32_t getWinPosX() const { return m_win_pos_x; }
 		inline uint32_t getWinPosY() const { return m_win_pos_y; }
-		inline auto getName() const { return m_win_name; }
+		inline std::string getName() const { return m_win_name; }
 		inline bool isClose() const { return m_close; }
-		inline auto getSurface() const { return m_surface; }
+		inline VkSurfaceKHR getSurface() const { return m_surface; }
 
-		auto setWinSizeX(const uint32_t& val);
-		auto setWinSizeY(const uint32_t& val);
-		auto setWinPosX(const uint32_t& val);
-		auto setWinPosY(const uint32_t& val);
-		auto setName(const std::string& name);
+		void setWinSizeX(const uint32_t& val);
+		void setWinSizeY(const uint32_t& val);
+		void setWinPosX(const uint32_t& val);
+		void setWinPosY(const uint32_t& val);
+		void setName(const std::string& name);
 
 #if VK_USE_PLATFORM_WIN32_KHR
-		auto getWin32_Instance() const { return m_win32_instance; }
-		auto getHWND() const { return m_win32_handle; }
+		HINSTANCE getWin32_Instance() const { return m_win32_instance; }
+		HWND getHWND() const { return m_win32_handle; }
 		LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 #if VK_USE_PLATFORM_ANDROID_KHR
-		
-		
-
+		void AndroidEventProc(int32_t pCommand);
+		bool getFocus() const { return m_focus; }
 #endif // VK_USE_PLATFORM_ANDROID_KHR
 
 		// close the window 
@@ -85,11 +84,11 @@ namespace luna
 		
 	private:
 
-		std::atomic<uint32_t> m_win_size_x = 0;
-		std::atomic<uint32_t> m_win_size_y = 0;
-		std::atomic<uint32_t> m_win_pos_x = 0;
-		std::atomic<uint32_t> m_win_pos_y = 0;
-		std::atomic<bool> m_close = false;
+		std::atomic<uint32_t> m_win_size_x;
+		std::atomic<uint32_t> m_win_size_y;
+		std::atomic<uint32_t> m_win_pos_x;
+		std::atomic<uint32_t> m_win_pos_y;
+		std::atomic<bool> m_close;
 
 		std::string	m_win_name = " ";
 		
@@ -97,6 +96,11 @@ namespace luna
 		HINSTANCE m_win32_instance= NULL;
 		HWND m_win32_handle = NULL;
 #endif // VK_USE_PLATFORM_WIN32_KHR
+
+#if VK_USE_PLATFORM_ANDROID_KHR
+		android_app* m_androidApplication;
+		bool m_focus = true;
+#endif // VK_USE_PLATFORM_ANDROID_KHR
 
 		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 		VkInstance m_vulkanInstance = VK_NULL_HANDLE;

@@ -23,13 +23,10 @@ namespace luna
 	{
 		Textures.resize(MAXTEX_NAME_TYPE_FORMAT);
 
-		Textures[BASIC_2D_RGBA8] = new VulkanTexture2D(getAssetPath() + "Textures/NewTex_rgba.ktx");
-		Textures[BASIC_2D_BC2] = new VulkanTexture2D(getAssetPath() + "Textures/pattern_02_bc2.ktx");
+		Textures[BASIC_2D_RGBA8] = new VulkanTexture2D(getAssetPath() + "Textures/pattern_02_rgba8.ktx");
 		Textures[BLACK_2D_RGBA] = new VulkanTexture2D(getAssetPath() + "Textures/black.ktx");
-		Textures[EVAFONT_2D_BC3] = new VulkanTexture2D(getAssetPath() + "Textures/eva_bc3.ktx");
-		Textures[TERRAIN_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/terrain_texturearray_bc3.ktx");
-		Textures[BASIC_2DARRAY_BC3] = new VulkanTextureArray2D(getAssetPath() + "Textures/texturearray_bc3.ktx");
-		Textures[YOKOHOMO_CUBEMAP_BC3] = new VulkanTextureCube(getAssetPath() + "Textures/cubemap_vulkan.ktx");
+		Textures[EVAFONT_2D_BC3] = new VulkanTexture2D(getAssetPath() + "Textures/eva_rgba8.ktx");
+		Textures[YOKOHOMO_CUBEMAP_RGBA8] = new VulkanTextureCube(getAssetPath() + "Textures/cubemap_vulkan.ktx");
 		
 		/* attachments images will be auto init by fbos */
 		Textures[LDRTEX_ATTACHMENT_RGBA8] = nullptr;

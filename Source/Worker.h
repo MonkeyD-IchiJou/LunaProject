@@ -28,7 +28,7 @@ namespace luna
 		std::thread m_workerthrd;
 		std::mutex m_queuemutex{};
 		std::condition_variable m_condition{};
-		std::atomic<bool> m_loop = true;
+		std::atomic<bool> m_loop;
 	};
 }
 

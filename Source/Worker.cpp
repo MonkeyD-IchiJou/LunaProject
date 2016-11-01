@@ -2,7 +2,7 @@
 
 namespace luna
 {
-	Worker::Worker()
+	Worker::Worker() :  m_loop(true)
 	{
 		// start the thread
 		m_workerthrd = std::thread(&Worker::Infinite_loop_function, this);

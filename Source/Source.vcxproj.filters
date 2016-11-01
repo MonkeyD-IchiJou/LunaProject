@@ -315,6 +315,12 @@
     <ClInclude Include="NonLightPassShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="IOManager.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_wrapper.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLog.cpp">
@@ -493,6 +499,15 @@
     </ClCompile>
     <ClCompile Include="NonLightPassShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="WinAndroid.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="IOManager.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_wrapper.cpp">
+      <Filter>Source Files\System</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

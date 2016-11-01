@@ -4,7 +4,7 @@
 #include "ScreenQuadMesh.h"
 #include "DebugLog.h"
 
-#include <fstream>
+#include "IOManager.h"
 
 namespace luna
 {
@@ -174,25 +174,8 @@ namespace luna
 
 	Model::Model(std::string path)
 	{
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-
-		// load the lrl files
-		// open my lrl file
-		std::ifstream file(path, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-		{
-			DebugLog::throwEx("failed to open file!");
-		}
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		// seek back to the beggining of the file and read all of the bytes at once
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
+		std::vector<char> buffer;
+		IO::LoadFile(path, buffer);
 
 		// begin to store the information
 		std::string data = buffer.data();
@@ -232,8 +215,6 @@ namespace luna
 			this->m_meshes.push_back(new BasicMesh(vertices, indices));
 			m_totalmeshes++;
 		}
-
-#endif
 	}
 
 	void Model::Draw(const VkCommandBuffer & commandbuffer)

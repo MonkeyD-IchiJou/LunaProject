@@ -1,7 +1,8 @@
 #include "ShaderProgram.h"
 #include "Renderer.h"
 #include "DebugLog.h"
-#include <fstream>
+
+#include "IOManager.h"
 
 namespace luna
 {
@@ -54,26 +55,9 @@ namespace luna
 
 	std::vector<char> ShaderProgram::readShaderFile_(const std::string & filename)
 	{
-#if VK_USE_PLATFORM_WIN32_KHR
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-		{
-			DebugLog::throwEx("failed to open file!");
-		}
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		// seek back to the beggining of the file and read all of the bytes at once
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
-
+		std::vector<char> buffer;
+		IO::LoadFile(filename, buffer);
 		return buffer;
-
-#endif
 	}
 
 	void ShaderProgram::CreateShaderModule_(const std::vector<char>& code, VkShaderModule & shaderModule)

@@ -11,7 +11,12 @@ namespace luna
 	{
 		struct keyinfo
 		{
-			std::atomic<bool> pressed = false;
+			std::atomic<bool> pressed;
+
+			keyinfo()
+			{
+				pressed = false;
+			}
 		};
 
 		// 256 different keys registered
@@ -20,24 +25,44 @@ namespace luna
 		struct mouseinfo
 		{
 			// mouse position
-			std::atomic<int> posx{};
-			std::atomic<int> posy{};
+			std::atomic<int> posx;
+			std::atomic<int> posy;
 
 			// first touch position
-			std::atomic<int> firsttouchposx{};
-			std::atomic<int> firsttouchposy{};
+			std::atomic<int> firsttouchposx;
+			std::atomic<int> firsttouchposy;
 
 			// last touch position
-			std::atomic<int> lasttouchposx{};
-			std::atomic<int> lasttouchposy{};
+			std::atomic<int> lasttouchposx;
+			std::atomic<int> lasttouchposy;
 
-			std::atomic<bool> leftclick = false;
-			std::atomic<bool> leftdbclick = false;
+			std::atomic<bool> leftclick;
+			std::atomic<bool> leftdbclick;
 
-			std::atomic<bool> rightclick = false;
-			std::atomic<bool> rightdbclick = false;
+			std::atomic<bool> rightclick;
+			std::atomic<bool> rightdbclick;
 
-			std::atomic<int> scrolldelta = 0;
+			std::atomic<int> scrolldelta;
+
+			mouseinfo()
+			{
+				posx = 0;
+				posy = 0;
+
+				firsttouchposx = 0;
+				firsttouchposy = 0;
+
+				lasttouchposx = 0;
+				lasttouchposy = 0;
+
+				leftclick = false;
+				leftdbclick = false;
+
+				rightclick = false;
+				rightdbclick = false;
+
+				scrolldelta = 0;
+			}
 		};
 
 		extern mouseinfo Mouse;

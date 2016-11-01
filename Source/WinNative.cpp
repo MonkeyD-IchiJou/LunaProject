@@ -1,6 +1,6 @@
 #include "WinNative.h"
-#include "Renderer.h"
 #include "DebugLog.h"
+#include "Renderer.h"
 
 namespace luna
 {
@@ -12,6 +12,7 @@ namespace luna
 		m_win_size_y(720),
 		m_win_pos_x(90), 
 		m_win_pos_y(70),
+		m_close(false),
 		m_win_name("Luna")
 	{			
 		/* get the reference of the vulkan instance */

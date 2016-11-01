@@ -117,10 +117,10 @@ namespace luna
 			fontc->text = "NEON GENESIS EVAGENLION";
 			fontc->material.color = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
 			fontc->material.outlinecolor = glm::vec4(0.f, 0.f, 0.0f, 0.f);
-			fontc->material.borderOffset = glm::vec2(0.0015f, 0.000f);
+			fontc->material.borderOffset = glm::vec2(0.0f, 0.0f);
 			fontc->material.width = 0.45f;
 			fontc->material.edge = 0.15f;
-			fontc->material.borderwidth = 0.5f;
+			fontc->material.borderwidth = 0.53f;
 			fontc->material.borderedge = 0.15f;
 			m_availableEntities.push_back(entity);
 		}
@@ -135,7 +135,7 @@ namespace luna
 			fontc->text = "NEON GENESIS EVAGENLION";
 			fontc->material.color = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
 			fontc->material.outlinecolor = glm::vec4(0.75f, 0.55f, 0.1f, 0.f);
-			fontc->material.borderOffset = glm::vec2(0.0015f, 0.000f);
+			fontc->material.borderOffset = glm::vec2(0.0f, 0.0f);
 			fontc->material.width = 0.45f;
 			fontc->material.edge = 0.15f;
 			fontc->material.borderwidth = 0.5f;
