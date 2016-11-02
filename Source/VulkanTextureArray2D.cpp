@@ -2,6 +2,7 @@
 #include <gli/gli.hpp>
 #include "Renderer.h"
 #include "DebugLog.h"
+#include "Global.h"
 
 namespace luna
 {

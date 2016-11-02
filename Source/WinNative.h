@@ -38,6 +38,7 @@ namespace luna
 #if VK_USE_PLATFORM_ANDROID_KHR
 		void AndroidEventProc(int32_t pCommand);
 		bool getFocus() const { return m_focus; }
+		int firstinit = -1;
 #endif // VK_USE_PLATFORM_ANDROID_KHR
 
 		// close the window 

@@ -12,7 +12,7 @@ namespace luna
 	{
 		glm::vec4 pos_uv;
 
-		static inline auto getBindingDescription()
+		static inline VkVertexInputBindingDescription getBindingDescription()
 		{
 			VkVertexInputBindingDescription bindingDescription{};
 			bindingDescription.binding = 0;
@@ -22,7 +22,7 @@ namespace luna
 			return bindingDescription;
 		}
 
-		static inline auto getAttributeDescriptions()
+		static inline std::array<VkVertexInputAttributeDescription, 1> getAttributeDescriptions()
 		{
 			std::array<VkVertexInputAttributeDescription, 1> attributeDescription{};
 
@@ -39,7 +39,7 @@ namespace luna
 	{
 		glm::vec2 pos;
 
-		static inline auto getBindingDescription()
+		static inline VkVertexInputBindingDescription getBindingDescription()
 		{
 			VkVertexInputBindingDescription bindingDescription{};
 			bindingDescription.binding = 0;
@@ -49,7 +49,7 @@ namespace luna
 			return bindingDescription;
 		}
 
-		static inline auto getAttributeDescriptions()
+		static inline std::array<VkVertexInputAttributeDescription, 1> getAttributeDescriptions()
 		{
 			std::array<VkVertexInputAttributeDescription, 1> attributeDescription{};
 
@@ -68,7 +68,7 @@ namespace luna
 		glm::vec3 normal;
 		glm::vec2 texCoord;
 
-		static inline auto getBindingDescription()
+		static inline VkVertexInputBindingDescription getBindingDescription()
 		{
 			VkVertexInputBindingDescription bindingDescription{};
 			bindingDescription.binding = 0;
@@ -78,7 +78,7 @@ namespace luna
 			return bindingDescription;
 		}
 
-		static inline auto getAttributeDescriptions()
+		static inline std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
 		{
 			std::array<VkVertexInputAttributeDescription, 3> attributeDescription{};
 

@@ -73,6 +73,9 @@ namespace luna
 			// Shader write (sampler, input attachment)
 			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
 			break;
+
+		default:
+			break;
 		}
 
 		// Target layouts (new)
@@ -101,6 +104,9 @@ namespace luna
 		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
 			// color image read and write
 			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+
+		default:
 			break;
 		}
 

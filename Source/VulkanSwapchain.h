@@ -35,11 +35,11 @@ namespace luna
 		/* destroy the swapchain and its buffers */
 		void Destroy();
 
-		auto getSwapchain() const { return m_swapchain; }
-		auto getColorFormat() const { return m_colorformat; }
-		auto getColorSpace() const { return m_colorspace; }
-		auto getImageCount() const { return m_imagecount; }
-		auto getExtent() const { return m_swapchainExtent; }
+		VkSwapchainKHR getSwapchain() const { return m_swapchain; }
+		VkFormat getColorFormat() const { return m_colorformat; }
+		VkColorSpaceKHR getColorSpace() const { return m_colorspace; }
+		uint32_t getImageCount() const { return m_imagecount; }
+		VkExtent2D getExtent() const { return m_swapchainExtent; }
 
 		std::vector<SwapChainBuffer> m_buffers;
 

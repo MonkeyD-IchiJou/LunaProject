@@ -24,7 +24,7 @@ namespace luna
 		// Font description file is stored inside the apk
 		// So we need to load it using the asset manager
 		std::vector<char> buffer;
-		IO::LoadFile(path, buffer);
+		IO::LoadFile(fileName, buffer);
 
 		std::stringbuf sbuf(buffer.data());
 		std::istream istream(&sbuf);

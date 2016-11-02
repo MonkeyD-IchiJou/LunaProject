@@ -29,6 +29,8 @@ namespace luna
 
 		m_instance_exts.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 		m_instance_exts.push_back(PLATFORM_SURFACE_EXTENSION_NAME);
+
+		DebugLog::printFF(PLATFORM_SURFACE_EXTENSION_NAME);
 	}
 
 #if _DEBUG

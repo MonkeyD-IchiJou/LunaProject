@@ -13,12 +13,12 @@ namespace luna
 		VulkanImageBufferObject();
 		virtual ~VulkanImageBufferObject();
 
-		inline auto getImage() const { return m_image; }
-		inline auto getImageView() const { return m_imageview; }
-		inline auto getFormat() const { return m_format; }
-		inline auto getSampler() const { return m_sampler; }
-		inline auto getWidth() const { return m_texwidth; }
-		inline auto getHeight() const { return m_texheight; }
+		inline VkImage getImage() const { return m_image; }
+		inline VkImageView getImageView() const { return m_imageview; }
+		inline VkFormat getFormat() const { return m_format; }
+		inline VkSampler getSampler() const { return m_sampler; }
+		inline uint32_t getWidth() const { return m_texwidth; }
+		inline uint32_t getHeight() const { return m_texheight; }
 
 		/* get the sampler from the implementor (e.g attachments shared sampler with each other) */
 		inline void setSampler(VkSampler sampler) { this->m_sampler = sampler; }

@@ -16,8 +16,8 @@ namespace luna
 		void Update() override;
 		void Reset() override;
 
-		auto GetView() const { return this->m_view; }
-		auto GetProjection() const { return this->m_projection; }
+		glm::mat4 GetView() const { return this->m_view; }
+		glm::mat4 GetProjection() const { return this->m_projection; }
 
 	public:
 		glm::vec3 target = {};

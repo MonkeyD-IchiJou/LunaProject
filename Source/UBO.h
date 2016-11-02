@@ -15,8 +15,8 @@ namespace luna
 		// update the ubodata into device memory
 		void Update(const UBOData& ubodata);
 		
-		inline auto getUboTotalSize() const { return m_uboTotalSize; }
-		inline auto getMainBuffer() const { return m_main_buffer; }
+		inline VkDeviceSize getUboTotalSize() const { return m_uboTotalSize; }
+		inline VulkanBufferData getMainBuffer() const { return m_main_buffer; }
 
 		void Record(const VkCommandBuffer cmdbuff);
 

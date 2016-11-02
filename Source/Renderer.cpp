@@ -105,7 +105,7 @@ namespace luna
 		m_final_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
 		// create framebuffer for each swapchain images
-		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
+		clearvalue.color = {0.f, 1.f, 0.f, 1.f};
 		m_presentation_fbos.resize(m_swapchain->getImageCount());
 		for (int i = 0; i < m_presentation_fbos.size(); i++)
 		{
@@ -383,6 +383,37 @@ namespace luna
 		RecordSkybox__Secondary_(commandbufferpacket->skybox_secondary_cmdbuff);
 		RecordSecondaryOffscreen_Secondary_(commandbufferpacket->offscreen_secondary_cmdbuff);
 
+
+
+		VkCommandBufferInheritanceInfo inheritanceinfo{};
+		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
+		inheritanceinfo.subpass = 1;
+		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
+		inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = &inheritanceinfo;
+		// start recording the geometry pass command buffer
+		vkBeginCommandBuffer(commandbufferpacket->temp_secondary_cmdbuff, &beginInfo);
+		// bind the dirlight pass shader
+		m_dirlightpass_shader->Bind(commandbufferpacket->temp_secondary_cmdbuff);
+		m_dirlightpass_shader->SetViewPort(commandbufferpacket->temp_secondary_cmdbuff, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(commandbufferpacket->temp_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(commandbufferpacket->temp_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(commandbufferpacket->temp_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbufferpacket->temp_secondary_cmdbuff);
+
+		// combined with those not lightpass geometry
+		m_nonlightpass_shader->Bind(commandbufferpacket->temp_secondary_cmdbuff);
+		m_nonlightpass_shader->SetViewPort(commandbufferpacket->temp_secondary_cmdbuff, m_deferred_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbufferpacket->temp_secondary_cmdbuff);
+		// end geometry pass cmd buff
+		vkEndCommandBuffer(commandbufferpacket->temp_secondary_cmdbuff);
+
+
 		// primary command buffers, record once and for all
 		RecordOffscreen_Primary_(commandbufferpacket->offscreen_cmdbuffer);
 		RecordPresentation_Primary_();
@@ -415,7 +446,7 @@ namespace luna
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		// start recording the offscreen command buffers
+		//// start recording the offscreen command buffers
 		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
 
 		// transfer data to gpu first
@@ -434,23 +465,11 @@ namespace luna
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
 			commandbuff, 
-			VK_SUBPASS_CONTENTS_INLINE
+			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 		);
 
-		// execute all the light passes
-
-		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(commandbuff);
-		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
-
-		// combined with those not lightpass geometry
-		m_nonlightpass_shader->Bind(commandbuff);
-		m_nonlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+		//// execute all the light passes
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->temp_secondary_cmdbuff);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
@@ -537,12 +556,15 @@ namespace luna
 	{
 		// get the available image to render with
 		uint32_t imageindex = 0;
+
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
+		DebugLog::printFF("get the swap chain");
 		m_submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
 
 		// submit all the queues
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, m_submitInfo, VK_NULL_HANDLE));
+		DebugLog::printFF("submit finish");
 
 		// present it on the screen pls
 		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));

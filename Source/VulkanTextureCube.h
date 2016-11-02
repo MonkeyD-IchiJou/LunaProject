@@ -1,5 +1,5 @@
-#ifndef VULKAN_TEXTURE_CUBE_H
-#define VULKAN_TEXTURE_CUBE_H
+#ifndef VULKAN_TEXTURELUNA_CUBE_H
+#define VULKAN_TEXTURELUNA_CUBE_H
 
 #include "VulkanImageBufferObject.h"
 

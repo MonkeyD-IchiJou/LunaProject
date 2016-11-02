@@ -71,17 +71,37 @@ namespace luna
 		m_androidApplication->userData = this;
 		m_androidApplication->onAppCmd = Callback_AppEvent;
 		m_androidApplication->onInputEvent = handleAppInput;
+
+
+
+		int32_t result = 0;
+		int32_t events = 0;
+		android_poll_source* source = nullptr;
+		android_app* androidapp = luna::global::androidApplication;
+
+		// event processing loop
+		while ((result = ALooper_pollAll(firstinit, NULL, &events, (void**)&source)) >= 0)
+		{
+			// an even has to be processed
+			if (source != nullptr)
+			{
+				//luna::DebugLog::printFF("Processing an event");
+				source->process(androidapp, source);
+			}
+
+			// application is getting destroyed
+			if (androidapp->destroyRequested != 0)
+			{
+				luna::DebugLog::printFF("Exiting event loop");
+				return;
+			}
+		}
+
+		luna::DebugLog::printFF("come out liao");
 	}
 
 	void WinNative::InitOSWindowSurface_()
 	{
-		VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
-		surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-		surfaceCreateInfo.window = m_androidApplication->window;
-		err = vkCreateAndroidSurfaceKHR(instance, &surfaceCreateInfo, NULL, &surface);
-
-		if(err == VK_SUCCESS)
-			DebugLog::printFF("create Surface Success");
 	}
 
 	void WinNative::AndroidEventProc(int32_t pCommand)
@@ -94,6 +114,23 @@ namespace luna
 
 		case APP_CMD_INIT_WINDOW:
 			DebugLog::printFF("Window Init App");
+
+			{
+				VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
+				surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+				surfaceCreateInfo.window = m_androidApplication->window;
+
+				if (m_androidApplication->window == nullptr)
+					DebugLog::printFF("Vulkan Instance is nullptr...");
+
+				DebugLog::printFF("Creating Surface...");
+				vkCreateAndroidSurfaceKHR(m_vulkanInstance, &surfaceCreateInfo, nullptr, &m_surface);
+				DebugLog::printFF("create Surface Success");
+			}
+
+			// init scenes and stuff
+			firstinit = 0;
+
 			break;
 
 		case APP_CMD_GAINED_FOCUS:

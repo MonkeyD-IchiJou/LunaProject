@@ -17,7 +17,7 @@
 #define PLATFORM_SURFACE_EXTENSION_NAME		VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
 
 #include <android_native_app_glue.h>
-#include "vulkan_wrapper.h"
+#include "vulkanandroid.h"
 
 #else
 #error Platform not yet supported

@@ -43,6 +43,11 @@ namespace luna
 #endif
 
 		DebugLog::EC(vkCreateInstance(&instance_create_info, nullptr, &m_vulkan_instance));
+
+#if defined(__ANDROID__)
+		DebugLog::printFF("init all the vulkan functions !!!!...");
+		loadVulkanFunctions(m_vulkan_instance);
+#endif
 	}
 
 	void VulkanRenderer::SetUpLogicalDevice_()
@@ -57,7 +62,7 @@ namespace luna
 		m_queuefamily_index = m_physicaldevices.findQueueFamilies(gpuChoose);
 		if (!m_queuefamily_index.isComplete())
 		{
-			DebugLog::throwEx("Cannot find suitable Queues");
+			DebugLog::printFF("Cannot find suitable Queues");
 		}
 
 		// get all the info about this chosen gpu
@@ -66,8 +71,8 @@ namespace luna
 		m_gpu_features = m_physicaldevices.getGPUDeviceFeatures(gpuChoose);
 		m_gpu_memProperties = m_physicaldevices.getGPUMemoryProperties(gpuChoose);
 	
-		DebugLog::print("Physical Device: ");
-		DebugLog::printL(m_gpu_properties.deviceName);
+		DebugLog::printFF("Physical Device: ");
+		DebugLog::printFF(m_gpu_properties.deviceName);
 
 #if _DEBUG
 		/* print out all the device extensions only */
@@ -113,8 +118,12 @@ namespace luna
 		device_info.ppEnabledExtensionNames	 = m_device_exts.data();
 		device_info.pEnabledFeatures = &m_required_features;
 
-		// create the logical device 
-		DebugLog::EC(vkCreateDevice(m_gpu, &device_info, nullptr, &m_logicaldevice));
+		// create the logical device
+
+		if (vkCreateDevice(m_gpu, &device_info, nullptr, &m_logicaldevice) == VK_SUCCESS)
+		{
+			DebugLog::printFF("Created logical device ");
+		}
 
 		// get the queue from the device. queues are constructed when the device is created
 		vkGetDeviceQueue(m_logicaldevice, m_queuefamily_index.graphicsFamily, 0, &m_graphic_queue);
@@ -200,7 +209,7 @@ namespace luna
 	void VulkanRenderer::PhysicalDevice::Init(const VkInstance & instance)
 	{
 		vkEnumeratePhysicalDevices(instance, &TotalNumOfGPUs, nullptr);
-		if (TotalNumOfGPUs < 0) { DebugLog::throwEx("Vulkan ERROR: Cannot find any gpu"); }
+		//if (TotalNumOfGPUs < 0) { DebugLog::throwEx("Vulkan ERROR: Cannot find any gpu"); }
 		GPUs.resize(TotalNumOfGPUs);
 		vkEnumeratePhysicalDevices(instance, &TotalNumOfGPUs, GPUs.data());
 

@@ -23,7 +23,7 @@ void android_main(android_app* pApplication)
 	luna::global::androidApplication = pApplication;
 
 	// must init the vulkan first
-	InitVulkan();
+	loadVulkanLibrary();
 
 #endif
 
@@ -45,6 +45,8 @@ void android_main(android_app* pApplication)
 		return EXIT_FAILURE;
 	}
 
+	return 0;
+
 #else //BUILD_ENABLE_DEBUG
 
 	/* release build version */
@@ -54,5 +56,9 @@ void android_main(android_app* pApplication)
 
 #endif
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 	return 0;
+#else
+	freeVulkanLibrary();
+#endif // VK_USE_PLATFORM_WIN32_KHR
 }

@@ -225,17 +225,34 @@ namespace luna
 				subPass[1].pDepthStencilAttachment = &depthstencilAttachmentRef;
 			}
 
-			// dependency between subpasses
-			VkSubpassDependency dependency{};
+			// Subpass dependencies for layout transitions
+			std::array<VkSubpassDependency, 3> dependencies;
 
 			{
-				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-				dependency.srcSubpass = 0; // subpass 0 start first
-				dependency.dstSubpass = 1; // subpass 1 start after srcsubpass 0
-				dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-				dependency.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-				dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // beginning work here
-				dependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; // must finish all the works before this stage (transitioning image layout e.g)
+				dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+				dependencies[0].dstSubpass = 0;
+				dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+				dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+				dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+				// This dependency transitions the input attachment from color attachment to shader read
+				dependencies[1].srcSubpass = 0;
+				dependencies[1].dstSubpass = 1;
+				dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			
+				dependencies[2].srcSubpass = 0;
+				dependencies[2].dstSubpass = VK_SUBPASS_EXTERNAL;
+				dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependencies[2].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+				dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependencies[2].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+				dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			}
 
 			// Render pass create
@@ -245,8 +262,8 @@ namespace luna
 			renderpass_create_info.pAttachments = attachmentDescs.data();
 			renderpass_create_info.subpassCount = static_cast<uint32_t>(subPass.size());
 			renderpass_create_info.pSubpasses = subPass.data();
-			renderpass_create_info.dependencyCount = 1;
-			renderpass_create_info.pDependencies = &dependency;
+			renderpass_create_info.dependencyCount = 3;
+			renderpass_create_info.pDependencies = dependencies.data();
 			DebugLog::EC(vkCreateRenderPass(m_logicaldevice, &renderpass_create_info, nullptr, &m_renderpass));
 		};
 

@@ -43,8 +43,8 @@ namespace luna
 			}
 		}
 
-		inline auto getSSBOTotalSize() const { return m_ssboTotalSize; }
-		inline auto getMainBuffer() const { return m_main_buffer; }
+		inline VkDeviceSize getSSBOTotalSize() const { return m_ssboTotalSize; }
+		inline VulkanBufferData getMainBuffer() const { return m_main_buffer; }
 
 		void Record(const VkCommandBuffer cmdbuff);
 

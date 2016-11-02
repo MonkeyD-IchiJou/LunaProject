@@ -66,7 +66,7 @@ namespace luna
 		auto window = luna::WinNative::getInstance();
 
 #if VK_USE_PLATFORM_ANDROID_KHR 
-		while (window->getFocus())
+		while (true)
 
 #elif VK_USE_PLATFORM_WIN32_KHR
 		while (!window->isClose())
@@ -81,9 +81,12 @@ namespace luna
 			// update game logic
 			m_scene->Update(framepacket, workers);
 
+			
 			// update the gpu
 			renderer->RecordBuffers(framepacket, workers);
 			
+			DebugLog::printFF("Begin Rendering");
+
 			// queue submit and present it on the screen
 			renderer->Render();
 		}
@@ -97,8 +100,8 @@ namespace luna
 		MSG msg;
 		BOOL bRet;
 
-		while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
-		{ 
+		while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0)
+		{
 			if (bRet == -1)
 			{
 				// handle the error and possibly exit
@@ -106,8 +109,8 @@ namespace luna
 			}
 			else
 			{
-				TranslateMessage(&msg); 
-				DispatchMessage(&msg); 
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
 			}
 		}
 #else
@@ -117,21 +120,24 @@ namespace luna
 		android_poll_source* source = nullptr;
 		android_app* androidapp = luna::global::androidApplication;
 
-		// event processing loop
-		while ((result = ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0)
+		while (true)
 		{
-			// an even has to be processed
-			if (source != nullptr)
+			// event processing loop
+			while ((result = ALooper_pollAll(0, NULL, &events, (void**)&source)) >= 0)
 			{
-				//luna::DebugLog::printFF("Processing an event");
-				source->process(androidapp, source);
-			}
+				// an even has to be processed
+				if (source != nullptr)
+				{
+					//luna::DebugLog::printFF("Processing an event");
+					source->process(androidapp, source);
+				}
 
-			// application is getting destroyed
-			if (androidapp->destroyRequested != 0)
-			{
-				luna::DebugLog::printFF("Exiting event loop");
-				return;
+				// application is getting destroyed
+				if (androidapp->destroyRequested != 0)
+				{
+					DebugLog::printFF("Exiting event loop");
+					return;
+				}
 			}
 		}
 
@@ -150,9 +156,11 @@ namespace luna
 
 		// create necessary resources, models, ubo, textures, shaders, swapchain, fbos .. all must loaded here and once only 
 		renderer->CreateResources();
+		DebugLog::printFF("Resources create finish");
 
 		// create scenes and prepare entities
 		m_scene = new SceneDefault();
+		DebugLog::printFF("Scenes create finish");
 	}
 
 	void LunaManager::DeInit_()

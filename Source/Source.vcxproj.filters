@@ -318,7 +318,7 @@
     <ClInclude Include="IOManager.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="vulkan_wrapper.h">
+    <ClInclude Include="vulkanandroid.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
   </ItemGroup>
@@ -506,7 +506,7 @@
     <ClCompile Include="IOManager.cpp">
       <Filter>Source Files\System</Filter>
     </ClCompile>
-    <ClCompile Include="vulkan_wrapper.cpp">
+    <ClCompile Include="vulkanandroid.cpp">
       <Filter>Source Files\System</Filter>
     </ClCompile>
   </ItemGroup>

@@ -17,10 +17,10 @@ namespace luna
 		virtual void DrawInstanced(const VkCommandBuffer& commandbuffer, const uint32_t& instancecount);
 		virtual void MapToDeviceMemory(const VkDevice& logicaldevice, const VkDeviceMemory& devicememory) = 0;
 
-		inline auto getVertexTotalSize() const { return m_vertexTotalSize; }
-		inline auto getIndexTotalSize() const { return m_indexTotalSize; }
-		inline auto getVertexOffset() const { return m_vertexOffset; }
-		inline auto getIndexOffset() const { return m_indexOffset; }
+		inline VkDeviceSize getVertexTotalSize() const { return m_vertexTotalSize; }
+		inline VkDeviceSize getIndexTotalSize() const { return m_indexTotalSize; }
+		inline VkDeviceSize getVertexOffset() const { return m_vertexOffset; }
+		inline VkDeviceSize getIndexOffset() const { return m_indexOffset; }
 		inline void setMainBuffer(VkBuffer buffer) { this->m_main_buffer = buffer; }
 
 		/* current total size in this buffer */
