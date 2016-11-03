@@ -3,7 +3,7 @@
 
 #include "Component.h"
 
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 namespace luna
 {

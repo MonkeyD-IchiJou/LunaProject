@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "enum_c.h"
+#include "Component.h"
 
 namespace luna
 {
@@ -34,13 +35,13 @@ namespace luna
 
 		/* find the specific component, and then return the original class type of it */
 		template<typename T>
-		T * findComponentT(void)
+		T * findComponentT(COMPONENT_TYPE type)
 		{
 			for (auto &x : m_componentsContainer)
 			{
-				if (T* temp = dynamic_cast<T*>(x))
+				if (x->GetComponentType() == type)
 				{
-					return temp;
+					return dynamic_cast<T*>(x);
 				}
 			}
 

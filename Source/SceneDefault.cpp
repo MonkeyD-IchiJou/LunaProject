@@ -4,7 +4,6 @@
 #include "Renderer.h"
 #include "Global.h"
 
-#include <glm\glm.hpp>
 
 #include "RotateScript.h"
 #include "TextChangeScript.h"

@@ -66,11 +66,12 @@ namespace luna
 		auto window = luna::WinNative::getInstance();
 
 #if VK_USE_PLATFORM_ANDROID_KHR 
-		while (true)
+		while(true)
 
 #elif VK_USE_PLATFORM_WIN32_KHR
 		while (!window->isClose())
 #endif
+
 		{
 			// get the prev frame time elapsed
 			global::DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - time_start).count() / 1000000.f;

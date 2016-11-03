@@ -20,7 +20,7 @@ namespace luna
 
 	void CameraControlScript::Update(Entity * entity)
 	{
-		auto camera = entity->findComponentT<CameraComponent>();
+		auto camera = entity->findComponentT<CameraComponent>(CAMERA_CTYPE);
 
 		if (camera)
 		{
