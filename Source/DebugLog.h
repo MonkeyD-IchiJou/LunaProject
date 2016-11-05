@@ -14,26 +14,7 @@ namespace luna
 	class DebugLog
 	{
 	public:
-		/* print what message is it on the console with endl*/
-		template<typename t>
-		static void printL(const t& format)
-		{
-#if _DEBUG
-			std::cout << format << std::endl;
-#endif //BUILD_ENABLE_DEBUG
-		}
-
-		/* print what message is it on the console without endl */
-		template<typename t>
-		static void print(const t& format)
-		{
-#if _DEBUG
-			std::cout << format;
-#endif //BUILD_ENABLE_DEBUG
-
-		}
-
-		static void printFF(const char* pMessage, ...);
+		static void printF(const char* pMessage, ...);
 
 		static void throwEx(const char* format)
 		{
@@ -50,61 +31,61 @@ namespace luna
 				switch (result)
 				{
 				case VK_ERROR_OUT_OF_HOST_MEMORY:
-					printL( "VK_ERROR_OUT_OF_HOST_MEMORY" );
+					printF( "VK_ERROR_OUT_OF_HOST_MEMORY \n" );
 					break;
 				case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-					printL( "VK_ERROR_OUT_OF_DEVICE_MEMORY" );
+					printF( "VK_ERROR_OUT_OF_DEVICE_MEMORY \n" );
 					break;
 				case VK_ERROR_INITIALIZATION_FAILED:
-					printL( "VK_ERROR_INITIALIZATION_FAILED" );
+					printF( "VK_ERROR_INITIALIZATION_FAILED \n" );
 					break;
 				case VK_ERROR_DEVICE_LOST:
-					printL( "VK_ERROR_DEVICE_LOST" );
+					printF( "VK_ERROR_DEVICE_LOST \n" );
 					break;
 				case VK_ERROR_MEMORY_MAP_FAILED:
-					printL( "VK_ERROR_MEMORY_MAP_FAILED" );
+					printF( "VK_ERROR_MEMORY_MAP_FAILED \n" );
 					break;
 				case VK_ERROR_LAYER_NOT_PRESENT:
-					printL( "VK_ERROR_LAYER_NOT_PRESENT" );
+					printF( "VK_ERROR_LAYER_NOT_PRESENT \n" );
 					break;
 				case VK_ERROR_EXTENSION_NOT_PRESENT:
-					printL( "VK_ERROR_EXTENSION_NOT_PRESENT" );
+					printF( "VK_ERROR_EXTENSION_NOT_PRESENT \n" );
 					break;
 				case VK_ERROR_FEATURE_NOT_PRESENT:
-					printL( "VK_ERROR_FEATURE_NOT_PRESENT" );
+					printF( "VK_ERROR_FEATURE_NOT_PRESENT \n" );
 					break;
 				case VK_ERROR_INCOMPATIBLE_DRIVER:
-					printL( "VK_ERROR_INCOMPATIBLE_DRIVER" );
+					printF( "VK_ERROR_INCOMPATIBLE_DRIVER \n" );
 					break;
 				case VK_ERROR_TOO_MANY_OBJECTS:
-					printL( "VK_ERROR_TOO_MANY_OBJECTS" );
+					printF( "VK_ERROR_TOO_MANY_OBJECTS \n" );
 					break;
 				case VK_ERROR_FORMAT_NOT_SUPPORTED:
-					printL( "VK_ERROR_FORMAT_NOT_SUPPORTED" );
+					printF( "VK_ERROR_FORMAT_NOT_SUPPORTED \n" );
 					break;
 				case VK_ERROR_FRAGMENTED_POOL:
-					printL( "VK_ERROR_FRAGMENTED_POOL" );
+					printF( "VK_ERROR_FRAGMENTED_POOL \n" );
 					break;
 				case VK_ERROR_SURFACE_LOST_KHR:
-					printL( "VK_ERROR_SURFACE_LOST_KHR" );
+					printF( "VK_ERROR_SURFACE_LOST_KHR \n" );
 					break;
 				case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
-					printL( "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR" );
+					printF( "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR \n" );
 					break;
 				case VK_SUBOPTIMAL_KHR:
-					printL( "VK_SUBOPTIMAL_KHR" );
+					printF( "VK_SUBOPTIMAL_KHR \n" );
 					break;
 				case VK_ERROR_OUT_OF_DATE_KHR:
-					printL( "VK_ERROR_OUT_OF_DATE_KHR" );
+					printF( "VK_ERROR_OUT_OF_DATE_KHR \n" );
 					break;
 				case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:
-					printL( "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR" );
+					printF( "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR \n" );
 					break;
 				case VK_ERROR_VALIDATION_FAILED_EXT:
-					printL( "VK_ERROR_VALIDATION_FAILED_EXT" );
+					printF( "VK_ERROR_VALIDATION_FAILED_EXT \n" );
 					break;
 				default:
-					printL( "SOMETHING WRONG WITH VK" );
+					printF( "SOMETHING WRONG WITH VK \n" );
 					break;
 				}
 

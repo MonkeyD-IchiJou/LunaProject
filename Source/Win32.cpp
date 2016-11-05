@@ -1,7 +1,7 @@
 #include "WinNative.h"
 #include "DebugLog.h"
-#include "Renderer.h"
 #include "Input.h"
+#include "LunaManager.h"
 
 #if VK_USE_PLATFORM_WIN32_KHR
 
@@ -11,8 +11,6 @@ namespace luna
 {
 	LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
-		// TODO: mouse scolling input
-
 		// pointer to the window data
 		WinNative * pwin = reinterpret_cast<WinNative*>(
 			GetWindowLongPtrW(hwnd, GWLP_USERDATA)
@@ -165,14 +163,32 @@ namespace luna
 		SetFocus(m_win32_handle);
 	}
 
-	void WinNative::InitOSWindowSurface_()
+	void WinNative::RunOSWindow_()
 	{
-		VkWin32SurfaceCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hinstance = m_win32_instance;
-		createInfo.hwnd	= m_win32_handle;
+		if (m_gamemanager == nullptr)
+		{
+			// game running in other worker thread
+			m_gamemanager = new LunaManager();
+			m_gamemanager->GameRun();
+		}
 
-		vkCreateWin32SurfaceKHR(m_vulkanInstance, &createInfo, nullptr, &m_surface);
+		MSG msg{};
+		BOOL bRet{};
+
+		// always listening to inputs and events
+		while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0)
+		{
+			if (bRet == -1)
+			{
+				// handle the error and possibly exit
+				luna::DebugLog::throwEx("windows input error");
+			}
+			else
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
 	}
 
 	void WinNative::setWinSizeX(const uint32_t & val)
@@ -197,6 +213,13 @@ namespace luna
 
 	void WinNative::DeInitOSWindow_()
 	{
+		// destroy the game manager
+		if (m_gamemanager != nullptr)
+		{
+			delete m_gamemanager;
+			m_gamemanager = nullptr;
+		}
+
 		if (m_win32_handle != NULL)
 		{
 			DestroyWindow(m_win32_handle);

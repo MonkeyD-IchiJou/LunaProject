@@ -22,7 +22,7 @@ namespace luna
 		DeInit_();
 	}
 
-	void SceneDefault::Update(FramePacket& framepacket, std::array<Worker, 3>& workers)
+	void SceneDefault::Update(FramePacket& framepacket, std::array<Worker, 4>& workers)
 	{
 		/* prepare Frame Packets datas !! */ 
 

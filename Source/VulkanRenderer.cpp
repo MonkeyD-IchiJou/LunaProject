@@ -9,6 +9,11 @@ namespace luna
 	{
 		// straight away init the vulkan api instance
 
+#if defined(__ANDROID__)
+		// must init the vulkan first in android
+		loadVulkanLibrary();
+#endif
+
 		SetUpInstanceLayersAndExtension_();
 		SetUpVulkanDebug_();
 
@@ -16,7 +21,6 @@ namespace luna
 		InitVulkanDebug_();
 
 		// vulkan logical device init
-
 		SetUpLogicalDevice_();
 		InitLogicalDevice_();
 	}
@@ -45,7 +49,7 @@ namespace luna
 		DebugLog::EC(vkCreateInstance(&instance_create_info, nullptr, &m_vulkan_instance));
 
 #if defined(__ANDROID__)
-		DebugLog::printFF("init all the vulkan functions !!!!...");
+		// need to dynamically load the vulkan functions pointer
 		loadVulkanFunctions(m_vulkan_instance);
 #endif
 	}
@@ -62,7 +66,7 @@ namespace luna
 		m_queuefamily_index = m_physicaldevices.findQueueFamilies(gpuChoose);
 		if (!m_queuefamily_index.isComplete())
 		{
-			DebugLog::printFF("Cannot find suitable Queues");
+			DebugLog::printF("Cannot find suitable Queues \n");
 		}
 
 		// get all the info about this chosen gpu
@@ -71,9 +75,9 @@ namespace luna
 		m_gpu_features = m_physicaldevices.getGPUDeviceFeatures(gpuChoose);
 		m_gpu_memProperties = m_physicaldevices.getGPUMemoryProperties(gpuChoose);
 	
-		DebugLog::printFF("Physical Device: ");
-		DebugLog::printFF(m_gpu_properties.deviceName);
-
+		DebugLog::printF("Physical Device: ");
+		DebugLog::printF(m_gpu_properties.deviceName);
+		DebugLog::printF("\n");
 #if _DEBUG
 		/* print out all the device extensions only */
 		{
@@ -82,14 +86,14 @@ namespace luna
 			std::vector<VkExtensionProperties> extension_list(deviceExtCount);
 			vkEnumerateDeviceExtensionProperties(m_gpu, nullptr, &deviceExtCount, extension_list.data());
 
-			DebugLog::printL("\nDevice Extensions: ");
+			DebugLog::printF("\nDevice Extensions: ");
 			for (auto i : extension_list)
 			{
-				DebugLog::print("\t");
-				DebugLog::printL(i.extensionName);
+				DebugLog::printF("\n \t");
+				DebugLog::printF(i.extensionName);
 			}
 
-			DebugLog::print("\n");
+			DebugLog::printF("\n");
 		}
 
 		// only in debug mode we can see the line
@@ -119,11 +123,7 @@ namespace luna
 		device_info.pEnabledFeatures = &m_required_features;
 
 		// create the logical device
-
-		if (vkCreateDevice(m_gpu, &device_info, nullptr, &m_logicaldevice) == VK_SUCCESS)
-		{
-			DebugLog::printFF("Created logical device ");
-		}
+		DebugLog::EC(vkCreateDevice(m_gpu, &device_info, nullptr, &m_logicaldevice));
 
 		// get the queue from the device. queues are constructed when the device is created
 		vkGetDeviceQueue(m_logicaldevice, m_queuefamily_index.graphicsFamily, 0, &m_graphic_queue);
@@ -159,6 +159,11 @@ namespace luna
 			vkDestroyInstance(m_vulkan_instance, nullptr);
 			m_vulkan_instance = VK_NULL_HANDLE;
 		}
+
+#if defined(__ANDROID__)
+		// deinit the dynamically loaded library
+		freeVulkanLibrary();
+#endif
 	}
 
 	const uint32_t VulkanRenderer::findMemoryType(const uint32_t & typeFilter, const VkMemoryPropertyFlags & properties) const
@@ -209,7 +214,7 @@ namespace luna
 	void VulkanRenderer::PhysicalDevice::Init(const VkInstance & instance)
 	{
 		vkEnumeratePhysicalDevices(instance, &TotalNumOfGPUs, nullptr);
-		//if (TotalNumOfGPUs < 0) { DebugLog::throwEx("Vulkan ERROR: Cannot find any gpu"); }
+		if (TotalNumOfGPUs < 0) { DebugLog::throwEx("Vulkan ERROR: Cannot find any gpu"); }
 		GPUs.resize(TotalNumOfGPUs);
 		vkEnumeratePhysicalDevices(instance, &TotalNumOfGPUs, GPUs.data());
 

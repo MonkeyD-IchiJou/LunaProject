@@ -1,6 +1,4 @@
 #include "WinNative.h"
-#include "DebugLog.h"
-#include "Renderer.h"
 
 namespace luna
 {
@@ -14,23 +12,15 @@ namespace luna
 		m_win_pos_y(70),
 		m_close(false),
 		m_win_name("Luna")
-	{			
-		/* get the reference of the vulkan instance */
-		m_vulkanInstance = Renderer::getInstance()->GetVulkanInstance();
-
-		// init the os window
-		InitOSWindow_();	 
-
-		// surface inits 
-		InitOSWindowSurface_();
+	{
 	}
 
-	void WinNative::DeInitWindowSurface_()
+	void WinNative::Create()
 	{
-		if (m_surface != VK_NULL_HANDLE)
-		{
-			vkDestroySurfaceKHR(m_vulkanInstance, m_surface, nullptr);
-			m_surface = VK_NULL_HANDLE;
-		}
+		// init the os window
+		InitOSWindow_();
+
+		// straight away run the window after init
+		RunOSWindow_();
 	}
 }

@@ -43,7 +43,7 @@ namespace luna
 		void Render();
 
 		/* tell the gpu what to render */
-		void RecordBuffers(const FramePacket& framepacket, std::array<Worker, 3>& workers);
+		void RecordBuffers(const FramePacket& framepacket, std::array<Worker, 4>& workers);
 
 	public:
 		/* Singleton class implementation */

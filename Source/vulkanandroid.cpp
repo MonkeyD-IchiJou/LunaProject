@@ -257,7 +257,6 @@ void loadVulkanFunctions(VkInstance instance)
 	vkCmdSetDepthBias = reinterpret_cast<PFN_vkCmdSetDepthBias>(vkGetInstanceProcAddr(instance, "vkCmdSetDepthBias"));
 	vkCmdPushConstants = reinterpret_cast<PFN_vkCmdPushConstants>(vkGetInstanceProcAddr(instance, "vkCmdPushConstants"));
 
-	// here
 	vkCmdSetStencilCompareMask = reinterpret_cast<PFN_vkCmdSetStencilCompareMask>(vkGetInstanceProcAddr(instance, "vkCmdSetStencilCompareMask"));
 	vkCmdSetStencilWriteMask = reinterpret_cast<PFN_vkCmdSetStencilWriteMask>(vkGetInstanceProcAddr(instance, "vkCmdSetStencilWriteMask"));
 	vkCmdSetStencilReference = reinterpret_cast<PFN_vkCmdSetStencilReference>(vkGetInstanceProcAddr(instance, "vkCmdSetStencilReference"));

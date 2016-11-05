@@ -9,19 +9,20 @@
 
 namespace luna
 {
-	class VulkanRenderer;
+	class LunaManager;
 
 	// multiplatform window, singleton
 	class WinNative
 	{
 	public:
+		void Create();
+
 		inline uint32_t getWinSizeX() const { return m_win_size_x; }
 		inline uint32_t getWinSizeY() const { return m_win_size_y; }
 		inline uint32_t getWinPosX() const { return m_win_pos_x; }
 		inline uint32_t getWinPosY() const { return m_win_pos_y; }
 		inline std::string getName() const { return m_win_name; }
 		inline bool isClose() const { return m_close; }
-		inline VkSurfaceKHR getSurface() const { return m_surface; }
 
 		void setWinSizeX(const uint32_t& val);
 		void setWinSizeY(const uint32_t& val);
@@ -38,7 +39,6 @@ namespace luna
 #if VK_USE_PLATFORM_ANDROID_KHR
 		void AndroidEventProc(int32_t pCommand);
 		bool getFocus() const { return m_focus; }
-		int firstinit = -1;
 #endif // VK_USE_PLATFORM_ANDROID_KHR
 
 		// close the window 
@@ -64,7 +64,7 @@ namespace luna
 
 		/* Warning Once destroyed, forever destroy */
 		inline void Destroy() { 
-			DeInitWindowSurface_();  DeInitOSWindow_();
+			DeInitOSWindow_();
 		}
 
 	private:
@@ -74,14 +74,11 @@ namespace luna
 		/* platform specific: init the os window */
 		void InitOSWindow_();
 
-		/* platform specific: init the os surface */
-		void InitOSWindowSurface_();
+		/* platform specific: windows running events */
+		void RunOSWindow_();
 
 		/* platform specific: de init and destroy the os window */
 		void DeInitOSWindow_();
-
-		/* deinit the window surface */
-		void DeInitWindowSurface_();
 		
 	private:
 
@@ -99,12 +96,12 @@ namespace luna
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 #if VK_USE_PLATFORM_ANDROID_KHR
-		android_app* m_androidApplication;
+		android_app* m_androidApplication = nullptr;
 		bool m_focus = true;
 #endif // VK_USE_PLATFORM_ANDROID_KHR
 
-		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-		VkInstance m_vulkanInstance = VK_NULL_HANDLE;
+		// game manager objects
+		LunaManager* m_gamemanager = nullptr;
 
 		static std::once_flag m_sflag;
 		static WinNative* m_instance;

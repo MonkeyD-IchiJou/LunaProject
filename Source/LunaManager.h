@@ -1,57 +1,38 @@
 #ifndef LUNA_MANAGER_H
 #define LUNA_MANAGER_H
 
-#include <mutex>
+#include "Worker.h"
+#include <array>
 
 namespace luna
 {
-	class Renderer;
-	class WinNative;
 	class Scene;
+	class Renderer;
 
 	class LunaManager
 	{
 	public:
-		void Run();
+		LunaManager();
+		~LunaManager();
 
-	public:
-		/* Singleton class implementation */
-		static inline LunaManager* getInstance(void)
-		{
-			// only called once
-			std::call_once(m_sflag, [&]() {
-				m_instance = new LunaManager();
-			});
-
-			return m_instance;
-		}
-
-		/* check whether exist or not */
-		static inline bool exists(void)
-		{
-			return m_instance != nullptr;
-		}
-
-		/* Warning Once destroyed, forever destroy */
-		inline void Destroy() { DeInit_(); }
+		// game run in other thread
+		void GameRun();
 
 	private:
-		void Init_();
-		void DeInit_();
+		void InitResources_();
+		void DeInitResources_();
 
-		void GameRun_();
 		void GameLoop_();
-		void InputRun_();
-
-		LunaManager();
-		~LunaManager() {/* do nothing */}
-
+		
 	private:
 		/* all the scenes are here */
 		Scene* m_scene = nullptr;
 
-		static std::once_flag m_sflag;
-		static LunaManager* m_instance;
+		/* renderer handle */
+		Renderer* m_renderer = nullptr;
+
+		// i have 4 workers waiting to do jobs
+		std::array<Worker, 4> workers{};
 	};
 }
 

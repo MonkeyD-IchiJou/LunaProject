@@ -17,13 +17,18 @@ namespace luna
 	{
 	}
 
-	void DebugLog::printFF(const char* pMessage, ...)
+	void DebugLog::printF(const char* pMessage, ...)
 	{
+		va_list varArgs;
+		va_start(varArgs, pMessage);
+
 #if VK_USE_PLATFORM_ANDROID_KHR
-			va_list varArgs;
-			va_start(varArgs, pMessage);
-			__android_log_vprint(ANDROID_LOG_INFO, "LunaInfo", pMessage, varArgs);
-			va_end(varArgs);
+		__android_log_vprint(ANDROID_LOG_INFO, "LunaInfo", pMessage, varArgs);
+#elif VK_USE_PLATFORM_WIN32_KHR
+#if _DEBUG
+		printf(pMessage, varArgs);
 #endif
+#endif
+		va_end(varArgs);
 	}
 }

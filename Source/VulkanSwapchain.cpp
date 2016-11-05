@@ -14,7 +14,20 @@ namespace luna
 		m_gpu = r->GetGPU();
 		m_logicalDevice = r->GetLogicalDevice();
 		m_queueIndex = r->GetQueueFamilyIndices().graphicsFamily;
-		m_surface = WinNative::getInstance()->getSurface();
+
+		auto win = WinNative::getInstance();
+
+#if VK_USE_PLATFORM_WIN32_KHR
+
+		VkWin32SurfaceCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+		createInfo.hinstance = win->getWin32_Instance();
+		createInfo.hwnd	= win->getHWND();
+		vkCreateWin32SurfaceKHR(m_vulkanInstance, &createInfo, nullptr, &m_surface);
+
+#elif VK_USE_PLATFORM_ANDROID_KHR
+
+#endif
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
@@ -215,6 +228,12 @@ namespace luna
 
 			vkDestroySwapchainKHR(m_logicalDevice, m_swapchain, nullptr);
 			m_swapchain = VK_NULL_HANDLE;
+		}
+
+		if (m_surface != VK_NULL_HANDLE)
+		{
+			vkDestroySurfaceKHR(m_vulkanInstance, m_surface, nullptr);
+			m_surface = VK_NULL_HANDLE;
 		}
 	}
 }

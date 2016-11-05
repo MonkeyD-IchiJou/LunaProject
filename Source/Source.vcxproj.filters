@@ -127,6 +127,18 @@
     <Filter Include="Header Files\Resources\Components\Scripts">
       <UniqueIdentifier>{bf740a76-60dd-4564-b23b-8d18019d03d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\System\IO">
+      <UniqueIdentifier>{2ca6126b-b8ce-4f04-8812-05e4d3c2542b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\System\Base">
+      <UniqueIdentifier>{b77c33e7-ae52-44d4-a4ac-370641ea018c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\System\IO">
+      <UniqueIdentifier>{1b39edcc-63a8-4dd3-b293-20e929c14c4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\System\Base">
+      <UniqueIdentifier>{0243a3f5-a14f-4572-a945-dd18bc631029}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BasicMesh.h">
@@ -167,9 +179,6 @@
     </ClInclude>
     <ClInclude Include="VulkanTextureCube.h">
       <Filter>Header Files\Resources\Textures</Filter>
-    </ClInclude>
-    <ClInclude Include="DebugLog.h">
-      <Filter>Header Files\System</Filter>
     </ClInclude>
     <ClInclude Include="WinNative.h">
       <Filter>Header Files\Windows</Filter>
@@ -231,9 +240,6 @@
     <ClInclude Include="SkyBoxShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="LunaManager.h">
-      <Filter>Header Files\System</Filter>
-    </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>Header Files\Resources\Scenes\Base</Filter>
     </ClInclude>
@@ -251,9 +257,6 @@
     </ClInclude>
     <ClInclude Include="FontComponent.h">
       <Filter>Header Files\Resources\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="enum_c.h">
-      <Filter>Header Files\System</Filter>
     </ClInclude>
     <ClInclude Include="ComponentManager.h">
       <Filter>Header Files\Resources\Components\Base</Filter>
@@ -291,23 +294,14 @@
     <ClInclude Include="RotateScript.h">
       <Filter>Header Files\Resources\Components\Scripts</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
-      <Filter>Header Files\System</Filter>
-    </ClInclude>
     <ClInclude Include="FramePacket.h">
       <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
     <ClInclude Include="CommandBufferPacket.h">
       <Filter>Header Files\Resources\Storages</Filter>
     </ClInclude>
-    <ClInclude Include="Worker.h">
-      <Filter>Header Files\System</Filter>
-    </ClInclude>
     <ClInclude Include="TextChangeScript.h">
       <Filter>Header Files\Resources\Components\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Global.h">
-      <Filter>Header Files\System</Filter>
     </ClInclude>
     <ClInclude Include="CameraControlScript.h">
       <Filter>Header Files\Resources\Components\Scripts</Filter>
@@ -315,17 +309,32 @@
     <ClInclude Include="NonLightPassShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="DebugLog.h">
+      <Filter>Header Files\System\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>Header Files\System\IO</Filter>
+    </ClInclude>
     <ClInclude Include="IOManager.h">
-      <Filter>Header Files\System</Filter>
+      <Filter>Header Files\System\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>Header Files\System\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="LunaManager.h">
+      <Filter>Header Files\System\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="enum_c.h">
+      <Filter>Header Files\System\Base</Filter>
     </ClInclude>
     <ClInclude Include="vulkanandroid.h">
-      <Filter>Header Files\System</Filter>
+      <Filter>Header Files\System\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Worker.h">
+      <Filter>Header Files\System\Base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DebugLog.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
     <ClCompile Include="BasicMesh.cpp">
       <Filter>Source Files\Resources\Meshes</Filter>
     </ClCompile>
@@ -404,9 +413,6 @@
     <ClCompile Include="Framebuffer.cpp">
       <Filter>Source Files\Resources\FBOs\Base</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
     <ClCompile Include="GausianBlur1DShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
@@ -421,9 +427,6 @@
     </ClCompile>
     <ClCompile Include="SkyBoxShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="LunaManager.cpp">
-      <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Source Files\Resources\Scenes\Base</Filter>
@@ -479,20 +482,11 @@
     <ClCompile Include="RotateScript.cpp">
       <Filter>Source Files\Resources\Components\Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
     <ClCompile Include="CommandBufferPacket.cpp">
       <Filter>Source Files\Resources\Storages</Filter>
     </ClCompile>
-    <ClCompile Include="Worker.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
     <ClCompile Include="TextChangeScript.cpp">
       <Filter>Source Files\Resources\Components\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Global.cpp">
-      <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="CameraControlScript.cpp">
       <Filter>Source Files\Resources\Components\Scripts</Filter>
@@ -504,10 +498,28 @@
       <Filter>Source Files\Windows</Filter>
     </ClCompile>
     <ClCompile Include="IOManager.cpp">
-      <Filter>Source Files\System</Filter>
+      <Filter>Source Files\System\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugLog.cpp">
+      <Filter>Source Files\System\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="Global.cpp">
+      <Filter>Source Files\System\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="LunaManager.cpp">
+      <Filter>Source Files\System\Base</Filter>
     </ClCompile>
     <ClCompile Include="vulkanandroid.cpp">
-      <Filter>Source Files\System</Filter>
+      <Filter>Source Files\System\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\System\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>Source Files\System\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="Worker.cpp">
+      <Filter>Source Files\System\Base</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

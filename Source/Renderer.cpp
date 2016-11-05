@@ -27,7 +27,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 #define BASE_RESOLUTION_X 1280
 #define BASE_RESOLUTION_Y 720
@@ -446,7 +446,7 @@ namespace luna
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		//// start recording the offscreen command buffers
+		// start recording the offscreen command buffers
 		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
 
 		// transfer data to gpu first
@@ -524,12 +524,12 @@ namespace luna
 		}
 	}
 
-	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<Worker, 3>& workers)
+	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<Worker, 4>& workers)
 	{
 		workers[0].addJob([&]() {
 			// record the command buffers and update the staging buffers
 			RecordGeometryPass_Secondary_(
-				commandbufferpacket->geometry_secondary_cmdbuff, 
+				commandbufferpacket->geometry_secondary_cmdbuff,
 				*framepacket.renderinfos
 			);
 		});
@@ -559,12 +559,10 @@ namespace luna
 
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
-		DebugLog::printFF("get the swap chain");
 		m_submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
 
 		// submit all the queues
 		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, m_submitInfo, VK_NULL_HANDLE));
-		DebugLog::printFF("submit finish");
 
 		// present it on the screen pls
 		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));

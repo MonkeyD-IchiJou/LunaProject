@@ -15,22 +15,20 @@ namespace luna
 			std::vector<VkExtensionProperties> extension_list(instanceExtCount);
 			vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtCount, extension_list.data());
 
-			DebugLog::printL("Instance Extensions: ");
+			DebugLog::printF("Instance Extensions: ");
 
 			for (auto i : extension_list)
 			{
-				DebugLog::print("\t");
-				DebugLog::printL( i.extensionName );
+				DebugLog::printF("\n \t");
+				DebugLog::printF( i.extensionName );
 			}
 
-			DebugLog::print("\n");
+			DebugLog::printF("\n");
 		}
 #endif // BUILD_ENABLE_VULKAN_DEBUG
 
 		m_instance_exts.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 		m_instance_exts.push_back(PLATFORM_SURFACE_EXTENSION_NAME);
-
-		DebugLog::printFF(PLATFORM_SURFACE_EXTENSION_NAME);
 	}
 
 #if _DEBUG
@@ -42,7 +40,8 @@ namespace luna
 	{
 		if (msg_flags &  VK_DEBUG_REPORT_WARNING_BIT_EXT)
 		{
-			DebugLog::printL(msg);
+			DebugLog::printF(msg);
+			DebugLog::printF("\n");
 		}
 
 		if (msg_flags &  VK_DEBUG_REPORT_ERROR_BIT_EXT)
@@ -72,13 +71,13 @@ namespace luna
 			vkEnumerateInstanceLayerProperties(&layer_count, layer_property_list.data());
 
 			// print for debug purposes
-			DebugLog::printL("Instance Layers: ");
+			DebugLog::printF("Instance Layers: ");
 			for (auto &i : layer_property_list)
 			{
-				DebugLog::print('\t');
-				DebugLog::printL(i.layerName);
+				DebugLog::printF("\n \t");
+				DebugLog::printF(i.layerName);
 			}
-			DebugLog::print('\n');
+			DebugLog::printF("\n");
 		}
 
 		m_debuginfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;

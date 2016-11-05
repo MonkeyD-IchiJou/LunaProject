@@ -13,6 +13,50 @@ namespace luna
 		win.AndroidEventProc(pCommand);
 	}
 
+	void WinNative::AndroidEventProc(int32_t pCommand)
+	{
+		switch (pCommand) 
+		{
+		case APP_CMD_SAVE_STATE:
+			DebugLog::printFF("CMD SAVE APP !!");
+			break;
+
+		case APP_CMD_INIT_WINDOW:
+			DebugLog::printFF("Window Init App");
+
+			{
+				VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
+				surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+				surfaceCreateInfo.window = m_androidApplication->window;
+
+				if (m_androidApplication->window == nullptr)
+					DebugLog::printFF("Vulkan Instance is nullptr...");
+
+				DebugLog::printFF("Creating Surface...");
+				vkCreateAndroidSurfaceKHR(m_vulkanInstance, &surfaceCreateInfo, nullptr, &m_surface);
+				DebugLog::printFF("create Surface Success");
+			}
+
+			// init scenes and stuff
+			firstinit = 0;
+
+			break;
+
+		case APP_CMD_GAINED_FOCUS:
+			DebugLog::printFF("Gained Focus App");
+			m_focus = true;
+			break;
+
+		case APP_CMD_LOST_FOCUS:
+			DebugLog::printFF("Lost Focus App");
+			m_focus = false;
+			break;
+		case APP_CMD_TERM_WINDOW:
+			DebugLog::printFF("APP_CMD_TERM_WINDOW");
+			break;
+		}
+	}
+
 	static int32_t handleAppInput(android_app* app, AInputEvent* pEvent)
 	{
 		int32_t eventType = AInputEvent_getType(pEvent);
@@ -100,52 +144,37 @@ namespace luna
 		luna::DebugLog::printFF("come out liao");
 	}
 
-	void WinNative::InitOSWindowSurface_()
+	void WinNative::RunOSWindow_()
 	{
+		int32_t result = 0;
+		int32_t events = 0;
+		android_poll_source* source = nullptr;
+		android_app* androidapp = luna::global::androidApplication;
+
+		while (true)
+		{
+			// event processing loop
+			while ((result = ALooper_pollAll(0, NULL, &events, (void**)&source)) >= 0)
+			{
+				// an even has to be processed
+				if (source != nullptr)
+				{
+					//luna::DebugLog::printFF("Processing an event");
+					source->process(androidapp, source);
+				}
+
+				// application is getting destroyed
+				if (androidapp->destroyRequested != 0)
+				{
+					DebugLog::printF("Exiting event loop");
+					return;
+				}
+			}
+		}
 	}
 
-	void WinNative::AndroidEventProc(int32_t pCommand)
+	void WinNative::InitOSWindowSurface_()
 	{
-		switch (pCommand) 
-		{
-		case APP_CMD_SAVE_STATE:
-			DebugLog::printFF("CMD SAVE APP !!");
-			break;
-
-		case APP_CMD_INIT_WINDOW:
-			DebugLog::printFF("Window Init App");
-
-			{
-				VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
-				surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-				surfaceCreateInfo.window = m_androidApplication->window;
-
-				if (m_androidApplication->window == nullptr)
-					DebugLog::printFF("Vulkan Instance is nullptr...");
-
-				DebugLog::printFF("Creating Surface...");
-				vkCreateAndroidSurfaceKHR(m_vulkanInstance, &surfaceCreateInfo, nullptr, &m_surface);
-				DebugLog::printFF("create Surface Success");
-			}
-
-			// init scenes and stuff
-			firstinit = 0;
-
-			break;
-
-		case APP_CMD_GAINED_FOCUS:
-			DebugLog::printFF("Gained Focus App");
-			m_focus = true;
-			break;
-
-		case APP_CMD_LOST_FOCUS:
-			DebugLog::printFF("Lost Focus App");
-			m_focus = false;
-			break;
-		case APP_CMD_TERM_WINDOW:
-			DebugLog::printFF("APP_CMD_TERM_WINDOW");
-			break;
-		}
 	}
 
 	void WinNative::setWinSizeX(const uint32_t & val)
