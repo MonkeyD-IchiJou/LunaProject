@@ -4,7 +4,7 @@ include $(CLEAR_VARS)
 
 LS_CPP=$(subst $(1)/,,$(wildcard $(1)/*.cpp))
 
-LOCAL_MODULE := androidapp
+LOCAL_MODULE := app
 
 LOCAL_CPPFLAGS := -std=c++11
 LOCAL_CPPFLAGS += -D__STDC_LIMIT_MACROS
