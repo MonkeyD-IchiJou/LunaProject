@@ -128,8 +128,12 @@ namespace luna
 		// depth buffer
 		imageattachment = &texrsc->Textures[eTEXTURES::DEPTHSTENCIL_ATTACHMENT_32F8U];
 		*imageattachment = new VulkanTexture2D(
-			m_resolution.width, m_resolution.height, 
-			VK_FORMAT_D24_UNORM_S8_UINT, // mobile not supported
+			m_resolution.width, m_resolution.height,
+#if VK_USE_PLATFORM_ANDROID_KHR
+			VK_FORMAT_D24_UNORM_S8_UINT,
+#else
+            VK_FORMAT_D32_SFLOAT_S8_UINT, // mobile not supported
+#endif
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);

@@ -33,11 +33,11 @@ namespace luna
 
 			AAsset* asset = AAssetManager_open(global::androidApplication->activity->assetManager, filename.c_str(), AASSET_MODE_STREAMING);
 			if (asset == nullptr)
-				DebugLog::printFF("failed to open file!");
+				DebugLog::printF("failed to open file!");
 
-			size_t size = AAsset_getLength(asset);
+			size_t size = static_cast<size_t>(AAsset_getLength(asset));
 			if(size <= 0)
-				DebugLog::printFF("file size is less than zero");
+				DebugLog::printF("file size is less than zero");
 
 			if (buffer.size() > 0)
 				buffer.clear();

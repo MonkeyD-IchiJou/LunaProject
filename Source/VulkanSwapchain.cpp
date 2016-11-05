@@ -2,6 +2,7 @@
 #include "DebugLog.h"
 #include "Renderer.h"
 #include "WinNative.h"
+#include "Global.h"
 
 namespace luna
 {
@@ -13,12 +14,10 @@ namespace luna
 		m_vulkanInstance = r->GetVulkanInstance();
 		m_gpu = r->GetGPU();
 		m_logicalDevice = r->GetLogicalDevice();
-		m_queueIndex = r->GetQueueFamilyIndices().graphicsFamily;
-
-		auto win = WinNative::getInstance();
+		m_queueIndex = static_cast<uint32_t >(r->GetQueueFamilyIndices().graphicsFamily);
 
 #if VK_USE_PLATFORM_WIN32_KHR
-
+		auto win = WinNative::getInstance();
 		VkWin32SurfaceCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 		createInfo.hinstance = win->getWin32_Instance();
@@ -26,7 +25,10 @@ namespace luna
 		vkCreateWin32SurfaceKHR(m_vulkanInstance, &createInfo, nullptr, &m_surface);
 
 #elif VK_USE_PLATFORM_ANDROID_KHR
-
+        VkAndroidSurfaceCreateInfoKHR createinfo{};
+		createinfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+		createinfo.window = global::androidApplication->window;
+		vkCreateAndroidSurfaceKHR(m_vulkanInstance, &createinfo, nullptr, &m_surface);
 #endif
 	}
 
@@ -94,9 +96,10 @@ namespace luna
 			// If the surface size is defined, the swap chain size must match
 			m_swapchainExtent = surface_capabilities.currentExtent;
 
-			// window size recreate ??
-			//*width = surface_capabilities.currentExtent.width;
-			//*height = surface_capabilities.currentExtent.height;
+			WinNative::getInstance()->setWinSizeX(m_swapchainExtent.width);
+			WinNative::getInstance()->setWinSizeY(m_swapchainExtent.height);
+
+			DebugLog::printF("current extent x: %u, y: %u", m_swapchainExtent.width, m_swapchainExtent.height);
 		}
 
 		// Determine the number of images
@@ -121,11 +124,11 @@ namespace luna
 		// default present mode is FIFO
 		VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; 
 		// find the best present mode --> MAILBOX 
-		for (auto i : m_presentmode_list)
+		/*for (auto i : m_presentmode_list)
 		{
 			if (i == VK_PRESENT_MODE_MAILBOX_KHR)
 				presentMode = i;
-		}
+		}*/
 
 		/* swap chain creation start */
 		VkSwapchainKHR oldSwapChain = m_swapchain;

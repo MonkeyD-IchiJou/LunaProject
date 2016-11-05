@@ -4,7 +4,6 @@
 #include "SceneDefault.h"
 #include "WinNative.h"
 #include "Global.h"
-#include <chrono>
 
 namespace luna
 {

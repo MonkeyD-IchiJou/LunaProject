@@ -145,6 +145,7 @@ namespace luna
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
+		// a simple non light pass
 		m_nonlightpass_shader = new NonLightPassShader();
 		m_nonlightpass_shader->SetDescriptors(
 			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U]

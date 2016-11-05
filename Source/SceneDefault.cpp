@@ -1,9 +1,6 @@
 #include "SceneDefault.h"
 #include "ComponentManager.h"
-#include "DebugLog.h"
-#include "Renderer.h"
-#include "Global.h"
-
+#include "WinNative.h"
 
 #include "RotateScript.h"
 #include "TextChangeScript.h"
@@ -127,7 +124,7 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("font", m_componentmanager);
-			entity->transformation->position = glm::vec3(5.f, 720.f, 0.f);
+			entity->transformation->position = glm::vec3(5.f, WinNative::getInstance()->getWinSizeY(), 0.f);
 			entity->transformation->scale = glm::vec3(400.f, 400.f, 1.f);
 			FontComponent* fontc = dynamic_cast<FontComponent*>(entity->AddComponent(COMPONENT_ATYPE::FONT_ACTYPE));
 			fontc->material.fontID = FONT_EVA;

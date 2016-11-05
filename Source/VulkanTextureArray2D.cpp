@@ -14,11 +14,11 @@ namespace luna
 		// So they need to be loaded via the asset manager
 		AAsset* asset = AAssetManager_open(global::androidApplication->activity->assetManager, filename.c_str(), AASSET_MODE_STREAMING);
 		if (asset == nullptr)
-			DebugLog::printFF("failed to open file!");
+			DebugLog::printF("failed to open file!");
 
-		size_t size = AAsset_getLength(asset);
+		size_t size = static_cast<size_t>(AAsset_getLength(asset));
 		if(size <= 0)
-			DebugLog::printFF("file size is less than zero");
+			DebugLog::printF("file size is less than zero");
 
 		void *textureData = malloc(size);
 		AAsset_read(asset, textureData, size);
