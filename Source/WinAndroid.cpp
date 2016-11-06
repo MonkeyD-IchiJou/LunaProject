@@ -8,7 +8,7 @@
 
 namespace luna
 {
-	static void Callback_AppEvent(android_app* pApplication, int32_t pCommand) 
+	static void Callback_AppEvent(android_app* pApplication, int32_t pCommand)
 	{
 		WinNative& win = *(WinNative*) pApplication->userData;
 		win.AndroidEventProc(pCommand);
@@ -16,7 +16,7 @@ namespace luna
 
 	void WinNative::AndroidEventProc(int32_t pCommand)
 	{
-		switch (pCommand) 
+		switch (pCommand)
 		{
 			case APP_CMD_SAVE_STATE:
 				DebugLog::printF("CMD SAVE APP !!");
@@ -48,6 +48,19 @@ namespace luna
 				DebugLog::printF("APP_CMD_TERM_WINDOW");
 				break;
 
+			case APP_CMD_WINDOW_RESIZED:
+				DebugLog::printF("APP_CMD_WINDOW_RESIZED");
+				break;
+
+			case APP_CMD_WINDOW_REDRAW_NEEDED:
+				DebugLog::printF("APP_CMD_WINDOW_REDRAW_NEEDED");
+				break;
+
+			case APP_CMD_CONFIG_CHANGED:
+				setWinDrawingSurfaceSize(1, 1);
+				DebugLog::printF("APP_CMD_CONFIG_CHANGED");
+				break;
+
 			default:
 				break;
 		}
@@ -57,7 +70,7 @@ namespace luna
 	{
 		int32_t eventType = AInputEvent_getType(pEvent);
 
-		switch (eventType) 
+		switch (eventType)
 		{
 			case AINPUT_EVENT_TYPE_MOTION:
 
@@ -117,6 +130,7 @@ namespace luna
 		m_androidApplication->userData = this;
 		m_androidApplication->onAppCmd = Callback_AppEvent;
 		m_androidApplication->onInputEvent = handleAppInput;
+
 	}
 
 	void WinNative::RunOSWindow_()
@@ -145,14 +159,43 @@ namespace luna
 
 	}
 
-	void WinNative::setWinSizeX(const uint32_t & val)
+	void WinNative::setWinDrawingSurfaceSizeX(const uint32_t &val)
 	{
-		this->m_win_size_x = val;
+		if (m_win_surfacesize_x == 0)
+		{
+			m_win_surfacesize_x = val;
+			return;
+		}
+
+		m_win_surfacesize_x = val;
+
 	}
 
-	void WinNative::setWinSizeY(const uint32_t & val)
+	void WinNative::setWinDrawingSurfaceSizeY(const uint32_t & val)
 	{
-		this->m_win_size_y = val;
+		if (m_win_surfacesize_y == 0)
+		{
+			m_win_surfacesize_y = val;
+			return;
+		}
+
+		m_win_surfacesize_y = val;
+	}
+
+	void WinNative::setWinDrawingSurfaceSize(const uint32_t & valx, const uint32_t & valy)
+	{
+		if (m_win_surfacesize_x == 0 || m_win_surfacesize_y == 0)
+		{
+			m_win_surfacesize_x = valx;
+			m_win_surfacesize_y = valy;
+		}
+		else
+		{
+			m_win_surfacesize_x = valx;
+			m_win_surfacesize_y = valy;
+
+			m_gamemanager->OnWindowSizeChange(valx, valy);
+		}
 	}
 
 	void WinNative::setWinPosX(const uint32_t & val)

@@ -38,7 +38,6 @@ namespace luna
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &offscreen_secondary_cmdbuff));
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &skybox_secondary_cmdbuff));
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &transferdata_secondary_cmdbuff));
-			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &temp_secondary_cmdbuff));
 			
 		}
 

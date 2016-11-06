@@ -38,6 +38,10 @@ namespace luna
 		
 			break;
 
+		case WM_SIZE:
+			setWinDrawingSurfaceSize(LOWORD(lparam), HIWORD(lparam));
+			break;
+
 		case WM_KEYUP:
 			input::Keys[wparam].pressed = false;
 		
@@ -133,18 +137,14 @@ namespace luna
 		DWORD ex_style = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
 		DWORD style = WS_OVERLAPPEDWINDOW;
 
-		// Create window with the registered class:
-		RECT wr = { 0, 0, LONG(m_win_size_x), LONG(m_win_size_y) };
-		AdjustWindowRectEx(&wr, style, FALSE, ex_style);
-
 		m_win32_handle = CreateWindowEx(
 			0,
 			m_win_name.c_str(),				// class name
 			m_win_name.c_str(),				// app name
 			style,							// window style
 			m_win_pos_x, m_win_pos_y,		// x/y coords
-			wr.right - wr.left,				// width
-			wr.bottom - wr.top,				// height
+			m_win_size_x,					// width
+			m_win_size_y,					// height
 			NULL,							// handle to parent
 			NULL,							// handle to menu
 			m_win32_instance,				// hInstance
@@ -191,12 +191,38 @@ namespace luna
 		}
 	}
 
-	void WinNative::setWinSizeX(const uint32_t & val)
+	void WinNative::setWinDrawingSurfaceSizeX(const uint32_t & val)
 	{
+		if (m_win_surfacesize_x != val)
+		{
+			m_win_surfacesize_x = val;
+			m_gamemanager->OnWindowSizeChange(m_win_surfacesize_x, m_win_surfacesize_y);
+		}
 	}
 
-	void WinNative::setWinSizeY(const uint32_t & val)
+	void WinNative::setWinDrawingSurfaceSizeY(const uint32_t & val)
 	{
+		if (m_win_surfacesize_y != val)
+		{
+			m_win_surfacesize_y = val;
+			m_gamemanager->OnWindowSizeChange(m_win_surfacesize_x, m_win_surfacesize_y);
+		}
+	}
+
+	void WinNative::setWinDrawingSurfaceSize(const uint32_t & valx, const uint32_t & valy)
+	{
+		if (m_win_surfacesize_x == 0 || m_win_surfacesize_y == 0)
+		{
+			m_win_surfacesize_x = valx;
+			m_win_surfacesize_y = valy;
+		}
+		else
+		{
+			m_win_surfacesize_x = valx;
+			m_win_surfacesize_y = valy;
+
+			m_gamemanager->OnWindowSizeChange(valx, valy);
+		}
 	}
 
 	void WinNative::setWinPosX(const uint32_t & val)

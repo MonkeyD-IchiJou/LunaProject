@@ -19,11 +19,8 @@ namespace luna
 		VulkanSwapchain();
 		~VulkanSwapchain();
 
-		/* create the swapchain and its buffers 
-		* @param width Pointer to the width of the swapchain (may be adjusted to fit the requirements of the swapchain)
-		* @param height Pointer to the height of the swapchain (may be adjusted to fit the requirements of the swapchain)
-		*/
-		void Init();
+		// when window size changes
+		void RecreateSwapChain();
 
 		/* Acquires the next image in the swap chain */
 		/* The function will always wait until the next image has been acquired by setting timeout to UINT64_MAX */
@@ -44,6 +41,9 @@ namespace luna
 		std::vector<SwapChainBuffer> m_buffers;
 
 	private:
+		/* create the swapchain and its buffers */
+		void Init_();
+
 		/* necessary handle from renderer */
 		VkInstance m_vulkanInstance = VK_NULL_HANDLE;
 		VkDevice m_logicalDevice = VK_NULL_HANDLE;

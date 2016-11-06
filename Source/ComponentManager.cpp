@@ -112,7 +112,7 @@ namespace luna
 		auto font = texrsc->Fonts[FONT_EVA];
 
 		// scale with screen size
-		glm::mat4 proj = glm::ortho(0.f, (float)win->getWinSizeX(), (float)win->getWinSizeY(), 0.f);
+		glm::mat4 proj = glm::ortho(0.f, static_cast<float>(win->getWinSurfaceSizeX()), static_cast<float>(win->getWinSurfaceSizeY()), 0.f);
 		glm::vec2 cursor = {};
 		glm::vec2 toplefthandcorner = {};
 		glm::vec2 position = {};

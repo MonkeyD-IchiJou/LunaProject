@@ -14,7 +14,7 @@ namespace luna
 		virtual ~SceneDefault();
 
 		/* scene update objects transformation, physics, AI, secondary command buffer, every frame */
-		void Update(FramePacket& framepacket, std::array<Worker, 4>& workers) override;
+		void Update(FramePacket& framepacket, std::array<Worker*, 2>& workers) override;
 
 	private:
 		/* scene necessary init */

@@ -18,6 +18,9 @@ namespace luna
 		// game run in other thread
 		void GameRun();
 
+		// when window size changes
+		void OnWindowSizeChange(const uint32_t& x, const uint32_t& y);
+
 	private:
 		void InitResources_();
 		void DeInitResources_();
@@ -32,7 +35,7 @@ namespace luna
 		Renderer* m_renderer = nullptr;
 
 		// i have 4 workers waiting to do jobs
-		std::array<Worker, 4> workers{};
+		std::array<Worker, 6> workers{};
 	};
 }
 

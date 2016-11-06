@@ -2,6 +2,8 @@
 #include "Entity.h"
 #include "FontComponent.h"
 #include "Global.h"
+#include "TransformationComponent.h"
+#include "WinNative.h"
 
 namespace luna
 {
@@ -19,6 +21,7 @@ namespace luna
 		if (fontc)
 		{
 			fontc->text = std::to_string(global::DeltaTime);
+			fontc->GetOwner()->transformation->position.y = WinNative::getInstance()->getWinSurfaceSizeY();
 		}
 	}
 }

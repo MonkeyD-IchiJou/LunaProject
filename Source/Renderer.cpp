@@ -29,8 +29,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
-#define BASE_RESOLUTION_X 1280
-#define BASE_RESOLUTION_Y 720
+#define BASE_RESOLUTION_X 1600
+#define BASE_RESOLUTION_Y 900
 #define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
 
@@ -65,7 +65,6 @@ namespace luna
 			// swap chain and final fbo creation
 			// create the swap chain for presenting images
 			m_swapchain = new VulkanSwapchain();
-			m_swapchain->Init();
 
 			// fbos, shaders will be created 
 			CreateRenderPassResources_();
@@ -384,37 +383,6 @@ namespace luna
 		RecordSkybox__Secondary_(commandbufferpacket->skybox_secondary_cmdbuff);
 		RecordSecondaryOffscreen_Secondary_(commandbufferpacket->offscreen_secondary_cmdbuff);
 
-
-
-		VkCommandBufferInheritanceInfo inheritanceinfo{};
-		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
-		inheritanceinfo.subpass = 1;
-		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
-		inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = &inheritanceinfo;
-		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(commandbufferpacket->temp_secondary_cmdbuff, &beginInfo);
-		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(commandbufferpacket->temp_secondary_cmdbuff);
-		m_dirlightpass_shader->SetViewPort(commandbufferpacket->temp_secondary_cmdbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(commandbufferpacket->temp_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(commandbufferpacket->temp_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(commandbufferpacket->temp_secondary_cmdbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbufferpacket->temp_secondary_cmdbuff);
-
-		// combined with those not lightpass geometry
-		m_nonlightpass_shader->Bind(commandbufferpacket->temp_secondary_cmdbuff);
-		m_nonlightpass_shader->SetViewPort(commandbufferpacket->temp_secondary_cmdbuff, m_deferred_fbo->getResolution());
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbufferpacket->temp_secondary_cmdbuff);
-		// end geometry pass cmd buff
-		vkEndCommandBuffer(commandbufferpacket->temp_secondary_cmdbuff);
-
-
 		// primary command buffers, record once and for all
 		RecordOffscreen_Primary_(commandbufferpacket->offscreen_cmdbuffer);
 		RecordPresentation_Primary_();
@@ -466,11 +434,22 @@ namespace luna
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
 			commandbuff, 
-			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+			VK_SUBPASS_CONTENTS_INLINE
 		);
 
-		//// execute all the light passes
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->temp_secondary_cmdbuff);
+		// execute all the light passes
+		// bind the dirlight pass shader
+		m_dirlightpass_shader->Bind(commandbuff);
+		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+
+		// combined with those not lightpass geometry
+		m_nonlightpass_shader->Bind(commandbuff);
+		m_nonlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
@@ -525,9 +504,9 @@ namespace luna
 		}
 	}
 
-	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<Worker, 4>& workers)
+	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<Worker*, 2>& workers)
 	{
-		workers[0].addJob([&]() {
+		workers[0]->addJob([&]() {
 			// record the command buffers and update the staging buffers
 			RecordGeometryPass_Secondary_(
 				commandbufferpacket->geometry_secondary_cmdbuff,
@@ -535,7 +514,7 @@ namespace luna
 			);
 		});
 		
-		workers[1].addJob([&]() {
+		workers[1]->addJob([&]() {
 
 			// update to staging buffers
 			m_instance_ssbo->Update(framepacket.instancedatas);
@@ -549,8 +528,62 @@ namespace luna
 		});
 
 		// let all workers finish their job pls
-		workers[0].wait();
-		workers[1].wait();
+		workers[0]->wait();
+		workers[1]->wait();
+	}
+
+	void Renderer::RecreateSwapChain()
+	{
+		vkDeviceWaitIdle(m_logicaldevice);
+
+		m_swapchain->RecreateSwapChain();
+
+		// destroy the presentation fbos and then create them again
+		for (auto &fbo : m_presentation_fbos)
+		{
+			fbo->Destroy();
+		}
+
+		// create framebuffer for each swapchain images
+		VkClearValue clearvalue{};
+		clearvalue.color = {0.f, 1.f, 0.f, 1.f};
+		for (int i = 0; i < m_presentation_fbos.size(); i++)
+		{
+			m_presentation_fbos[i]->SetAttachment(
+				m_swapchain->m_buffers[i].image, 
+				m_swapchain->m_buffers[i].imageview, 
+				m_swapchain->getColorFormat(), 
+				PRESENT_FBOATTs::COLOR_ATTACHMENT
+			);
+			m_presentation_fbos[i]->Clear(clearvalue, PRESENT_FBOATTs::COLOR_ATTACHMENT);
+			m_presentation_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
+		}
+
+		// recreate the command buffers again
+		if (m_commandPool != VK_NULL_HANDLE)
+		{
+			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
+			m_commandPool = VK_NULL_HANDLE;
+		}
+		m_presentation_cmdbuffers.clear();
+
+		VkCommandPoolCreateInfo commandPool_createinfo{};
+		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+
+		m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
+
+		// command buffers creation
+		VkCommandBufferAllocateInfo buffer_allocateInfo{};
+		buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		buffer_allocateInfo.commandPool = m_commandPool;
+		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
+		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
+
+		// then record it again
+		RecordPresentation_Primary_();
 	}
 
 	void Renderer::Render()

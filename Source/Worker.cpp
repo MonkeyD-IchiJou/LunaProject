@@ -1,4 +1,5 @@
 #include "Worker.h"
+#include "DebugLog.h"
 
 namespace luna
 {
@@ -58,7 +59,20 @@ namespace luna
 				job = m_jobqueues.front();
 			}
 
+#if _DEBUG
+			try
+			{
+				job();
+			}
+			catch (const std::runtime_error& e)
+			{
+				DebugLog::printF("\n [Worker Thread Catch]->");
+				DebugLog::printF(e.what());
+				system("pause");
+			}
+#else
 			job();
+#endif
 
 			{
 				std::lock_guard<std::mutex> lock(m_queuemutex);

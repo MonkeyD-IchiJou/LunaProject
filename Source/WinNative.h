@@ -17,15 +17,16 @@ namespace luna
 	public:
 		void Create();
 
-		inline uint32_t getWinSizeX() const { return m_win_size_x; }
-		inline uint32_t getWinSizeY() const { return m_win_size_y; }
+		inline uint32_t getWinSurfaceSizeX() const { return m_win_surfacesize_x; }
+		inline uint32_t getWinSurfaceSizeY() const { return m_win_surfacesize_y; }
 		inline uint32_t getWinPosX() const { return m_win_pos_x; }
 		inline uint32_t getWinPosY() const { return m_win_pos_y; }
 		inline std::string getName() const { return m_win_name; }
 		inline bool isClose() const { return m_close; }
 
-		void setWinSizeX(const uint32_t& val);
-		void setWinSizeY(const uint32_t& val);
+		void setWinDrawingSurfaceSizeX(const uint32_t& val);
+		void setWinDrawingSurfaceSizeY(const uint32_t& val);
+		void setWinDrawingSurfaceSize(const uint32_t& valx, const uint32_t& valy);
 		void setWinPosX(const uint32_t& val);
 		void setWinPosY(const uint32_t& val);
 		void setName(const std::string& name);
@@ -84,6 +85,8 @@ namespace luna
 
 		std::atomic<uint32_t> m_win_size_x;
 		std::atomic<uint32_t> m_win_size_y;
+		std::atomic<uint32_t> m_win_surfacesize_x;
+		std::atomic<uint32_t> m_win_surfacesize_y;
 		std::atomic<uint32_t> m_win_pos_x;
 		std::atomic<uint32_t> m_win_pos_y;
 		std::atomic<bool> m_close;

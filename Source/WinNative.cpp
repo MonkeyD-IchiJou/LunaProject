@@ -11,6 +11,8 @@ namespace luna
 		m_win_pos_x(90), 
 		m_win_pos_y(70),
 		m_close(false),
+		m_win_surfacesize_x(0),
+		m_win_surfacesize_y(0),
 		m_win_name("Luna")
 	{
 	}

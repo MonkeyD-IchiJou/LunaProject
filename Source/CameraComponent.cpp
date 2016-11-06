@@ -24,7 +24,7 @@ namespace luna
 			m_view = glm::lookAt(position, target, up);
 
 			WinNative* win = WinNative::getInstance();
-			m_projection = glm::perspective(glm::radians(fovy), win->getWinSizeX() / static_cast<float>(win->getWinSizeY()), nearZ, farZ);
+			m_projection = glm::perspective(glm::radians(fovy), win->getWinSurfaceSizeX() / static_cast<float>(win->getWinSurfaceSizeY()), nearZ, farZ);
 			m_projection[1][1] *= -1.f;
 		}
 	}

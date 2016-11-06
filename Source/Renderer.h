@@ -43,7 +43,10 @@ namespace luna
 		void Render();
 
 		/* tell the gpu what to render */
-		void RecordBuffers(const FramePacket& framepacket, std::array<Worker, 4>& workers);
+		void RecordBuffers(const FramePacket& framepacket, std::array<Worker*, 2>& workers);
+
+		/* recreate the swap chain when windows resize */
+		void RecreateSwapChain();
 
 	public:
 		/* Singleton class implementation */

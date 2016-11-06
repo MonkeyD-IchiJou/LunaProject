@@ -39,8 +39,8 @@ namespace luna
 
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float)WinNative::getInstance()->getWinSizeX();
-		viewport.height	= (float)WinNative::getInstance()->getWinSizeY();
+		viewport.width = static_cast<float>(WinNative::getInstance()->getWinSurfaceSizeX());
+		viewport.height	= static_cast<float>(WinNative::getInstance()->getWinSurfaceSizeY());
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 

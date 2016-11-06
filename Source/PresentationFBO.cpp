@@ -17,6 +17,11 @@ namespace luna
 
 	PresentationFBO::~PresentationFBO()
 	{
+		if (m_renderpass != VK_NULL_HANDLE)
+		{
+			vkDestroyRenderPass(m_logicaldevice, m_renderpass, nullptr);
+			m_renderpass = VK_NULL_HANDLE;
+		}
 	}
 
 	void PresentationFBO::Init(const VkExtent2D & extent)
@@ -135,13 +140,11 @@ namespace luna
 			m_framebuffer = VK_NULL_HANDLE;
 		}
 
-		if (m_renderpass != VK_NULL_HANDLE)
-		{
-			vkDestroyRenderPass(m_logicaldevice, m_renderpass, nullptr);
-			m_renderpass = VK_NULL_HANDLE;
-		}
-
 		// image views are from swap chain
 		m_attachments.clear();
+		m_clearvalues.clear();
+
+		m_attachments.resize(PRESENT_FBOATTs::ALL_ATTACHMENTS);
+		m_clearvalues.resize(PRESENT_FBOATTs::ALL_ATTACHMENTS);
 	}
 }
