@@ -18,7 +18,6 @@
 			android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 			android:configChanges="orientation|screenSize|keyboardHidden"
 			android:label="app"
-			android:screenOrientation="landscape"
 			>
 			
 			<meta-data android:name="android.app.lib_name" android:value="app" />
