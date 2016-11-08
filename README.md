@@ -4,7 +4,7 @@ A cross-platform game engine created with Vulkan Api and c++.
 For windows and android only
 
 # Building
-all the source codes, external libraries and mk files are in the repo.
+all the source codes, external libraries and android mk files are in the repo.
 
 # Visual Studio
 - In order to build in debug mode, you may need to download and install the latest VulkanSDK from https://vulkan.lunarg.com/ 
