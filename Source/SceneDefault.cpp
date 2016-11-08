@@ -4,6 +4,7 @@
 
 #include "RotateScript.h"
 #include "TextChangeScript.h"
+#include "TextChangeScript2.h"
 #include "CameraControlScript.h"
 
 namespace luna
@@ -37,8 +38,7 @@ namespace luna
 		workers[1]->addJob([&]() {
 			m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
 			m_componentmanager->GetMainCamData(framepacket.maincamdata);
-			framepacket.pointlightsdatas[0].position = glm::vec3(-5.5f, -2.f, 5.5f);
-			framepacket.pointlightsdatas[0].color = glm::vec3(0.1f, 1.f, 0.1f);
+			pointlightpos_(framepacket.pointlightsdatas);
 		});
 
 		// make sure the two workers have finish all their prev jobs
@@ -73,7 +73,7 @@ namespace luna
 			entity->transformation->position = glm::vec3(4.f, -1.f, -6.f);
 			BasicMeshComponent* basicmeshc = dynamic_cast<BasicMeshComponent*>(entity->AddComponent(COMPONENT_ATYPE::BASICMESH_ACTYPE));
 			basicmeshc->meshID = eMODELS::BUNNY_MODEL;
-			basicmeshc->material.color = glm::vec4(0.f, 1.f, 0.f, 0.f);
+			basicmeshc->material.color = glm::vec4(0.1f, 1.f, 0.2f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
 			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
 			script->script = new RotateScript();
@@ -110,7 +110,7 @@ namespace luna
 			entity->transformation->position = glm::vec3(-5.f, -1.f, -8.f);
 			BasicMeshComponent* basicmeshc = dynamic_cast<BasicMeshComponent*>(entity->AddComponent(COMPONENT_ATYPE::BASICMESH_ACTYPE));
 			basicmeshc->meshID = eMODELS::SUZANNA_MODEL;
-			basicmeshc->material.color = glm::vec4(0.15f, 1.f, 0.1f, 0.f);
+			basicmeshc->material.color = glm::vec4(0.7f, 0.7f, 0.2f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
 			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
 			script->script = new RotateScript();
@@ -134,7 +134,7 @@ namespace luna
 			entity->transformation->position = glm::vec3(-5.5f, -2.f, 5.5f);
 			BasicMeshComponent* basicmeshc = dynamic_cast<BasicMeshComponent*>(entity->AddComponent(COMPONENT_ATYPE::BASICMESH_ACTYPE));
 			basicmeshc->meshID = eMODELS::SPHERE_MODEL;
-			basicmeshc->material.color = glm::vec4(0.f, 0.f, 1.f, 0.f);
+			basicmeshc->material.color = glm::vec4(0.1f, 0.1f, 1.f, 0.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
 			m_availableEntities.push_back(entity);
 		}
@@ -142,7 +142,7 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("font", m_componentmanager);
-			entity->transformation->position = glm::vec3(705.f, 100.f, 0.f);
+			entity->transformation->position = glm::vec3(705.f, 60.f, 0.f);
 			entity->transformation->scale = glm::vec3(400.f, 400.f, 1.f);
 			FontComponent* fontc = dynamic_cast<FontComponent*>(entity->AddComponent(COMPONENT_ATYPE::FONT_ACTYPE));
 			fontc->material.fontID = FONT_EVA;
@@ -154,6 +154,8 @@ namespace luna
 			fontc->material.edge = 0.15f;
 			fontc->material.borderwidth = 0.53f;
 			fontc->material.borderedge = 0.15f;
+			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
+			script->script = new TextChangeScript2();
 			m_availableEntities.push_back(entity);
 		}
 
@@ -196,5 +198,48 @@ namespace luna
 	void SceneDefault::DeInit_()
 	{
 		
+	}
+
+	void SceneDefault::pointlightpos_(std::array<UBOPointLightData, 10>& pointlightsdatas)
+	{
+		auto * pl = &pointlightsdatas[0];
+		pl->position = glm::vec4(7.5f, -5.f, 5.5f, 0.f);
+		pl->color = glm::vec4(1.0f, 0.2f, 0.2f, 0.f);
+
+		pl = &pointlightsdatas[1];
+		pl->position = glm::vec4(-7.5f, 5.f, 6.5f, 0.f);
+		pl->color = glm::vec4(0.2f, 1.0f, 0.2f, 0.f);
+
+		pl = &pointlightsdatas[2];
+		pl->position = glm::vec4(-2.5f, 0.f, -5.5f, 0.f);
+		pl->color = glm::vec4(0.2f, 0.2f, 1.0f, 0.f);
+
+		pl = &pointlightsdatas[3];
+		pl->position = glm::vec4(-7.5f, 5.f, -5.5f, 0.f);
+		pl->color = glm::vec4(1.0f, 0.2f, 0.5f, 0.f);
+
+		pl = &pointlightsdatas[4];
+		pl->position = glm::vec4(7.5f, 7.f, 7.5f, 0.f);
+		pl->color = glm::vec4(0.2f, 1.0f, 0.5f, 0.f);
+
+		pl = &pointlightsdatas[5];
+		pl->position = glm::vec4(0.5f, 3.f, 8.5f, 0.f);
+		pl->color = glm::vec4(0.25f, 0.25f, 1.0f, 0.f);
+
+		pl = &pointlightsdatas[6];
+		pl->position = glm::vec4(7.5f, 5.f, -7.5f, 0.f);
+		pl->color = glm::vec4(1.f, 0.75f, 0.2f, 0.f);
+
+		pl = &pointlightsdatas[7];
+		pl->position = glm::vec4(0.5f, -8.f, -1.5f, 0.f);
+		pl->color = glm::vec4(0.2f, 1.0f, 0.75f, 0.f);
+
+		pl = &pointlightsdatas[8];
+		pl->position = glm::vec4(-5.5f, -8.f, 2.5f, 0.f);
+		pl->color = glm::vec4(0.7f, 0.25f, 1.0f, 0.f);
+
+		pl = &pointlightsdatas[9];
+		pl->position = glm::vec4(-5.5f, -8.f, -2.5f, 0.f);
+		pl->color = glm::vec4(0.8f, 0.7f, 0.25f, 0.f);
 	}
 }

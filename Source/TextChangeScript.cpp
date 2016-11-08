@@ -20,7 +20,7 @@ namespace luna
 		auto fontc = entity->findComponentT<FontComponent>(FONT_CTYPE);
 		if (fontc)
 		{
-			fontc->text = std::to_string(global::DeltaTime);
+			fontc->text = std::to_string(global::DeltaTime) + "s";
 			fontc->GetOwner()->transformation->position.y = static_cast<float>(WinNative::getInstance()->getWinSurfaceSizeY());
 		}
 	}

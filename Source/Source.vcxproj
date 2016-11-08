@@ -33,6 +33,7 @@
     <ClInclude Include="IOManager.h" />
     <ClInclude Include="NonLightPassShader.h" />
     <ClInclude Include="TextChangeScript.h" />
+    <ClInclude Include="TextChangeScript2.h" />
     <ClInclude Include="vulkanandroid.h" />
     <ClInclude Include="Worker.h" />
     <ClInclude Include="PresentationFBO.h" />
@@ -98,6 +99,7 @@
     <ClCompile Include="IOManager.cpp" />
     <ClCompile Include="NonLightPassShader.cpp" />
     <ClCompile Include="TextChangeScript.cpp" />
+    <ClCompile Include="TextChangeScript2.cpp" />
     <ClCompile Include="vulkanandroid.cpp" />
     <ClCompile Include="WinAndroid.cpp" />
     <ClCompile Include="Worker.cpp" />

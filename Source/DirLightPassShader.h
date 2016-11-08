@@ -26,6 +26,7 @@ namespace luna
 			const VulkanImageBufferObject* color0,
 			const VulkanImageBufferObject* color1,
 			const VulkanImageBufferObject* color2,
+			const VulkanImageBufferObject* color3,
 			const UBO* ubo_pointlights
 		);
 

@@ -333,6 +333,9 @@
     <ClInclude Include="Worker.h">
       <Filter>Header Files\System\Base</Filter>
     </ClInclude>
+    <ClInclude Include="TextChangeScript2.h">
+      <Filter>Header Files\Resources\Components\Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp">
@@ -520,6 +523,9 @@
     </ClCompile>
     <ClCompile Include="Worker.cpp">
       <Filter>Source Files\System\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="TextChangeScript2.cpp">
+      <Filter>Source Files\Resources\Components\Scripts</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

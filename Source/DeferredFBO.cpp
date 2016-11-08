@@ -38,6 +38,7 @@ namespace luna
 			m_attachments[DFR_FBOATTs::COLOR0_ATTACHMENT].view, 
 			m_attachments[DFR_FBOATTs::COLOR1_ATTACHMENT].view,
 			m_attachments[DFR_FBOATTs::COLOR2_ATTACHMENT].view,
+			m_attachments[DFR_FBOATTs::COLOR3_ATTACHMENT].view,
 			m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].view,
 			m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].view
 		};
@@ -88,6 +89,13 @@ namespace luna
 		);
 
 		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
+			commandbuffer, m_attachments[DFR_FBOATTs::COLOR3_ATTACHMENT].image,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
+			0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+		);
+
+		VulkanImageBufferObject::TransitionAttachmentImagesLayout_(
 			commandbuffer, m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].image,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
 			0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -103,7 +111,7 @@ namespace luna
 		TextureResources* texrsc = TextureResources::getInstance();
 		VulkanImageBufferObject** imageattachment = nullptr; // image attachment mapping
 
-		 // color attachment 0 store normal, albedo and material id
+		 // color attachment 0 store world space normal, albedo and material id
 		imageattachment = &texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U];
 		*imageattachment = new VulkanTexture2D(
 			m_resolution.width, m_resolution.height, 
@@ -113,25 +121,35 @@ namespace luna
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::COLOR0_ATTACHMENT);
 
-		// color attachment 1 store view pos and specular 
+		// color attachment 1 store view pos and specular color
 		imageattachment = &texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32F];
 		*imageattachment = new VulkanTexture2D(
-			m_resolution.width, m_resolution.height, 
-			VK_FORMAT_R32G32B32A32_SFLOAT, 
+			m_resolution.width, m_resolution.height,
+			VK_FORMAT_R32G32B32A32_SFLOAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT, // will be used by subpasses
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::COLOR1_ATTACHMENT);
 
-		// color attachment 2 store world pos
+		// color attachment 2 store world pos, velocity
 		imageattachment = &texrsc->Textures[eTEXTURES::COLOR2_ATTACHMENT_RGBA32F];
 		*imageattachment = new VulkanTexture2D(
-			m_resolution.width, m_resolution.height, 
+			m_resolution.width, m_resolution.height,
 			VK_FORMAT_R32G32B32A32_SFLOAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT, // will be used by subpasses
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::COLOR2_ATTACHMENT);
+
+		// color attachment 3 to store view space normal and depth
+		imageattachment = &texrsc->Textures[eTEXTURES::COLOR3_ATTACHMENT_RGBA16F];
+		*imageattachment = new VulkanTexture2D(
+			m_resolution.width, m_resolution.height,
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT, // will be used by subpasses
+			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		);
+		SetAttachment(*imageattachment, DFR_FBOATTs::COLOR3_ATTACHMENT);
 
 		// HDR color attachment
 		imageattachment = &texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F];
@@ -203,6 +221,17 @@ namespace luna
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_GENERAL; // for second subpass to input it
 
+				// color3 attachment description
+				descs = &attachmentDescs[DFR_FBOATTs::COLOR3_ATTACHMENT];
+				descs->format = m_attachments[DFR_FBOATTs::COLOR3_ATTACHMENT].format;
+				descs->samples = VK_SAMPLE_COUNT_1_BIT;
+				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // dun care about storing this attachment
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				descs->finalLayout = VK_IMAGE_LAYOUT_GENERAL; // for second subpass to input it
+
 				// hdr attachment description
 				descs = &attachmentDescs[DFR_FBOATTs::HDRCOLOR_ATTACHMENT];
 				descs->format = m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].format;
@@ -229,15 +258,17 @@ namespace luna
 			// i have 2 subpass
 			std::array<VkSubpassDescription, 2> subPass{};
 
-			std::array<VkAttachmentReference, 3> outputAttachmentRef = {};
+			std::array<VkAttachmentReference, 4> outputAttachmentRef = {};
 			outputAttachmentRef[0] = { DFR_FBOATTs::COLOR0_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 			outputAttachmentRef[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 			outputAttachmentRef[2] = { DFR_FBOATTs::COLOR2_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+			outputAttachmentRef[3] = { DFR_FBOATTs::COLOR3_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
-			std::array<VkAttachmentReference, 3> inputAttachmentRef = {};
+			std::array<VkAttachmentReference, 4> inputAttachmentRef = {};
 			inputAttachmentRef[0] = { DFR_FBOATTs::COLOR0_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
 			inputAttachmentRef[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
 			inputAttachmentRef[2] = { DFR_FBOATTs::COLOR2_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
+			inputAttachmentRef[3] = { DFR_FBOATTs::COLOR3_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
 
 			VkAttachmentReference depthstencilAttachmentRef = {DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 			VkAttachmentReference presentColorAttachmentRef{DFR_FBOATTs::HDRCOLOR_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -251,7 +282,7 @@ namespace luna
 				subPass[0].pDepthStencilAttachment = &depthstencilAttachmentRef;
 
 				// second subpass
-				// take in the 3 attachment and output 1 hdr attachment
+				// take in the 4 attachment and output 1 hdr attachment
 				subPass[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 				subPass[1].colorAttachmentCount = 1;
 				subPass[1].pColorAttachments = &presentColorAttachmentRef; // only got 1 color attachment, layout = 0 in shaders

@@ -148,6 +148,7 @@ namespace luna
 			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U],
 			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32F],
 			texrsc->Textures[eTEXTURES::COLOR2_ATTACHMENT_RGBA32F],
+			texrsc->Textures[eTEXTURES::COLOR3_ATTACHMENT_RGBA16F],
 			m_ubopointlights
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
@@ -397,7 +398,7 @@ namespace luna
 		// bind the dirlight pass shader
 		m_dirlightpass_shader->Bind(commandbuff);
 		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		m_dirlightpass_shader->LoadDirLightPos(commandbuff, glm::mat3(camdata.view) * glm::vec3(-100.f, 100.f, -100.f));
+		m_dirlightpass_shader->LoadDirLightPos(commandbuff, glm::mat3(camdata.view) * glm::vec3(-100.f, 100.f, -100.f)); // dir light pos must be in view space
 		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
 		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
 		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with

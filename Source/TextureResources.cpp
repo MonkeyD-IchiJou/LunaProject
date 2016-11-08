@@ -33,6 +33,7 @@ namespace luna
 		Textures[COLOR0_ATTACHMENT_RGBA32U] = nullptr;
 		Textures[COLOR1_ATTACHMENT_RGBA32F] = nullptr;
 		Textures[COLOR2_ATTACHMENT_RGBA32F] = nullptr;
+		Textures[COLOR3_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[HDRTEX_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[DEPTHSTENCIL_ATTACHMENT_32F8U] = nullptr;
 

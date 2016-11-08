@@ -15,8 +15,8 @@ namespace luna
 
 	struct UBOPointLightData
 	{
-		glm::vec3 position{};
-		glm::vec3 color{};
+		glm::vec4 position{};
+		glm::vec4 color{};
 	};
 
 	struct InstanceData

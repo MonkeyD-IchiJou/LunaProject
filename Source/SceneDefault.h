@@ -22,6 +22,9 @@ namespace luna
 
 		/* Deinit everything */
 		void DeInit_() override;
+
+		// hardcode pointlight pos first
+		void pointlightpos_(std::array<UBOPointLightData, 10>& pointlightsdatas);
 	};
 }
 
