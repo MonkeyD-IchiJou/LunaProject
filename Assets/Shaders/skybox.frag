@@ -13,6 +13,7 @@ layout(location = 0) in vec3 inUVW;
 // output as color attachment
 layout (location = 0) out uvec4 color0;
 layout (location = 1) out vec4 color1;
+layout (location = 2) out vec4 color2;
 
 void main()
 {
@@ -31,4 +32,5 @@ void main()
 	
 	color0 = outvec0;
 	color1 = outvec1;
+	color2 = color1;
 }

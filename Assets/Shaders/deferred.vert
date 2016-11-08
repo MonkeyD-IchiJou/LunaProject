@@ -8,11 +8,11 @@ layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 
 // output to fragment shader
-layout(location = 0) out vec4 outWorldPos;
-layout(location = 1) out vec4 outMaterialColor;
-layout(location = 2) out vec3 outNormal;
-layout(location = 3) out vec2 outUV;
-
+layout(location = 0) out vec4 outViewPos;
+layout(location = 1) out vec4 outWSPos;
+layout(location = 2) out vec4 outMaterialColor;
+layout(location = 3) out vec3 outViewNormal;
+layout(location = 4) out vec2 outUV;
 
 out gl_PerVertex
 {
@@ -30,7 +30,6 @@ layout(set = 0, binding = 0) uniform UniformBufferObject
 struct InstanceData
 {
 	mat4 model;
-	mat4 transpose_inverse_model;
 	vec4 material;
 };
 
@@ -50,17 +49,17 @@ void main()
 {
 	int index = pushconsts.offset + gl_InstanceIndex;
 	
-	outWorldPos = instance[index].model * vec4(inPosition, 1.0);
-	gl_Position = ubo.proj * ubo.view * outWorldPos;
+	mat4 modelview = ubo.view * instance[index].model;
+	
+	outWSPos = instance[index].model * vec4(inPosition, 1.0);
+	outViewPos = modelview * vec4(inPosition, 1.0);
+	gl_Position = ubo.proj * outViewPos;
 	
 	// out texcoord
-	outUV = inTexCoord;
-	
-	// vertex pos in world space, make sure w is 1
-	outWorldPos.w = 1; 
+	outUV = inTexCoord; 
 	
 	// normal in world space
-	outNormal = mat3(instance[index].transpose_inverse_model) * normalize(inNormal);
+	outViewNormal = transpose( inverse( mat3(modelview) ) ) * normalize(inNormal);
 
 	// out material color
 	outMaterialColor = instance[index].material;
