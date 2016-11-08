@@ -19,8 +19,4 @@ Important: You need to have a device with an Android image that supports Vulkan
 # Current engine Features
 - Multithreaded environment
 I tried to make the whole framework as multithreaded-friendly as possible. Current game looping models 
------------------------------------------------------------------------
-Update Frame 0 | Update Frame 1 | Update Frame 2 | ...
------------------------------------------------------------------------
-~~~~~~~~~~~~~~ | Render Frame 0 | Render Frame 1 | Render Frame 2
------------------------------------------------------------------------
+
