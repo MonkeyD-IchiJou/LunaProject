@@ -1,10 +1,10 @@
 # Vulkan Game Dev README
 
 A cross-platform game engine created with Vulkan Api and c++.
-For windows and android only
+For windows and android only. Note: I am still learning, dun expect perfection pls
 
 # Building
-all the source codes, external libraries and android mk files are in the repo.
+all the source codes, external libraries, assets and android mk files are in the repo.
 
 # Visual Studio
 - In order to build in debug mode, you may need to download and install the latest VulkanSDK from https://vulkan.lunarg.com/ 
@@ -32,7 +32,10 @@ all the source codes, external libraries and android mk files are in the repo.
 
 <img src="./images/vulkanee.png" alt="pic not available" height="256px">
 
-
+# Credits
+- SaschaWillems for his wonderful vulkan example https://github.com/SaschaWillems/Vulkan
+- Vulkan details Specs and tutorials in VulkanLunarSDK https://vulkan.lunarg.com/
+- Superb Beginner guide https://vulkan-tutorial.com/
 
 # my youtube channel $$$$
 https://www.youtube.com/channel/UCCMgDJDAyT-KhGlrr5qMZPQ
