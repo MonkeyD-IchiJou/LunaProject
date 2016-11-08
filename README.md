@@ -19,7 +19,7 @@ Important: You need to have a device with an Android image that supports Vulkan
 # Current engine Features
 - Multiplatform friendly : Settle platform specific codes such as creating windows and handling inputs/events. 
   
-- Multithreaded environment : input && game loop concurrently running in its own threads. In game loop, when rendering the previous framepacket, at the same time, updating the next framepacket. 
+- Multithreaded environment : input && game loop concurrently running in its own threads. In game loop, when rendering the previous framepacket, at the same time, updating the next framepacket. Also, thanks to vulkan, I can record command buffers concurrently too
   
 - Deferred Shading Rendering Graphics pipeline: no more forward rendering
   
@@ -27,7 +27,7 @@ Important: You need to have a device with an Android image that supports Vulkan
   
 - Entity-Component Architecture
 
-- Basic UI, Signed Distance Fields Fonts  
+- Basic UI, Signed Distance Fields Fonts
 
-
+<img src="./images/vulkanee.png" alt="pic not available" height="256px">
 
