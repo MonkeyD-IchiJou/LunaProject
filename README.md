@@ -32,3 +32,12 @@ all the source codes, external libraries and mk files are in the repo.
 
 <img src="./images/vulkanee.png" alt="pic not available" height="256px">
 
+
+
+# my youtube channel $$$$
+https://www.youtube.com/channel/UCCMgDJDAyT-KhGlrr5qMZPQ
+
+subscribe for more videos about vulkan api in the future :))
+
+
+
