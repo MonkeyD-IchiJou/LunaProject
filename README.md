@@ -17,6 +17,22 @@ Build only support arm-v7
 Important: You need to have a device with an Android image that supports Vulkan
 
 # Current engine Features
+- Multiplatform friendly
+  -Settle platform specific codes such as creating windows and handling inputs/events
+  
 - Multithreaded environment
-  - I tried to make the whole framework as multithreaded-friendly as possible. Current game looping models 
+  -input && game loop concurrently running in its own threads
+  -In game loop, when rendering the previous framepacket, at the same time, updating the next framepacket
+  
+- Deferred Shading Rendering Graphics pipeline
+  -no more forward rendering
+  
+- Various Post-Processing effects
+  -currently only hdr, gamma correction, tone mapping are implemented. (in future will have ssao, motion blur, lens flare etc)
+  
+- Entity-Component Architecture
+
+- Basic UI, Signed Distance Fields Fonts  
+
+
 
