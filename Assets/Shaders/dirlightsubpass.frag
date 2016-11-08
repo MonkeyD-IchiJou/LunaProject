@@ -5,6 +5,7 @@
 layout (input_attachment_index = 0, set = 0, binding = 0) uniform usubpassInput attachmentColor0;
 layout (input_attachment_index = 1, set = 0, binding = 1) uniform subpassInput attachmentColor1;
 layout (input_attachment_index = 2, set = 0, binding = 2) uniform subpassInput attachmentColor2;
+layout (input_attachment_index = 3, set = 0, binding = 3) uniform subpassInput attachmentColor3;
 
 // output as hdr color
 layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
@@ -16,12 +17,12 @@ layout(push_constant) uniform PushConst
 
 struct pointlight
 {
-	vec3 position;
-	vec3 color;
+	vec4 position;
+	vec4 color;
 };
 
-// uniform buffer object binding at 3
-layout(set = 0, binding = 3) uniform UniformBufferObject
+// uniform buffer object binding at 4
+layout(set = 0, binding = 4) uniform UniformBufferObject
 {
 	pointlight lightinfo[10];
 } ubo_pointlights;
@@ -30,6 +31,7 @@ struct fragment_info_t
 {
 	vec3 diffusecolor;
 	vec3 normal;
+	vec3 wsnormal;
 	vec3 viewpos;
 	vec3 wspos;
 	float specularcolor;
@@ -53,33 +55,75 @@ vec3 calculate_rim(vec3 N, vec3 V)
 	return vec3(f);
 }
 
+const vec3 lightdiff = vec3(0.5, 0.5, 0.5);
+const float lightspec = 0.5;
+const vec3 lightambient = vec3(0.01, 0.01, 0.01);
+const float lightconstant = 1.0;
+const float lightlinear = 0.22;
+const float lightquadratic = 0.20;
+
 vec4 pointlight_fragment(fragment_info_t fragment)
 {
-	vec4 result = vec4(0.0, 0.0, 0.0, 1.0);
-	vec3 lightcolor = ubo_pointlights.lightinfo[0].color;
-	vec3 lightpos = ubo_pointlights.lightinfo[0].position;
+	vec3 norm = fragment.wsnormal;
+	vec3 lightpos = vec3(0.0);
+	vec3 lightcolor = vec3(0.0);
+	vec3 finaloutput = vec3(0.0);
+	float distance = 0.0;
+	float attenuation = 0.0;
+	vec3 ambient = vec3(0.0);
+	vec3 diffuse = vec3(0.0);
+	vec3 V = vec3(0.0);
+	int i = 0;
 	
-	vec3 L = fragment.wspos - lightpos;
-	float dist = length(L);
-	L = normalize(L);
-	vec3 N = normalize(fragment.normal);
-	vec3 R = reflect(-L, N);
-	float NdotR = max(0.0, dot(N, R));
-	float NdotL = max(0.0, dot(N, L));
-	float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * (dist * dist));
+	for(i = 0; i < 10; ++i)
+	{
+		lightpos = ubo_pointlights.lightinfo[i].position.xyz;
+		lightcolor = ubo_pointlights.lightinfo[i].color.xyz;
+		V = lightpos - fragment.wspos;
+		
+		// Attenuation
+		distance = length(V);
+		attenuation = 1.0 / (lightconstant + lightlinear * distance + lightquadratic * (distance * distance));
+		
+		// ambient
+		ambient = lightambient * attenuation;
+		
+		// Diffuse
+		diffuse = max(dot(norm, normalize(V)), 0.0) * 
+					fragment.diffusecolor * lightcolor * attenuation;
+		
+		finaloutput += ambient + diffuse;
+	}
 	
-	vec3 diffuse_color = lightcolor *
-						fragment.diffusecolor *
-						NdotL * attenuation;
-						
-	vec3 specular_color = lightcolor *
-						pow(NdotR, 128) *
-						fragment.specularcolor *
-						attenuation;
-						
-	result += vec4(diffuse_color + specular_color, 0.0);
+	return vec4(finaloutput, 1.0);
+}
+
+vec4 dirlight_fragment(fragment_info_t fragment)
+{
+	// calculate view-space light vector
+	vec3 L = normalize(pushconsts.dirlightpos - fragment.viewpos);
 	
-	return result;
+	// calculate the view vector
+	vec3 V = normalize(-fragment.viewpos);
+	
+	// calculate the half vector, H
+	vec3 H = normalize(L + V);
+
+	// Calculate the diffuse and specular contributions
+	vec3 diffuse = max(dot(fragment.normal, L), 0.0) * 
+					fragment.diffusecolor * lightdiff;
+	float specular = pow(max(dot(fragment.normal, H), 0.0), 128.0) * 
+						fragment.specularcolor * lightspec;
+
+	vec3 rim = vec3(0.0);
+	if(fragment.materialID == 0)
+	{
+		rim = calculate_rim(fragment.normal, V) * lightdiff;
+	}
+	
+	// output the final color
+	vec3 ambient = lightambient;
+	return vec4(rim + ambient + diffuse + specular, 1.0);
 }
 
 void unpackGBuffer(out fragment_info_t fragment)
@@ -88,10 +132,11 @@ void unpackGBuffer(out fragment_info_t fragment)
 	uvec4 data0 = subpassLoad(attachmentColor0);
 	vec4 data1 = subpassLoad(attachmentColor1);
 	vec4 data2 = subpassLoad(attachmentColor2);
+	vec4 data3 = subpassLoad(attachmentColor3);
 	
 	vec2 temp = unpackHalf2x16(data0.y);
 	fragment.diffusecolor = vec3(unpackHalf2x16(data0.x), temp.x);
-	fragment.normal = vec3(temp.y, unpackHalf2x16(data0.z));
+	fragment.wsnormal = vec3(temp.y, unpackHalf2x16(data0.z));
 	fragment.materialID = data0.w;
 	
 	fragment.viewpos = data1.xyz;
@@ -99,6 +144,7 @@ void unpackGBuffer(out fragment_info_t fragment)
 	
 	fragment.wspos = data2.xyz;
 	
+	fragment.normal = data3.xyz;
 }
  
 void main()
@@ -108,29 +154,8 @@ void main()
 	unpackGBuffer(fragmentinfo);
 	
 	// do some lighting calculation
+	vec4 dirlightcompute = dirlight_fragment(fragmentinfo);
+	vec4 pointlightcompute = pointlight_fragment(fragmentinfo);
 	
-	// calculate view-space light vector
-	vec3 L = normalize(pushconsts.dirlightpos - fragmentinfo.viewpos);
-	
-	// calculate the view vector
-	vec3 V = normalize(-fragmentinfo.viewpos);
-	
-	// calculate the half vector, H
-	vec3 H = normalize(L + V);
-
-	// Calculate the diffuse and specular contributions
-	vec3 diffuse = max(dot(fragmentinfo.normal, L), 0.0) * 
-					fragmentinfo.diffusecolor;
-	float specular = pow(max(dot(fragmentinfo.normal, H), 0.0), 128.0) * 
-						fragmentinfo.specularcolor;
-
-	vec3 rim = vec3(0.0);
-	if(fragmentinfo.materialID == 0)
-	{
-		rim = calculate_rim(fragmentinfo.normal, V);
-	}
-	
-	// output the final color
-	vec3 ambient = vec3(0.01, 0.01, 0.01);
-	outFragcolor = vec4(rim + ambient + diffuse + specular, 1.0);
+	outFragcolor = vec4(dirlightcompute.xyz + pointlightcompute.xyz, 1.0);
 }

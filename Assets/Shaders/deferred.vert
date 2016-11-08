@@ -12,7 +12,8 @@ layout(location = 0) out vec4 outViewPos;
 layout(location = 1) out vec4 outWSPos;
 layout(location = 2) out vec4 outMaterialColor;
 layout(location = 3) out vec3 outViewNormal;
-layout(location = 4) out vec2 outUV;
+layout(location = 4) out vec3 outWSNormal;
+layout(location = 5) out vec2 outUV;
 
 out gl_PerVertex
 {
@@ -49,17 +50,21 @@ void main()
 {
 	int index = pushconsts.offset + gl_InstanceIndex;
 	
-	mat4 modelview = ubo.view * instance[index].model;
+	mat4 model = instance[index].model;
+	mat4 modelview = ubo.view * model;
 	
-	outWSPos = instance[index].model * vec4(inPosition, 1.0);
+	outWSPos = model * vec4(inPosition, 1.0);
 	outViewPos = modelview * vec4(inPosition, 1.0);
 	gl_Position = ubo.proj * outViewPos;
 	
 	// out texcoord
 	outUV = inTexCoord; 
 	
-	// normal in world space
-	outViewNormal = transpose( inverse( mat3(modelview) ) ) * normalize(inNormal);
+	// normal in world space 
+	outWSNormal = transpose(inverse(mat3(model))) * normalize(inNormal);
+	
+	// normal in view space
+	outViewNormal = transpose(inverse(mat3(modelview))) * normalize(inNormal);
 
 	// out material color
 	outMaterialColor = instance[index].material;
