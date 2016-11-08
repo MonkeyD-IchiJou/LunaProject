@@ -11,10 +11,10 @@ In order to build in debug mode, you may need to download and install the latest
 I am using visual studio community 2015
 
 # Android Studio
-Android studio 2.2 or above is required for android builds.
-latest Ndk is required, download it from sdk (if dont have it)
-Build only support arm-v7
-Important: You need to have a device with an Android image that supports Vulkan
+-Android studio 2.2 or above is required for android builds.
+-latest Ndk is required, download it from sdk (if dont have it)
+-Build only support arm-v7
+-Important: You need to have a device with an Android image that supports Vulkan
 
 # Current engine Features
 - Multiplatform friendly : Settle platform specific codes such as creating windows and handling inputs/events. 
