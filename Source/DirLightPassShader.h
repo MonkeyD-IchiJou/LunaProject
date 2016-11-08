@@ -3,10 +3,12 @@
 
 #include "ShaderProgram.h"
 #include "DescriptorTool.h"
+#include <glm/glm.hpp>
 
 namespace luna
 {
 	class VulkanImageBufferObject;
+	class UBO;
 
 	class DirLightPassShader :
 		public ShaderProgram
@@ -18,10 +20,13 @@ namespace luna
 		void Init(const VkRenderPass& renderpass) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
+		void LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3& pos);
 
 		void SetDescriptors(
 			const VulkanImageBufferObject* color0,
-			const VulkanImageBufferObject* color1
+			const VulkanImageBufferObject* color1,
+			const VulkanImageBufferObject* color2,
+			const UBO* ubo_pointlights
 		);
 
 	private:

@@ -4,11 +4,11 @@
 
 namespace luna
 {
-	UBO::UBO()
+	UBO::UBO(const VkDeviceSize& totalsize)
 	{
 		m_logicaldevice = Renderer::getInstance()->GetLogicalDevice();
 
-		m_uboTotalSize = sizeof(UBOData);
+		m_uboTotalSize = totalsize; //sizeof(UBOData);
 
 		BufferInit_();
 	}
@@ -20,6 +20,16 @@ namespace luna
 		void* data = nullptr;
 		vkMapMemory(m_logicaldevice, m_staging_mem, 0, m_uboTotalSize, 0, &data);
 		memcpy(data, &ubodata, (size_t)m_uboTotalSize);
+		vkUnmapMemory(m_logicaldevice, m_staging_mem);
+	}
+
+	void UBO::Update(const std::array<UBOPointLightData, 10> &ubodata)
+	{
+		// update the new ubo data 
+		/* begin to record the latest ubo info into the staged device memory */
+		void* data = nullptr;
+		vkMapMemory(m_logicaldevice, m_staging_mem, 0, m_uboTotalSize, 0, &data);
+		memcpy(data, ubodata.data(), (size_t)m_uboTotalSize);
 		vkUnmapMemory(m_logicaldevice, m_staging_mem);
 	}
 

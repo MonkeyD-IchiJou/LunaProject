@@ -1,3 +1,5 @@
+#include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp>
 #include "WinNative.h"
 #include "DebugLog.h"
 #include "Global.h"
@@ -79,16 +81,19 @@ namespace luna
 					case AINPUT_SOURCE_TOUCHSCREEN:
 					{
 						int action = AKeyEvent_getAction(pEvent) & AMOTION_EVENT_ACTION_MASK;
+						input::Mouse.numTouchPoints = AMotionEvent_getPointerCount(pEvent);
 
 						switch (action)
 						{
 							case AMOTION_EVENT_ACTION_DOWN:
+
 								// touch screen input
 								input::Mouse.leftclick = true;
 								input::Mouse.posx = AMotionEvent_getX(pEvent, 0);
 								input::Mouse.posy = AMotionEvent_getY(pEvent, 0);
 								input::Mouse.firsttouchposx = AMotionEvent_getX(pEvent, 0);
 								input::Mouse.firsttouchposy = AMotionEvent_getY(pEvent, 0);
+
 
 								break;
 
@@ -100,8 +105,24 @@ namespace luna
 								break;
 
 							case AMOTION_EVENT_ACTION_MOVE:
-								input::Mouse.posx = AMotionEvent_getX(pEvent, 0);
-								input::Mouse.posy = AMotionEvent_getY(pEvent, 0);
+
+								if(input::Mouse.numTouchPoints == 1)
+								{
+									input::Mouse.posx = AMotionEvent_getX(pEvent, 0);
+									input::Mouse.posy = AMotionEvent_getY(pEvent, 0);
+								}
+								else
+								{
+									auto fisrtT = glm::vec2(AMotionEvent_getX(pEvent, 0), AMotionEvent_getY(pEvent, 0));
+									auto secondT = glm::vec2(AMotionEvent_getX(pEvent, 1), AMotionEvent_getY(pEvent, 1));
+
+									float currentmagnitude = glm::length2(fisrtT - secondT);
+
+									input::Mouse.scrolldelta = input::Mouse.prevmagnitude - currentmagnitude;
+									input::Mouse.prevmagnitude = currentmagnitude;
+								}
+
+
 								break;
 
 							default:

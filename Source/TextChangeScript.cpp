@@ -21,7 +21,7 @@ namespace luna
 		if (fontc)
 		{
 			fontc->text = std::to_string(global::DeltaTime);
-			fontc->GetOwner()->transformation->position.y = WinNative::getInstance()->getWinSurfaceSizeY();
+			fontc->GetOwner()->transformation->position.y = static_cast<float>(WinNative::getInstance()->getWinSurfaceSizeY());
 		}
 	}
 }

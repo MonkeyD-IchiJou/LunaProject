@@ -88,6 +88,7 @@ namespace luna
 		void RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext);
 		void RecordSkybox__Secondary_(const VkCommandBuffer commandbuff);
 		void RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff);
+		void RecordLightingSubpass_Secondary_(const VkCommandBuffer commandbuff, const UBOData& camdata);
 
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -122,6 +123,9 @@ namespace luna
 
 		/* a universal UBO */
 		UBO* m_ubo = nullptr;
+
+		/* a point light ubo */
+		UBO* m_ubopointlights = nullptr;
 
 		/* ssbo for instancing data */
 		SSBO* m_instance_ssbo = nullptr;

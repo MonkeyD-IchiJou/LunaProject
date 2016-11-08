@@ -2,6 +2,7 @@
 #include "DebugLog.h"
 #include "VulkanImageBufferObject.h"
 #include "Vertex.h"
+#include "UBO.h"
 
 namespace luna
 {
@@ -27,11 +28,16 @@ namespace luna
 		);
 	}
 
-	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject* color0, const VulkanImageBufferObject* color1)
+	void DirLightPassShader::LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3 & pos)
 	{
-		// 3 kind of descriptors to send to
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pos), &pos);
+	}
+
+	void DirLightPassShader::SetDescriptors(const VulkanImageBufferObject* color0, const VulkanImageBufferObject* color1, const VulkanImageBufferObject* color2, const UBO* ubo_pointlights)
+	{
+		// 4 kind of descriptors to send to
 		// set up the layout for the shaders 
-		const int totalbinding = 2;
+		const int totalbinding = 4;
 		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
 
 		// color0
@@ -46,17 +52,30 @@ namespace luna
 		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		layoutinfo[1].typeflags = 1; // an image
 
+		// color2
+		layoutinfo[2].binding = 2;
+		layoutinfo[2].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		layoutinfo[2].typeflags = 1; // an image
+
+		layoutinfo[3].binding = 3;
+		layoutinfo[3].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutinfo[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutinfo[3].typeflags = 0; // a buffer
+
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
 
 		// create the poolsize to hold all my descriptors
-		const int totaldescriptors = 2; // total num of descriptors
+		const int totaldescriptors = 4; // total num of descriptors
 		const int totalsets = 1; // total num of descriptor sets i will have
 
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSize.descriptorCount = totaldescriptors;
+		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		poolSizes[0].descriptorCount = 3;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[1].descriptorCount = 1;
 
-		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 1, &poolSize, totalsets);
+		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 2, poolSizes.data(), totalsets);
 		m_descriptorTool.descriptorsInfo[0].descriptorSets.resize(1); // first layout has 1 descriptorsets
 		m_descriptorTool.AddDescriptorSet(m_logicaldevice, 0, 0);
 
@@ -69,12 +88,24 @@ namespace luna
 		color1info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		color1info.imageView = color1->getImageView();
 		color1info.sampler = color1->getSampler();
+		VkDescriptorImageInfo color2info{};
+		color2info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		color2info.imageView = color2->getImageView();
+		color2info.sampler = color2->getSampler();
+		VkDescriptorBufferInfo uboinfo{};
+		uboinfo.buffer = ubo_pointlights->getMainBuffer().buffer;
+		uboinfo.offset = 0;
+		uboinfo.range = ubo_pointlights->getUboTotalSize();
 
 		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
 		firstdescriptorset[0].layoutinfo = layoutinfo[0];
 		firstdescriptorset[0].imageinfo = color0info;
 		firstdescriptorset[1].layoutinfo = layoutinfo[1];
 		firstdescriptorset[1].imageinfo = color1info;
+		firstdescriptorset[2].layoutinfo = layoutinfo[2];
+		firstdescriptorset[2].imageinfo = color2info;
+		firstdescriptorset[3].layoutinfo = layoutinfo[3];
+		firstdescriptorset[3].bufferinfo = uboinfo;
 
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
@@ -178,6 +209,12 @@ namespace luna
 
 	void DirLightPassShader::CreatePipelineLayout_()
 	{
+		/* push constant info */
+		VkPushConstantRange pushconstant{};
+		pushconstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushconstant.offset = 0;
+		pushconstant.size = sizeof(glm::vec3);
+
 		std::vector<VkDescriptorSetLayout> setlayouts;
 		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());
 		for (int i = 0; i < m_descriptorTool.descriptorsInfo.size(); ++i)
@@ -190,7 +227,8 @@ namespace luna
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setlayouts.size()); // how many descriptor layout i have
 		pipelineLayoutInfo.pSetLayouts = setlayouts.data();
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.pushConstantRangeCount = 1; 
+		pipelineLayoutInfo.pPushConstantRanges = &pushconstant;
 
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}

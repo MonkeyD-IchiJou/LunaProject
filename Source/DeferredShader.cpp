@@ -215,12 +215,14 @@ namespace luna
 		// This is important, as color write mask will otherwise be 0x0 and you
 		// won't see anything rendered to the attachment
 		fixedpipeline.colorBlendAttachments.clear();
-		fixedpipeline.colorBlendAttachments.resize(2);
+		fixedpipeline.colorBlendAttachments.resize(3);
 
 		fixedpipeline.colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		fixedpipeline.colorBlendAttachments[0].blendEnable = VK_FALSE;
 		fixedpipeline.colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		fixedpipeline.colorBlendAttachments[1].blendEnable = VK_FALSE;
+		fixedpipeline.colorBlendAttachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		fixedpipeline.colorBlendAttachments[2].blendEnable = VK_FALSE;
 
 		VkPipelineColorBlendStateCreateInfo& colorBlending = fixedpipeline.colorBlending;
 		colorBlending.logicOp = VK_LOGIC_OP_CLEAR;

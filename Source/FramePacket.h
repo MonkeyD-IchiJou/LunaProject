@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <glm\glm.hpp>
+#include <array>
 #include "enum_c.h"
 
 namespace luna
@@ -12,10 +13,15 @@ namespace luna
 		glm::mat4 view, proj;
 	};
 
+	struct UBOPointLightData
+	{
+		glm::vec3 position{};
+		glm::vec3 color{};
+	};
+
 	struct InstanceData
 	{
 		glm::mat4 model{};
-		glm::mat4 transpose_inverse_model{};
 		glm::vec4 material{};
 	};
 
@@ -41,6 +47,7 @@ namespace luna
 		std::vector<RenderingInfo>* renderinfos = nullptr;
 		std::vector<InstanceData> instancedatas;
 		std::vector<FontInstanceData> fontinstancedatas;
+		std::array<UBOPointLightData, 10> pointlightsdatas{};
 		UBOData maincamdata{};
 	};
 }

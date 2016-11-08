@@ -6,6 +6,8 @@
 #include "TransformationComponent.h"
 #include "Global.h"
 
+#include "DebugLog.h"
+
 namespace luna
 {
 	CameraControlScript::CameraControlScript()
@@ -24,7 +26,7 @@ namespace luna
 
 		if (camera)
 		{
-			if (input::Mouse.leftclick == true)
+			if (input::Mouse.leftclick == true && input::Mouse.numTouchPoints == 1)
 			{
 				if (firstclick == true)
 				{
@@ -67,25 +69,26 @@ namespace luna
 
 			up = glm::cross(right, direction);
 
-			auto& position = entity->transformation->position;
-			if (input::Keys['W'].pressed == true)
+			int scrolldelta = input::Mouse.scrolldelta;
+			float scrollspeed = 15.f;
+#if VK_USE_PLATFORM_ANDROID_KHR
+			scrollspeed = 1.f;
+#endif // VK_USE_ANDROID_PLATFORM
+
+
+			if (scrolldelta < 0)
 			{
-				position += direction * ( (speed + 5.f) * global::DeltaTime);
+				magnitude += global::DeltaTime * 50.f * scrollspeed;
+				input::Mouse.scrolldelta = 0;
 			}
-			if (input::Keys['A'].pressed == true)
+			else if (scrolldelta > 0)
 			{
-				position += right * ((speed + 5.f) * global::DeltaTime);
-			}
-			if (input::Keys['S'].pressed == true)
-			{
-				position -= direction * ((speed + 5.f) * global::DeltaTime);
-			}
-			if (input::Keys['D'].pressed == true)
-			{
-				position -= right * ((speed + 5.f) * global::DeltaTime);
+				magnitude -= global::DeltaTime * 50.f * scrollspeed;
+				input::Mouse.scrolldelta = 0;
 			}
 
-			camera->target = position + direction;
+			entity->transformation->position = camera->target - (glm::normalize(direction) * magnitude);
+			//camera->target = position + direction;
 			camera->up = up;
 		}
 	}

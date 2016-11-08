@@ -2,12 +2,12 @@
 #define SCENE_DEFAULT_H
 
 #include "Scene.h"
-#include "SceneMedium.h"
+#include "SceneSmall.h"
 
 namespace luna
 {
 	class SceneDefault :
-		public Scene, SceneMedium
+		public Scene, SceneSmall
 	{
 	public:
 		SceneDefault();

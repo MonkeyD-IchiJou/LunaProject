@@ -19,6 +19,7 @@ namespace luna
 		return pwin->WindowProc(hwnd, msg, wparam, lparam);
 	}
 
+	WINDOWPLACEMENT g_wpPrev = { sizeof(g_wpPrev) };
 	LRESULT WinNative::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 		int i = 0;
@@ -35,7 +36,33 @@ namespace luna
 			input::Keys[wparam].pressed = true;
 
 			//int hold = (lparam & (1 << 30)) >> 30;
-		
+
+			// full screen toggle
+			if(wparam == 'F')
+			{
+				DWORD dwStyle = GetWindowLong(hwnd, GWL_STYLE);
+				if (dwStyle & WS_OVERLAPPEDWINDOW) 
+				{
+					MONITORINFO mi = { sizeof(mi) };
+					if (GetWindowPlacement(hwnd, &g_wpPrev) && GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi)) 
+					{
+						SetWindowLong(hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+						SetWindowPos(hwnd, HWND_TOP,
+							mi.rcMonitor.left, mi.rcMonitor.top,
+							mi.rcMonitor.right - mi.rcMonitor.left,
+							mi.rcMonitor.bottom - mi.rcMonitor.top,
+							SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+					}
+				} 
+				else 
+				{
+					SetWindowLong(hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+					SetWindowPlacement(hwnd, &g_wpPrev);
+					SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+						SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+						SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				}
+			}
 			break;
 
 		case WM_SIZE:
@@ -51,6 +78,7 @@ namespace luna
 			input::Mouse.firsttouchposx = LOWORD(lparam);
 			input::Mouse.firsttouchposy = HIWORD(lparam);
 			input::Mouse.leftclick = true;
+			input::Mouse.numTouchPoints = 1;
 			break;
 
 		case WM_LBUTTONDBLCLK:

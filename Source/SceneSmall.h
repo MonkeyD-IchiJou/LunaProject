@@ -13,7 +13,7 @@ namespace luna
 		virtual ~SceneSmall();
 
 		/* The max entity allowed in a small scene */
-		const static int MAX_ENTITIES = 10;
+		const static int MAX_ENTITIES = 25;
 
 		/* find the entity which is not awakened */
 		Entity* GetAvailableEntity_() override;

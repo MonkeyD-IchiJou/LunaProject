@@ -18,7 +18,6 @@ namespace luna
 		void Reset() override;
 
 		glm::mat4 GetModel() const { return m_model; }
-		glm::mat4 GetTransposeInverseModel() const { return m_transpose_inverse_model; }
 
 	public:
 		glm::vec3 position{};
@@ -27,7 +26,6 @@ namespace luna
 
 	private:
 		glm::mat4 m_model = {};
-		glm::mat4 m_transpose_inverse_model = {};
 	};
 }
 

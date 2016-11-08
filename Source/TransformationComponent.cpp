@@ -23,8 +23,6 @@ namespace luna
 			m_model = glm::translate(glm::mat4(), position) *
 				glm::toMat4(glm::quat(glm::radians(eulerangles))) *
 				glm::scale(glm::mat4(), scale);
-
-			m_transpose_inverse_model = glm::transpose(glm::inverse(m_model));
 		}
 	}
 
@@ -40,6 +38,5 @@ namespace luna
 		eulerangles = glm::vec4(0.f, 1.f, 0.f, 0.f);
 
 		m_model = {};
-		m_transpose_inverse_model = {};
 	}
 }

@@ -44,6 +44,9 @@ namespace luna
 
 			std::atomic<int> scrolldelta;
 
+			std::atomic<size_t> numTouchPoints;
+			std::atomic<float> prevmagnitude;
+
 			mouseinfo()
 			{
 				posx = 0;
@@ -62,6 +65,9 @@ namespace luna
 				rightdbclick = false;
 
 				scrolldelta = 0;
+
+				numTouchPoints = 0;
+				prevmagnitude = 0.f;
 			}
 		};
 

@@ -36,7 +36,6 @@ namespace luna
 
 				// update the instance datas
 				instancedata.model = t.GetModel();
-				instancedata.transpose_inverse_model = t.GetTransposeInverseModel();
 				instancedata.material = r.material.color;
 
 				instancedatas[count] = instancedata;

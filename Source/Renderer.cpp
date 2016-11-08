@@ -29,8 +29,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
-#define BASE_RESOLUTION_X 1600
-#define BASE_RESOLUTION_Y 900
+#if VK_USE_PLATFORM_WIN32_KHR
+#define BASE_RESOLUTION_X 1920
+#define BASE_RESOLUTION_Y 1080
+#else
+#define BASE_RESOLUTION_X 1280
+#define BASE_RESOLUTION_Y 720
+#endif
 #define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
 
@@ -58,7 +63,8 @@ namespace luna
 			TextureResources* texrsc = TextureResources::getInstance();
 
 			// ubo and ssbo that are unique to this renderer
-			m_ubo = new UBO();
+			m_ubo = new UBO(sizeof(UBOData));
+			m_ubopointlights = new UBO(sizeof(UBOPointLightData) * 10); // max 10 point lights
 			m_instance_ssbo = new SSBO(MAX_INSTANCEDATA * sizeof(InstanceData)); // 100 different models reserve
 			m_fontinstance_ssbo = new SSBO(MAX_FONTDATA * sizeof(FontInstanceData)); // 256 different characters reserve
 
@@ -140,7 +146,9 @@ namespace luna
 		m_dirlightpass_shader = new DirLightPassShader();
 		m_dirlightpass_shader->SetDescriptors(
 			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U],
-			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32F]
+			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32F],
+			texrsc->Textures[eTEXTURES::COLOR2_ATTACHMENT_RGBA32F],
+			m_ubopointlights
 		);
 		m_dirlightpass_shader->Init(DeferredFBO::getRenderPass());
 
@@ -211,6 +219,7 @@ namespace luna
 		m_instance_ssbo->Record(commandbuff);
 		m_fontinstance_ssbo->Record(commandbuff);
 		m_ubo->Record(commandbuff);
+		m_ubopointlights->Record(commandbuff);
 
 		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
@@ -299,7 +308,7 @@ namespace luna
 
 		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 3); // set stencil value, for skybox is 3
 		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
-		auto s = glm::scale(glm::mat4(), glm::vec3(100.f, 100.f, 100.f));
+		auto s = glm::scale(glm::mat4(), glm::vec3(200.f, 200.f, 200.f));
 		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
 		m_skybox_shader->LoadModel(commandbuff, t * s * r);
 		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(commandbuff);
@@ -365,6 +374,43 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
+	void Renderer::RecordLightingSubpass_Secondary_(const VkCommandBuffer commandbuff, const UBOData& camdata)
+	{
+		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferInheritanceInfo inheritanceinfo{};
+		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
+		inheritanceinfo.subpass = 1;
+		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
+		inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = &inheritanceinfo;
+
+		// start recording the geometry pass command buffer
+		vkBeginCommandBuffer(commandbuff, &beginInfo);
+
+		// execute all the light passes
+		// bind the dirlight pass shader
+		m_dirlightpass_shader->Bind(commandbuff);
+		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		m_dirlightpass_shader->LoadDirLightPos(commandbuff, glm::mat3(camdata.view) * glm::vec3(-100.f, 100.f, -100.f));
+		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+
+		// combined with those not lightpass geometry
+		m_nonlightpass_shader->Bind(commandbuff);
+		m_nonlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+
+		vkEndCommandBuffer(commandbuff);
+	}
+
 	void Renderer::PreRecord_()
 	{
 		// dummy record secondary buffers
@@ -375,6 +421,7 @@ namespace luna
 			commandbufferpacket->geometry_secondary_cmdbuff, 
 			renderinfos
 		);
+		RecordLightingSubpass_Secondary_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.maincamdata);
 		RecordUIPass_Secondary_(
 			commandbufferpacket->font_secondary_cmdbuff, 
 			0
@@ -434,22 +481,10 @@ namespace luna
 		// next subpass for lighting calculation
 		vkCmdNextSubpass(
 			commandbuff, 
-			VK_SUBPASS_CONTENTS_INLINE
+			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 		);
 
-		// execute all the light passes
-		// bind the dirlight pass shader
-		m_dirlightpass_shader->Bind(commandbuff);
-		m_dirlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
-
-		// combined with those not lightpass geometry
-		m_nonlightpass_shader->Bind(commandbuff);
-		m_nonlightpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->lightingsubpass_secondary_cmdbuff);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
@@ -520,11 +555,14 @@ namespace luna
 			m_instance_ssbo->Update(framepacket.instancedatas);
 			m_fontinstance_ssbo->Update(framepacket.fontinstancedatas);
 			m_ubo->Update(framepacket.maincamdata);
+			m_ubopointlights->Update(framepacket.pointlightsdatas);
 
 			RecordUIPass_Secondary_(
 				commandbufferpacket->font_secondary_cmdbuff,
 				static_cast<uint32_t>(framepacket.fontinstancedatas.size())
 			);
+
+			RecordLightingSubpass_Secondary_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.maincamdata);
 		});
 
 		// let all workers finish their job pls
@@ -618,6 +656,12 @@ namespace luna
 		{
 			delete m_ubo;
 			m_ubo = nullptr;
+		}
+
+		if (m_ubopointlights != nullptr)
+		{
+			delete m_ubopointlights;
+			m_ubopointlights = nullptr;
 		}
 
 		if (m_instance_ssbo != nullptr)
