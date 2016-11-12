@@ -17,7 +17,7 @@ namespace luna
 
 	void TextChangeScript::Update(Entity * entity)
 	{
-		auto fontc = entity->findComponentT<FontComponent>(FONT_CTYPE);
+		auto fontc = entity->findComponentT<FontComponent>();
 		if (fontc)
 		{
 			fontc->text = std::to_string(global::DeltaTime) + "s";

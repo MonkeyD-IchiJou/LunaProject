@@ -17,7 +17,7 @@ namespace luna
 
 	void TextChangeScript2::Update(Entity * entity)
 	{
-		auto fontc = entity->findComponentT<FontComponent>(FONT_CTYPE);
+		auto fontc = entity->findComponentT<FontComponent>();
 		if (fontc)
 		{
 			fontc->GetOwner()->transformation->position.x = static_cast<float>(WinNative::getInstance()->getWinSurfaceSizeX() - 540.f);

@@ -35,13 +35,13 @@ namespace luna
 
 		/* find the specific component, and then return the original class type of it */
 		template<typename T>
-		T * findComponentT(COMPONENT_TYPE type)
+		T * findComponentT()
 		{
 			for (auto &x : m_componentsContainer)
 			{
-				if (x->GetComponentType() == type)
+				if (T* temp = dynamic_cast<T*>(x))
 				{
-					return dynamic_cast<T*>(x);
+					return temp;
 				}
 			}
 
