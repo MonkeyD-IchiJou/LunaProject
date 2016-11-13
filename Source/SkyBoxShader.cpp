@@ -15,7 +15,7 @@ namespace luna
 		Destroy();
 	}
 
-	void SkyBoxShader::Init(const VkRenderPass & renderpass)
+	void SkyBoxShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
 	{
 		// only when it has not created
 		if (m_Pipeline == VK_NULL_HANDLE)
@@ -53,7 +53,7 @@ namespace luna
 			graphicspipeline_createinfo.pDynamicState			= &fixedpipelineinfo.dynamicStateInfo; // ??
 			graphicspipeline_createinfo.layout					= m_pipelineLayout;
 			graphicspipeline_createinfo.renderPass				= renderpass;
-			graphicspipeline_createinfo.subpass					= 0; // index of the subpass // take note of this
+			graphicspipeline_createinfo.subpass					= subpassindex; // index of the subpass // take note of this
 			graphicspipeline_createinfo.basePipelineHandle		= VK_NULL_HANDLE;
 			graphicspipeline_createinfo.basePipelineIndex		= -1;
 
@@ -160,52 +160,8 @@ namespace luna
 
 	void SkyBoxShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
 	{
-		// Blend attachment states required for all color attachments
-		// This is important, as color write mask will otherwise be 0x0 and you
-		// won't see anything rendered to the attachment
-		fixedpipeline.colorBlendAttachments.clear();
-		fixedpipeline.colorBlendAttachments.resize(4);
-
-		fixedpipeline.colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		fixedpipeline.colorBlendAttachments[0].blendEnable = VK_FALSE;
-		fixedpipeline.colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		fixedpipeline.colorBlendAttachments[1].blendEnable = VK_FALSE;
-		fixedpipeline.colorBlendAttachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		fixedpipeline.colorBlendAttachments[2].blendEnable = VK_FALSE;
-		fixedpipeline.colorBlendAttachments[3].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		fixedpipeline.colorBlendAttachments[3].blendEnable = VK_FALSE;
-
-		VkPipelineColorBlendStateCreateInfo& colorBlending = fixedpipeline.colorBlending;
-		colorBlending.logicOp = VK_LOGIC_OP_CLEAR;
-		colorBlending.attachmentCount = static_cast<uint32_t>(fixedpipeline.colorBlendAttachments.size());
-		colorBlending.pAttachments = fixedpipeline.colorBlendAttachments.data();
-
-		// stencil enable
 		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
-		depthStencil.stencilTestEnable = VK_TRUE;
-
-		VkStencilOpState frontstate{};
-		frontstate.compareOp = VK_COMPARE_OP_ALWAYS; // the comparison operator used in the stencil test
-		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
-		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
-		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
-		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
-		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
-		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
-
-		depthStencil.front = frontstate;
-		depthStencil.back = {}; // dun care about the back facing polygon
-
-		// dynamic state 
-		fixedpipeline.dynamicState.resize(5);
-		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
-		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
-		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
-		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
-
-		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
-		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
+		depthStencil.depthWriteEnable = VK_FALSE;
 	}
 
 	void SkyBoxShader::CreatePipelineLayout_()

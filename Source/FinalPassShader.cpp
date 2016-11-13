@@ -68,7 +68,7 @@ namespace luna
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
 
-	void FinalPassShader::Init(const VkRenderPass & renderpass)
+	void FinalPassShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
 	{
 		// only when it has not created
 		if (m_Pipeline == VK_NULL_HANDLE)
@@ -106,7 +106,7 @@ namespace luna
 			graphicspipeline_createinfo.pDynamicState			= &fixedpipelineinfo.dynamicStateInfo; // ??
 			graphicspipeline_createinfo.layout					= m_pipelineLayout;
 			graphicspipeline_createinfo.renderPass				= renderpass;
-			graphicspipeline_createinfo.subpass					= 0; // index of the subpass // take note of this
+			graphicspipeline_createinfo.subpass					= subpassindex; // index of the subpass // take note of this
 			graphicspipeline_createinfo.basePipelineHandle		= VK_NULL_HANDLE;
 			graphicspipeline_createinfo.basePipelineIndex		= -1;
 

@@ -14,7 +14,7 @@ namespace luna
 		Destroy();
 	}
 
-	void GausianBlur1DShader::Init(const VkRenderPass & renderpass)
+	void GausianBlur1DShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
 	{
 		// only when it has not created
 		if (m_Pipeline == VK_NULL_HANDLE)

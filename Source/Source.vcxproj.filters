@@ -144,12 +144,6 @@
     <ClInclude Include="BasicMesh.h">
       <Filter>Header Files\Resources\Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="DeferredShader.h">
-      <Filter>Header Files\Resources\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="DirLightPassShader.h">
-      <Filter>Header Files\Resources\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="FinalPassShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
@@ -306,9 +300,6 @@
     <ClInclude Include="CameraControlScript.h">
       <Filter>Header Files\Resources\Components\Scripts</Filter>
     </ClInclude>
-    <ClInclude Include="NonLightPassShader.h">
-      <Filter>Header Files\Resources\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="DebugLog.h">
       <Filter>Header Files\System\IO</Filter>
     </ClInclude>
@@ -336,6 +327,12 @@
     <ClInclude Include="TextChangeScript2.h">
       <Filter>Header Files\Resources\Components\Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="GBufferSubpassShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="LightingSubpassShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp">
@@ -355,12 +352,6 @@
     </ClCompile>
     <ClCompile Include="TextureResources.cpp">
       <Filter>Source Files\Resources\Textures</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredShader.cpp">
-      <Filter>Source Files\Resources\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DirLightPassShader.cpp">
-      <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="FinalPassShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
@@ -494,9 +485,6 @@
     <ClCompile Include="CameraControlScript.cpp">
       <Filter>Source Files\Resources\Components\Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="NonLightPassShader.cpp">
-      <Filter>Source Files\Resources\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="WinAndroid.cpp">
       <Filter>Source Files\Windows</Filter>
     </ClCompile>
@@ -526,6 +514,12 @@
     </ClCompile>
     <ClCompile Include="TextChangeScript2.cpp">
       <Filter>Source Files\Resources\Components\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="GBufferSubpassShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="LightingSubpassShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

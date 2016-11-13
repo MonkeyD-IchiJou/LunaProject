@@ -19,13 +19,12 @@ namespace luna
 	class FinalFBO;
 	class PresentationFBO;
 
-	class DeferredShader;
+	class GBufferSubpassShader;
+	class LightingSubpassShader;
 	class SkyBoxShader;
-	class DirLightPassShader;
 	class FinalPassShader;
 	class SimpleShader;
 	class TextShader;
-	class NonLightPassShader;
 
 	class CommandBufferPacket;
 
@@ -76,7 +75,7 @@ namespace luna
 		/* pre-record the primary command buffer once and for all */
 		void PreRecord_();
 
-		/* primary command buffer -> deffered shader fbo pass */
+		/* primary command buffer -> deffered shading fbo pass */
 		void RecordOffscreen_Primary_(const VkCommandBuffer commandbuff);
 
 		/* primary command buffer -> final rendering && presentation pass */
@@ -84,12 +83,12 @@ namespace luna
 
 		/* dynamic secondary command buffers rerecord */
 		void RecordCopyDataToOptimal_Secondary_(const VkCommandBuffer commandbuff);
-		void RecordGeometryPass_Secondary_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
-		void RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext);
-		void RecordSkybox__Secondary_(const VkCommandBuffer commandbuff);
-		void RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff);
+		void RecordGBufferSubpass_Secondary_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
 		void RecordLightingSubpass_Secondary_(const VkCommandBuffer commandbuff, const UBOData& camdata);
-
+		void RecordSkyboxSubpass_Secondary_(const VkCommandBuffer commandbuff);
+		void RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff);
+		void RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext);
+		
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
 
@@ -103,10 +102,9 @@ namespace luna
 		std::vector<PresentationFBO*> m_presentation_fbos;
 
 		/* all the shaders */
-		DeferredShader* m_deferred_shader = nullptr;
+		GBufferSubpassShader* m_gbuffersubpass_shader = nullptr;
+		LightingSubpassShader* m_lightsubpass_shader = nullptr;
 		SkyBoxShader* m_skybox_shader = nullptr;
-		DirLightPassShader* m_dirlightpass_shader = nullptr;
-		NonLightPassShader* m_nonlightpass_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		SimpleShader* m_simple_shader = nullptr;
 		TextShader* m_text_shader = nullptr;

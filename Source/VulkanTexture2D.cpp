@@ -173,12 +173,15 @@ namespace luna
 		subresourceRange.layerCount = 1; // The 2D texture only has one layer
 
 		// make sure the image layout is suitable for any usage later 
-		TransitionImageLayout_(
-			commandbuffer,
-			m_image,
-			VK_IMAGE_LAYOUT_UNDEFINED, imagelayout,
-			subresourceRange
-		);
+		if (imagelayout != VK_IMAGE_LAYOUT_UNDEFINED)
+		{
+			TransitionImageLayout_(
+				commandbuffer,
+				m_image,
+				VK_IMAGE_LAYOUT_UNDEFINED, imagelayout,
+				subresourceRange
+			);
+		}
 
 		// then submit this to the graphics queue to execute it
 		EndSingleTimeCommands_(commandbuffer, Renderer::getInstance()->GetGraphicQueue());

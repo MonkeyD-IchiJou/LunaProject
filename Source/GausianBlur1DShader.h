@@ -17,7 +17,7 @@ namespace luna
 		GausianBlur1DShader();
 		virtual ~GausianBlur1DShader();
 
-		void Init(const VkRenderPass& renderpass) override;
+		void Init(const VkRenderPass& renderpass, uint32_t subpassindex = 0) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 		void BindDescriptorSet(const VkCommandBuffer& commandbuffer, const int& whichset);

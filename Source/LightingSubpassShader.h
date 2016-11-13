@@ -10,18 +10,17 @@ namespace luna
 	class VulkanImageBufferObject;
 	class UBO;
 
-	class DirLightPassShader :
+	class LightingSubpassShader :
 		public ShaderProgram
 	{
 	public:
-		DirLightPassShader();
-		virtual ~DirLightPassShader();
+		LightingSubpassShader();
+		virtual ~LightingSubpassShader();
 
-		void Init(const VkRenderPass& renderpass) override;
+		void Init(const VkRenderPass& renderpass, uint32_t subpassindex = 0) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
-		void LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3& pos);
-
+		
 		void SetDescriptors(
 			const VulkanImageBufferObject* color0,
 			const VulkanImageBufferObject* color1,
@@ -29,6 +28,8 @@ namespace luna
 			const VulkanImageBufferObject* color3,
 			const UBO* ubo_pointlights
 		);
+
+		void LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3& pos);
 
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool& fixedpipeline) override;

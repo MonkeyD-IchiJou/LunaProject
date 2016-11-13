@@ -17,7 +17,7 @@ namespace luna
 		SkyBoxShader();
 		virtual ~SkyBoxShader();
 
-		void Init(const VkRenderPass& renderpass) override;
+		void Init(const VkRenderPass& renderpass, uint32_t subpassindex = 0) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 

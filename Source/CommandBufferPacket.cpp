@@ -53,7 +53,7 @@ namespace luna
 			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 			buffer_allocateInfo.commandPool = secondary_commandpool_thrd1;
 			buffer_allocateInfo.commandBufferCount = 1;
-			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &geometry_secondary_cmdbuff));
+			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &gbuffer_secondary_cmdbuff));
 		}
 
 		{

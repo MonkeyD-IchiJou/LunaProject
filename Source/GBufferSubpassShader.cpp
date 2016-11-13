@@ -1,4 +1,4 @@
-#include "DeferredShader.h"
+#include "GBufferSubpassShader.h"
 #include "SSBO.h"
 #include "UBO.h"
 #include "DebugLog.h"
@@ -7,22 +7,22 @@
 
 namespace luna
 {
-	DeferredShader::DeferredShader()
+	GBufferSubpassShader::GBufferSubpassShader()
 	{
 	}
 
-	DeferredShader::~DeferredShader()
+	GBufferSubpassShader::~GBufferSubpassShader()
 	{
 		Destroy();
 	}
 
-	void DeferredShader::Bind(const VkCommandBuffer & commandbuffer)
+	void GBufferSubpassShader::Bind(const VkCommandBuffer & commandbuffer)
 	{
 		// Graphics Pipeline Binding (shaders binding)
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 	}
 
-	void DeferredShader::BindTexture(const VkCommandBuffer & commandbuffer, const int & whichset)
+	void GBufferSubpassShader::BindTexture(const VkCommandBuffer & commandbuffer, const int & whichset)
 	{
 		VkDescriptorSet descriptorSets[] = {
 			m_descriptorTool.descriptorsInfo[0].descriptorSets[0], // first layout and its first descriptor sets
@@ -37,7 +37,7 @@ namespace luna
 		);
 	}
 
-	void DeferredShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const std::vector<VulkanImageBufferObject*>& diffuseTexs)
+	void GBufferSubpassShader::SetDescriptors(const UBO* ubo, const SSBO* ssbo, const std::vector<VulkanImageBufferObject*>& diffuseTexs)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
@@ -131,7 +131,7 @@ namespace luna
 		}
 	}
 
-	void DeferredShader::UpdateDescriptor(const SSBO* ssbo)
+	void GBufferSubpassShader::UpdateDescriptor(const SSBO* ssbo)
 	{
 		// descriptor info for ssbo
 		VkDescriptorBufferInfo ssboinfo{};
@@ -154,22 +154,22 @@ namespace luna
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, updateinfo);
 	}
 
-	void DeferredShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
+	void GBufferSubpassShader::LoadObjectOffset(const VkCommandBuffer& commandbuffer, const int & offset)
 	{
 		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(offset), &offset);
 	}
 
-	void DeferredShader::Init(const VkRenderPass & renderpass)
+	void GBufferSubpassShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
 	{
 		// only when it has not created
 		if (m_Pipeline == VK_NULL_HANDLE)
 		{
 			/* create the shaders first */
-			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/deferred_vert.spv");
+			VkPipelineShaderStageCreateInfo vertinfo = CreateShaders_(getAssetPath() + "Shaders/gbuffersubpass_vert.spv");
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/deferred_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/gbuffersubpass_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -197,7 +197,7 @@ namespace luna
 			graphicspipeline_createinfo.pDynamicState			= &fixedpipelineinfo.dynamicStateInfo;
 			graphicspipeline_createinfo.layout					= m_pipelineLayout;
 			graphicspipeline_createinfo.renderPass				= renderpass;
-			graphicspipeline_createinfo.subpass					= 0; // index of the subpass // take note of this
+			graphicspipeline_createinfo.subpass					= subpassindex; // index of the subpass // take note of this
 			graphicspipeline_createinfo.basePipelineHandle		= VK_NULL_HANDLE;
 			graphicspipeline_createinfo.basePipelineIndex		= -1;
 
@@ -209,7 +209,7 @@ namespace luna
 		}
 	}
 
-	void DeferredShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
+	void GBufferSubpassShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
 	{
 		// Blend attachment states required for all color attachments
 		// This is important, as color write mask will otherwise be 0x0 and you
@@ -230,36 +230,9 @@ namespace luna
 		colorBlending.logicOp = VK_LOGIC_OP_CLEAR;
 		colorBlending.attachmentCount = static_cast<uint32_t>(fixedpipeline.colorBlendAttachments.size());
 		colorBlending.pAttachments = fixedpipeline.colorBlendAttachments.data();
-
-		// stencil enable
-		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
-		depthStencil.stencilTestEnable = VK_TRUE;
-
-		VkStencilOpState frontstate{};
-		frontstate.compareOp = VK_COMPARE_OP_ALWAYS; // the comparison operator used in the stencil test
-		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
-		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
-		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
-		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
-		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
-		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
-
-		depthStencil.front = frontstate;
-		depthStencil.back = {}; // dun care about the back facing polygon
-		
-		// dynamic state 
-		fixedpipeline.dynamicState.resize(5);
-		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
-		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
-		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
-		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
-
-		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
-		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
-	void DeferredShader::CreatePipelineLayout_()
+	void GBufferSubpassShader::CreatePipelineLayout_()
 	{
 		/* push constant info */
 		VkPushConstantRange pushconstant{};
@@ -285,7 +258,7 @@ namespace luna
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void DeferredShader::Destroy()
+	void GBufferSubpassShader::Destroy()
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 

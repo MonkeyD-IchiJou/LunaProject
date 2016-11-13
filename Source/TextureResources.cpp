@@ -35,7 +35,7 @@ namespace luna
 		Textures[COLOR2_ATTACHMENT_RGBA32F] = nullptr;
 		Textures[COLOR3_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[HDRTEX_ATTACHMENT_RGBA16F] = nullptr;
-		Textures[DEPTHSTENCIL_ATTACHMENT_32F8U] = nullptr;
+		Textures[DEPTHSTENCIL_ATTACHMENT_32F] = nullptr;
 
 		Textures[HORBLUR_2D_RGBA16F] = new VulkanTexture2D(
 			512, 512, 

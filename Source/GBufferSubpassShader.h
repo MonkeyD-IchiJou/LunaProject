@@ -11,14 +11,14 @@ namespace luna
 	class SSBO;
 	class VulkanImageBufferObject;
 
-	class DeferredShader :
+	class GBufferSubpassShader :
 		public ShaderProgram
 	{
 	public:
-		DeferredShader();
-		virtual ~DeferredShader();
+		GBufferSubpassShader();
+		virtual ~GBufferSubpassShader();
 
-		void Init(const VkRenderPass& renderpass) override;
+		void Init(const VkRenderPass& renderpass, uint32_t subpassindex = 0) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 

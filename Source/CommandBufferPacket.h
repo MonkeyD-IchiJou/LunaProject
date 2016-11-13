@@ -27,7 +27,7 @@ namespace luna
 		VkCommandBuffer lightingsubpass_secondary_cmdbuff = VK_NULL_HANDLE;
 
 		VkCommandPool secondary_commandpool_thrd1 = VK_NULL_HANDLE;
-		VkCommandBuffer geometry_secondary_cmdbuff = VK_NULL_HANDLE;
+		VkCommandBuffer gbuffer_secondary_cmdbuff = VK_NULL_HANDLE;
 
 		VkCommandPool secondary_commandpool_thrd2 = VK_NULL_HANDLE;
 		VkCommandBuffer font_secondary_cmdbuff = VK_NULL_HANDLE;

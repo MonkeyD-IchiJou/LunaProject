@@ -13,7 +13,7 @@ namespace luna
 
 		/* init the graphics pipeline and necessary info */
 		/* tell the shader which framebuffer renderpass it is bound to*/
-		virtual void Init(const VkRenderPass& renderpass) = 0;
+		virtual void Init(const VkRenderPass& renderpass, uint32_t subpassindex = 0) = 0;
 
 		/* destroy the graphics pipeline */
 		virtual void Destroy() = 0;

@@ -1,4 +1,4 @@
-#include "DirLightPassShader.h"
+#include "LightingSubpassShader.h"
 #include "DebugLog.h"
 #include "VulkanImageBufferObject.h"
 #include "Vertex.h"
@@ -6,16 +6,16 @@
 
 namespace luna
 {
-	DirLightPassShader::DirLightPassShader()
+	LightingSubpassShader::LightingSubpassShader()
 	{
 	}
 
-	DirLightPassShader::~DirLightPassShader()
+	LightingSubpassShader::~LightingSubpassShader()
 	{
 		Destroy();
 	}
 
-	void DirLightPassShader::Bind(const VkCommandBuffer & commandbuffer)
+	void LightingSubpassShader::Bind(const VkCommandBuffer & commandbuffer)
 	{
 		// Graphics Pipeline Binding (shaders binding)
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
@@ -28,12 +28,12 @@ namespace luna
 		);
 	}
 
-	void DirLightPassShader::LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3 & pos)
+	void LightingSubpassShader::LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3 & pos)
 	{
 		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pos), &pos);
 	}
 
-	void DirLightPassShader::SetDescriptors(
+	void LightingSubpassShader::SetDescriptors(
 		const VulkanImageBufferObject* color0, 
 		const VulkanImageBufferObject* color1, 
 		const VulkanImageBufferObject* color2,
@@ -127,7 +127,7 @@ namespace luna
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
 
-	void DirLightPassShader::Init(const VkRenderPass & renderpass)
+	void LightingSubpassShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
 	{
 		// only when it has not created
 		if (m_Pipeline == VK_NULL_HANDLE)
@@ -137,7 +137,7 @@ namespace luna
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/dirlightsubpass_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/lightingsubpass_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -165,7 +165,7 @@ namespace luna
 			graphicspipeline_createinfo.pDynamicState			= &fixedpipelineinfo.dynamicStateInfo; // ??
 			graphicspipeline_createinfo.layout					= m_pipelineLayout;
 			graphicspipeline_createinfo.renderPass				= renderpass;
-			graphicspipeline_createinfo.subpass					= 1; // index of the subpass // take note of this
+			graphicspipeline_createinfo.subpass					= subpassindex; // index of the subpass // take note of this
 			graphicspipeline_createinfo.basePipelineHandle		= VK_NULL_HANDLE;
 			graphicspipeline_createinfo.basePipelineIndex		= -1;
 
@@ -177,7 +177,7 @@ namespace luna
 		}
 	}
 
-	void DirLightPassShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
+	void LightingSubpassShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
 	{
 		// no depth test
 		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
@@ -185,19 +185,7 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.stencilTestEnable = VK_TRUE; // stencil test enable
-
-		VkStencilOpState frontstate{};
-		frontstate.compareOp = VK_COMPARE_OP_GREATER_OR_EQUAL; // the comparison operator used in the stencil test
-		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
-		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
-		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
-		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
-		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
-		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
-
-		depthStencil.front = frontstate;
-		depthStencil.back = {}; // dun care about the back facing polygon
+		depthStencil.stencilTestEnable = VK_FALSE; // stencil test disable
 
 		// vertex attributes for screen quad
 		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
@@ -211,20 +199,9 @@ namespace luna
 		vertexInputInfo.pVertexBindingDescriptions = &fixedpipeline.bindingDescription;
 		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)fixedpipeline.attributeDescription.size();
 		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
-
-		// dynamic state 
-		fixedpipeline.dynamicState.resize(5);
-		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
-		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
-		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
-		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
-
-		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
-		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
-	void DirLightPassShader::CreatePipelineLayout_()
+	void LightingSubpassShader::CreatePipelineLayout_()
 	{
 		/* push constant info */
 		VkPushConstantRange pushconstant{};
@@ -250,7 +227,7 @@ namespace luna
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void DirLightPassShader::Destroy()
+	void LightingSubpassShader::Destroy()
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
