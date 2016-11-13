@@ -12,6 +12,7 @@
 #include "GBufferSubpassShader.h"
 #include "LightingSubpassShader.h"
 #include "SkyBoxShader.h"
+#include "CompositeSubpassShader.h"
 #include "FinalPassShader.h"
 #include "SimpleShader.h"
 #include "TextShader.h"
@@ -150,6 +151,12 @@ namespace luna
 		m_skybox_shader = new SkyBoxShader();
 		m_skybox_shader->SetDescriptors(m_ubo, texrsc->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_RGBA8]);
 		m_skybox_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_NONLIGHTING);
+
+		// composite pass shader init
+		m_composite_shader = new CompositeSubpassShader();
+		m_composite_shader->SetDescriptors(texrsc->Textures[eTEXTURES::LIGHTINGTEX_ATTACHMENT_RGBA16F],
+			texrsc->Textures[eTEXTURES::NONLIGHTINGTEX_ATTACHMENT_RGBA8U]);
+		m_composite_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_COMPOSITE);
 
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
@@ -474,6 +481,16 @@ namespace luna
 
 		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->skybox_secondary_cmdbuff);
 
+		// next subpass for composition calculation
+		vkCmdNextSubpass(
+			commandbuff, 
+			VK_SUBPASS_CONTENTS_INLINE
+		);
+
+		m_composite_shader->Bind(commandbuff);
+		m_composite_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
 
@@ -681,6 +698,13 @@ namespace luna
 			m_skybox_shader->Destroy();
 			delete m_skybox_shader;
 			m_skybox_shader = nullptr;
+		}
+
+		if (m_composite_shader != nullptr)
+		{
+			m_composite_shader->Destroy();
+			delete m_composite_shader;
+			m_composite_shader = nullptr;
 		}
 
 		if (m_finalpass_shader != nullptr)

@@ -22,6 +22,7 @@ namespace luna
 	class GBufferSubpassShader;
 	class LightingSubpassShader;
 	class SkyBoxShader;
+	class CompositeSubpassShader;
 	class FinalPassShader;
 	class SimpleShader;
 	class TextShader;
@@ -105,6 +106,7 @@ namespace luna
 		GBufferSubpassShader* m_gbuffersubpass_shader = nullptr;
 		LightingSubpassShader* m_lightsubpass_shader = nullptr;
 		SkyBoxShader* m_skybox_shader = nullptr;
+		CompositeSubpassShader* m_composite_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		SimpleShader* m_simple_shader = nullptr;
 		TextShader* m_text_shader = nullptr;

@@ -333,6 +333,9 @@
     <ClInclude Include="LightingSubpassShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="CompositeSubpassShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BasicMesh.cpp">
@@ -519,6 +522,9 @@
       <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="LightingSubpassShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="CompositeSubpassShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>

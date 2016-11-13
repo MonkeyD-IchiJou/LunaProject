@@ -1,29 +1,25 @@
-#ifndef SKYBOX_SHADER_H
-#define SKYBOX_SHADER_H
+#ifndef COMPOSITE_SUBPASS_SHADER_H
+#define COMPOSITE_SUBPASS_SHADER_H
 
 #include "ShaderProgram.h"
 #include "DescriptorTool.h"
-#include <glm/glm.hpp>
 
 namespace luna
 {
-	class UBO;
 	class VulkanImageBufferObject;
 
-	class SkyBoxShader :
+	class CompositeSubpassShader :
 		public ShaderProgram
 	{
 	public:
-		SkyBoxShader();
-		virtual ~SkyBoxShader();
+		CompositeSubpassShader();
+		virtual ~CompositeSubpassShader();
 
 		void Init(const VkRenderPass& renderpass, uint32_t subpassindex = 0) override;
 		void Destroy() override;
 		void Bind(const VkCommandBuffer& commandbuffer) override;
 
-		void SetDescriptors(const UBO* ubo, const VulkanImageBufferObject* cubemapimage);
-
-		void LoadModel(const VkCommandBuffer& cmdbuff, const glm::mat4& model);
+		void SetDescriptors(const VulkanImageBufferObject* comp1, const VulkanImageBufferObject* comp2);
 
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool& fixedpipeline) override;
@@ -34,4 +30,4 @@ namespace luna
 	};
 }
 
-#endif // SKYBOX_SHADER_H
+#endif
