@@ -214,7 +214,7 @@ namespace luna
 	void VulkanRenderer::PhysicalDevice::Init(const VkInstance & instance)
 	{
 		vkEnumeratePhysicalDevices(instance, &TotalNumOfGPUs, nullptr);
-		if (TotalNumOfGPUs < 0) { DebugLog::throwEx("Vulkan ERROR: Cannot find any gpu"); }
+		if (TotalNumOfGPUs == 0) { DebugLog::throwEx("Vulkan ERROR: Cannot find any gpu"); }
 		GPUs.resize(TotalNumOfGPUs);
 		vkEnumeratePhysicalDevices(instance, &TotalNumOfGPUs, GPUs.data());
 
