@@ -17,7 +17,7 @@ android {
             }
         }
 		ndk {
-            abiFilters 'armeabi-v7a'
+            abiFilters 'arm64-v8a'
             stl "c++_static"
             moduleName "app"
         }
