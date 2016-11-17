@@ -89,8 +89,7 @@ namespace luna
 			// RENDER_WORKERID worker always queue submit and present it on the screen
 			workers[RENDER_WORKERID].addJob([&]() {
 				// update datas to the gpu
-				m_renderer->RecordBuffers(framepackets[renderFrame], secondset);
-				m_renderer->Render();
+				m_renderer->RecordAndRender(framepackets[renderFrame], secondset);
 			});
 		}
 

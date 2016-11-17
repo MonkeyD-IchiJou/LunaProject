@@ -6,7 +6,6 @@
 #include "UBO.h"
 
 #include "DeferredFBO.h"
-#include "FinalFBO.h"
 #include "PresentationFBO.h"
 
 #include "GBufferSubpassShader.h"
@@ -14,7 +13,6 @@
 #include "SkyBoxShader.h"
 #include "CompositeSubpassShader.h"
 #include "FinalPassShader.h"
-#include "SimpleShader.h"
 #include "TextShader.h"
 
 #include "ModelResources.h"
@@ -99,15 +97,12 @@ namespace luna
 		m_deferred_fbo = new DeferredFBO();
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR0_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR2_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR3_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
 		clearvalue.depthStencil = {1.f, 0};
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTH32F_ATTACHMENT);
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
-
-		// final pass fbo
-		m_final_fbo = new FinalFBO();
-		m_final_fbo->Clear(clearvalue, FINAL_FBOATTs::COLOR_ATTACHMENT);
-		m_final_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
 		// create framebuffer for each swapchain images
 		clearvalue.color = {0.f, 1.f, 0.f, 1.f};
@@ -161,17 +156,12 @@ namespace luna
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
 		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
-		m_finalpass_shader->Init(FinalFBO::getRenderPass());
-
-		// simple shader init 
-		m_simple_shader = new SimpleShader();
-		m_simple_shader->SetDescriptors(texrsc->Textures[eTEXTURES::LDRTEX_ATTACHMENT_RGBA8]);
-		m_simple_shader->Init(PresentationFBO::getRenderPass());
+		m_finalpass_shader->Init(PresentationFBO::getRenderPass());
 
 		// text shader init
 		m_text_shader = new TextShader();
 		m_text_shader->SetDescriptors(m_fontinstance_ssbo, texrsc->Textures[eTEXTURES::EVAFONT_2D_BC3]);
-		m_text_shader->Init(FinalFBO::getRenderPass());
+		m_text_shader->Init(PresentationFBO::getRenderPass());
 
 		// just to double make sure that the shader update the latest size of the ssbo
 		m_gbuffersubpass_shader->UpdateDescriptor(m_instance_ssbo);
@@ -181,26 +171,58 @@ namespace luna
 
 	void Renderer::CreateCommandBuffers_()
 	{
-		VkCommandPoolCreateInfo commandPool_createinfo{};
-		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+		{
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
 
-		m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
+			m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
 
-		// command buffers creation
-		VkCommandBufferAllocateInfo buffer_allocateInfo{};
-		buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		buffer_allocateInfo.commandPool = m_commandPool;
-		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
-		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
+			// command buffers creation
+			VkCommandBufferAllocateInfo buffer_allocateInfo{};
+			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			buffer_allocateInfo.commandPool = m_commandPool;
+			buffer_allocateInfo.commandBufferCount = static_cast<uint32_t>(m_presentation_cmdbuffers.size());
+			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
+		}
+
+		{
+			// for secondary command buffers
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_sec_commandPool));
+			
+			// each primary cmdbuffers have 2 secondary cmdbuffers
+			m_sec_cmdbuffers.resize(m_presentation_fbos.size() * 2);
+
+			VkCommandBufferAllocateInfo buffer_allocateInfo{};
+			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+			buffer_allocateInfo.commandPool = m_sec_commandPool;
+			buffer_allocateInfo.commandBufferCount = static_cast<uint32_t>(m_sec_cmdbuffers.size()); // FinalComposition + UI pass
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_sec_cmdbuffers.data()));
+
+			m_presentation_sec_cmdbuff.resize(m_presentation_fbos.size());
+			
+			// structure it
+			int j = 0;
+			for (int i = 0; i < m_presentation_sec_cmdbuff.size(); ++i)
+			{
+				m_presentation_sec_cmdbuff[i].CompositionCmdbuff = m_sec_cmdbuffers[j++];
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff = m_sec_cmdbuffers[j++];
+			}
+		}
+
 
 		/* each frames */
 		commandbufferpacket = new CommandBufferPacket(m_queuefamily_index.graphicsFamily, m_logicaldevice);
 	}
 
-	void Renderer::RecordCopyDataToOptimal_Secondary_(const VkCommandBuffer commandbuff)
+	void Renderer::RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff)
 	{
 		// NOTE: I need to rerecord this command buffer if the transfer size exceed the expectation size !!
 		DebugLog::EC(vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
@@ -223,7 +245,7 @@ namespace luna
 		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
 
-	void Renderer::RecordGBufferSubpass_Secondary_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos)
+	void Renderer::RecordGBufferSubpass_Sec_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos)
 	{
 		auto mr = ModelResources::getInstance();
 
@@ -277,7 +299,7 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordLightingSubpass_Secondary_(const VkCommandBuffer commandbuff, const UBOData& camdata)
+	void Renderer::RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
@@ -306,7 +328,7 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordSkyboxSubpass_Secondary_(const VkCommandBuffer commandbuff)
+	void Renderer::RecordSkyboxSubpass_Sec_(const VkCommandBuffer commandbuff)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
@@ -339,16 +361,16 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff)
+	void Renderer::RecordFinalComposition_Sec_(const VkCommandBuffer commandbuff, const int& frameindex)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceinfo.framebuffer = m_final_fbo->getFramebuffer();
+		inheritanceinfo.framebuffer = m_presentation_fbos[frameindex]->getFramebuffer();
 		inheritanceinfo.subpass = 0;
 		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
-		inheritanceinfo.renderPass = FinalFBO::getRenderPass();
+		inheritanceinfo.renderPass = PresentationFBO::getRenderPass();
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -360,22 +382,22 @@ namespace luna
 
 		// bind the shader pipeline stuff
 		m_finalpass_shader->Bind(commandbuff);
-		m_finalpass_shader->SetViewPort(commandbuff, m_final_fbo->getResolution());
+		m_finalpass_shader->SetViewPort(commandbuff, m_presentation_fbos[frameindex]->getResolution());
 		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext)
+	void Renderer::RecordUIPass_Sec_(const VkCommandBuffer commandbuff, const uint32_t & totaltext, const int& frameindex)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 		VkCommandBufferInheritanceInfo inheritanceinfo{};
 		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceinfo.framebuffer = m_final_fbo->getFramebuffer();
+		inheritanceinfo.framebuffer = m_presentation_fbos[frameindex]->getFramebuffer();
 		inheritanceinfo.subpass = 0;
 		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
-		inheritanceinfo.renderPass = FinalFBO::getRenderPass();
+		inheritanceinfo.renderPass = PresentationFBO::getRenderPass();
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -389,7 +411,7 @@ namespace luna
 		{
 			// bind the ui related shaders
 			m_text_shader->Bind(commandbuff);
-			m_text_shader->SetViewPort(commandbuff, m_final_fbo->getResolution());
+			m_text_shader->SetViewPort(commandbuff, m_presentation_fbos[frameindex]->getResolution());
 			ModelResources::getInstance()->Models[FONT_MODEL]->DrawInstanced(commandbuff, totaltext);
 		}
 
@@ -402,28 +424,32 @@ namespace luna
 		FramePacket temp{};
 		std::vector<RenderingInfo> renderinfos;
 
+		RecordCopyDataToOptimal_Sec_(commandbufferpacket->transferdata_secondary_cmdbuff);
+
 		// record the command buffers and update the staging buffers
-		RecordGBufferSubpass_Secondary_(
+		RecordGBufferSubpass_Sec_(
 			commandbufferpacket->gbuffer_secondary_cmdbuff, 
 			renderinfos
 		);
 
-		RecordLightingSubpass_Secondary_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.maincamdata);
+		RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.maincamdata);
 
-		RecordSkyboxSubpass_Secondary_(commandbufferpacket->skybox_secondary_cmdbuff);
+		RecordSkyboxSubpass_Sec_(commandbufferpacket->skybox_secondary_cmdbuff);
 
-		RecordUIPass_Secondary_(
-			commandbufferpacket->font_secondary_cmdbuff, 
-			0
-		);
+		for (int i = 0; i < m_presentation_cmdbuffers.size(); ++i)
+		{
+			RecordFinalComposition_Sec_(m_presentation_sec_cmdbuff[i].CompositionCmdbuff, i);
 
-		RecordCopyDataToOptimal_Secondary_(commandbufferpacket->transferdata_secondary_cmdbuff);
-
-		RecordSecondaryOffscreen_Secondary_(commandbufferpacket->offscreen_secondary_cmdbuff);
+			RecordUIPass_Sec_(
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff,
+				0,
+				i
+			);
+		}
 
 		// primary command buffers, record once and for all
-		RecordOffscreen_Primary_(commandbufferpacket->offscreen_cmdbuffer);
-		RecordPresentation_Primary_();
+		RecordOffscreen_Pri_(commandbufferpacket->offscreen_cmdbuffer);
+		RecordPresentation_Pri_();
 
 		auto& submitinfo0 = m_submitInfo[0];
 		submitinfo0.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -445,7 +471,7 @@ namespace luna
 		submitinfo1.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
 	}
 
-	void luna::Renderer::RecordOffscreen_Primary_(const VkCommandBuffer commandbuff)
+	void luna::Renderer::RecordOffscreen_Pri_(const VkCommandBuffer commandbuff)
 	{
 		// begin init
 		VkCommandBufferBeginInfo beginInfo{};
@@ -494,24 +520,11 @@ namespace luna
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
 
-		// another render pass
-		m_final_fbo->Bind(commandbuff, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-		// execute the secondary command buffers
-		VkCommandBuffer secondarycommandbuffer[] = { 
-			commandbufferpacket->offscreen_secondary_cmdbuff, 
-			commandbufferpacket->font_secondary_cmdbuff 
-		};
-		vkCmdExecuteCommands(commandbuff, 2, secondarycommandbuffer);
-
-		// unbind the fbo
-		m_final_fbo->UnBind(commandbuff);
-
 		// finish recording
 		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
 
-	void luna::Renderer::RecordPresentation_Primary_()
+	void luna::Renderer::RecordPresentation_Pri_()
 	{	
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -529,12 +542,14 @@ namespace luna
 
 			// starting a render pass 
 			// bind the fbo
-			presentfbo->Bind(commandbuffer);
+			presentfbo->Bind(commandbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-			// draw a quad to present on screen
-			m_simple_shader->Bind(commandbuffer);
-			m_simple_shader->SetViewPort(commandbuffer, presentfbo->getResolution());
-			ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuffer);
+			// execute the secondary command buffers
+			VkCommandBuffer secondarycommandbuffer[] = { 
+				m_presentation_sec_cmdbuff[i].CompositionCmdbuff,
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff
+			};
+			vkCmdExecuteCommands(commandbuffer, 2, secondarycommandbuffer);
 
 			// unbind the fbo
 			presentfbo->UnBind(commandbuffer);
@@ -544,10 +559,15 @@ namespace luna
 		}
 	}
 
-	void Renderer::RecordBuffers(const FramePacket & framepacket, std::array<Worker*, 2>& workers)
+	void Renderer::RecordAndRender(const FramePacket & framepacket, std::array<Worker*, 2>& workers)
 	{
+		// get the available image to render with
+		uint32_t imageindex = 0;
+
+		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
+
 		workers[0]->addJob([&]() {
-			RecordGBufferSubpass_Secondary_(
+			RecordGBufferSubpass_Sec_(
 				commandbufferpacket->gbuffer_secondary_cmdbuff,
 				*framepacket.renderinfos
 			);
@@ -560,17 +580,26 @@ namespace luna
 			m_ubo->Update(framepacket.maincamdata);
 			m_ubopointlights->Update(framepacket.pointlightsdatas);
 
-			RecordUIPass_Secondary_(
-				commandbufferpacket->font_secondary_cmdbuff,
-				static_cast<uint32_t>(framepacket.fontinstancedatas.size())
+			RecordUIPass_Sec_(
+				m_presentation_sec_cmdbuff[imageindex].UIPassCmdbuff,
+				static_cast<uint32_t>(framepacket.fontinstancedatas.size()),
+				imageindex
 			);
 
-			RecordLightingSubpass_Secondary_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.maincamdata);
+			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.maincamdata);
 		});
 
 		// let all workers finish their job pls
 		workers[0]->wait();
 		workers[1]->wait();
+
+		m_submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
+
+		// submit all the queues
+		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, m_submitInfo, VK_NULL_HANDLE));
+
+		// present it on the screen pls
+		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));
 	}
 
 	void Renderer::RecreateSwapChain()
@@ -605,42 +634,72 @@ namespace luna
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
 			m_commandPool = VK_NULL_HANDLE;
+
+			vkDestroyCommandPool(m_logicaldevice, m_sec_commandPool, nullptr);
+			m_sec_commandPool = VK_NULL_HANDLE;
 		}
 		m_presentation_cmdbuffers.clear();
+		m_sec_cmdbuffers.clear();
+		m_presentation_sec_cmdbuff.clear();
 
-		VkCommandPoolCreateInfo commandPool_createinfo{};
-		commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
-		DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
+		{
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_commandPool));
 
-		m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
+			m_presentation_cmdbuffers.resize(m_presentation_fbos.size());
 
-		// command buffers creation
-		VkCommandBufferAllocateInfo buffer_allocateInfo{};
-		buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		buffer_allocateInfo.commandPool = m_commandPool;
-		buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
-		buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
+			// command buffers creation
+			VkCommandBufferAllocateInfo buffer_allocateInfo{};
+			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			buffer_allocateInfo.commandPool = m_commandPool;
+			buffer_allocateInfo.commandBufferCount = (uint32_t)m_presentation_cmdbuffers.size();
+			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_presentation_cmdbuffers.data()));
+		}
+
+		{
+			// for secondary command buffers
+			VkCommandPoolCreateInfo commandPool_createinfo{};
+			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			commandPool_createinfo.queueFamilyIndex = m_queuefamily_index.graphicsFamily;
+			DebugLog::EC(vkCreateCommandPool(m_logicaldevice, &commandPool_createinfo, nullptr, &m_sec_commandPool));
+
+			// each primary cmdbuffers have 2 secondary cmdbuffers
+			m_sec_cmdbuffers.resize(m_presentation_fbos.size() * 2);
+
+			VkCommandBufferAllocateInfo buffer_allocateInfo{};
+			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+			buffer_allocateInfo.commandPool = m_sec_commandPool;
+			buffer_allocateInfo.commandBufferCount = static_cast<uint32_t>(m_sec_cmdbuffers.size()); // FinalComposition + UI pass
+			DebugLog::EC(vkAllocateCommandBuffers(m_logicaldevice, &buffer_allocateInfo, m_sec_cmdbuffers.data()));
+
+			m_presentation_sec_cmdbuff.resize(m_presentation_fbos.size());
+
+			// structure it
+			int j = 0;
+			for (int i = 0; i < m_presentation_sec_cmdbuff.size(); ++i)
+			{
+				m_presentation_sec_cmdbuff[i].CompositionCmdbuff = m_sec_cmdbuffers[j++];
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff = m_sec_cmdbuffers[j++];
+			}
+		}
 
 		// then record it again
-		RecordPresentation_Primary_();
-	}
+		for (int i = 0; i < m_presentation_cmdbuffers.size(); ++i)
+		{
+			RecordFinalComposition_Sec_(m_presentation_sec_cmdbuff[i].CompositionCmdbuff, i);
 
-	void Renderer::Render()
-	{
-		// get the available image to render with
-		uint32_t imageindex = 0;
-
-		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
-
-		m_submitInfo[1].pCommandBuffers = &m_presentation_cmdbuffers[imageindex];
-
-		// submit all the queues
-		DebugLog::EC(vkQueueSubmit(m_graphic_queue, 2, m_submitInfo, VK_NULL_HANDLE));
-
-		// present it on the screen pls
-		DebugLog::EC(m_swapchain->QueuePresent(m_graphic_queue, imageindex, m_presentpass_renderComplete));
+			RecordUIPass_Sec_(
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff,
+				0,
+				i
+			);
+		}
+		RecordPresentation_Pri_();
 	}
 
 	void Renderer::CleanUpResources()
@@ -714,13 +773,6 @@ namespace luna
 			m_finalpass_shader = nullptr;
 		}
 
-		if (m_simple_shader != nullptr)
-		{
-			m_simple_shader->Destroy();
-			delete m_simple_shader;
-			m_simple_shader = nullptr;
-		}
-
 		if (m_text_shader!= nullptr)
 		{
 			m_text_shader->Destroy();
@@ -733,13 +785,6 @@ namespace luna
 			m_deferred_fbo->Destroy();
 			delete m_deferred_fbo;
 			m_deferred_fbo = nullptr;
-		}
-
-		if (m_final_fbo != nullptr)
-		{
-			m_final_fbo->Destroy();
-			delete m_final_fbo;
-			m_final_fbo = nullptr;
 		}
 
 		for (auto &fbo : m_presentation_fbos)
@@ -780,6 +825,11 @@ namespace luna
 		{
 			vkDestroyCommandPool(m_logicaldevice, m_commandPool, nullptr);
 			m_commandPool = VK_NULL_HANDLE;
+		}
+		if (m_sec_commandPool != VK_NULL_HANDLE)
+		{
+			vkDestroyCommandPool(m_logicaldevice, m_sec_commandPool, nullptr);
+			m_sec_commandPool = VK_NULL_HANDLE;
 		}
 		
 		if (commandbufferpacket != nullptr)

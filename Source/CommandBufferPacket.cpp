@@ -18,7 +18,6 @@ namespace luna
 			buffer_allocateInfo.commandPool = primary_commandpool;
 			buffer_allocateInfo.commandBufferCount = 1;
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &offscreen_cmdbuffer));
-			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &finalpass_cmdbuffer));
 		}
 
 		{
@@ -35,7 +34,6 @@ namespace luna
 			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 			buffer_allocateInfo.commandPool = secondary_commandpool_thrd0;
 			buffer_allocateInfo.commandBufferCount = 1;
-			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &offscreen_secondary_cmdbuff));
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &skybox_secondary_cmdbuff));
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &transferdata_secondary_cmdbuff));
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &lightingsubpass_secondary_cmdbuff));
@@ -54,21 +52,6 @@ namespace luna
 			buffer_allocateInfo.commandPool = secondary_commandpool_thrd1;
 			buffer_allocateInfo.commandBufferCount = 1;
 			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &gbuffer_secondary_cmdbuff));
-		}
-
-		{
-			VkCommandPoolCreateInfo commandPool_createinfo{};
-			commandPool_createinfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPool_createinfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			commandPool_createinfo.queueFamilyIndex = queueFamilyIndex;
-			DebugLog::EC(vkCreateCommandPool(logicaldevice, &commandPool_createinfo, nullptr, &secondary_commandpool_thrd2));
-
-			VkCommandBufferAllocateInfo buffer_allocateInfo{};
-			buffer_allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			buffer_allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-			buffer_allocateInfo.commandPool = secondary_commandpool_thrd2;
-			buffer_allocateInfo.commandBufferCount = 1;
-			DebugLog::EC(vkAllocateCommandBuffers(logicaldevice, &buffer_allocateInfo, &font_secondary_cmdbuff));
 		}
 	}
 
@@ -94,12 +77,6 @@ namespace luna
 		{
 			vkDestroyCommandPool(logicaldevice, secondary_commandpool_thrd1, nullptr);
 			secondary_commandpool_thrd1 = VK_NULL_HANDLE;
-		}
-
-		if (secondary_commandpool_thrd2 != VK_NULL_HANDLE)
-		{
-			vkDestroyCommandPool(logicaldevice, secondary_commandpool_thrd2, nullptr);
-			secondary_commandpool_thrd2 = VK_NULL_HANDLE;
 		}
 	}
 }

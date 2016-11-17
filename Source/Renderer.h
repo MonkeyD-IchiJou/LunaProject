@@ -16,7 +16,6 @@ namespace luna
 	class SSBO;
 
 	class DeferredFBO;
-	class FinalFBO;
 	class PresentationFBO;
 
 	class GBufferSubpassShader;
@@ -24,7 +23,6 @@ namespace luna
 	class SkyBoxShader;
 	class CompositeSubpassShader;
 	class FinalPassShader;
-	class SimpleShader;
 	class TextShader;
 
 	class CommandBufferPacket;
@@ -39,11 +37,9 @@ namespace luna
 		/* delete swap chain, fbo, shaders and renderpass, etc */
 		void CleanUpResources() override;
 
-		/* submit all the queues && render everything && then present it on the screen */
-		void Render();
-
 		/* tell the gpu what to render */
-		void RecordBuffers(const FramePacket& framepacket, std::array<Worker*, 2>& workers);
+		/* submit all the queues && render everything && then present it on the screen */
+		void RecordAndRender(const FramePacket& framepacket, std::array<Worker*, 2>& workers);
 
 		/* recreate the swap chain when windows resize */
 		void RecreateSwapChain();
@@ -77,18 +73,18 @@ namespace luna
 		void PreRecord_();
 
 		/* primary command buffer -> deffered shading fbo pass */
-		void RecordOffscreen_Primary_(const VkCommandBuffer commandbuff);
+		void RecordOffscreen_Pri_(const VkCommandBuffer commandbuff);
 
 		/* primary command buffer -> final rendering && presentation pass */
-		void RecordPresentation_Primary_();
+		void RecordPresentation_Pri_();
 
 		/* dynamic secondary command buffers rerecord */
-		void RecordCopyDataToOptimal_Secondary_(const VkCommandBuffer commandbuff);
-		void RecordGBufferSubpass_Secondary_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
-		void RecordLightingSubpass_Secondary_(const VkCommandBuffer commandbuff, const UBOData& camdata);
-		void RecordSkyboxSubpass_Secondary_(const VkCommandBuffer commandbuff);
-		void RecordSecondaryOffscreen_Secondary_(const VkCommandBuffer commandbuff);
-		void RecordUIPass_Secondary_(const VkCommandBuffer commandbuff, const uint32_t & totaltext);
+		void RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff);
+		void RecordGBufferSubpass_Sec_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
+		void RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata);
+		void RecordSkyboxSubpass_Sec_(const VkCommandBuffer commandbuff);
+		void RecordFinalComposition_Sec_(const VkCommandBuffer commandbuff, const int& frameindex);
+		void RecordUIPass_Sec_(const VkCommandBuffer commandbuff, const uint32_t & totaltext, const int& frameindex);
 		
 		Renderer();
 		virtual ~Renderer() {/*do nothing*/}
@@ -99,7 +95,6 @@ namespace luna
 
 		/* fbos for gpu to read/write */
 		DeferredFBO* m_deferred_fbo = nullptr;
-		FinalFBO* m_final_fbo = nullptr;
 		std::vector<PresentationFBO*> m_presentation_fbos;
 
 		/* all the shaders */
@@ -108,13 +103,21 @@ namespace luna
 		SkyBoxShader* m_skybox_shader = nullptr;
 		CompositeSubpassShader* m_composite_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
-		SimpleShader* m_simple_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 
 		/* presentation command buffer recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_presentation_cmdbuffers;
+		VkCommandPool m_sec_commandPool = VK_NULL_HANDLE;
+		std::vector<VkCommandBuffer> m_sec_cmdbuffers;
 		CommandBufferPacket* commandbufferpacket{};
+
+		struct Presentation_Sec_Cmdbuff
+		{
+			VkCommandBuffer CompositionCmdbuff = VK_NULL_HANDLE;
+			VkCommandBuffer UIPassCmdbuff = VK_NULL_HANDLE;
+		};
+		std::vector<Presentation_Sec_Cmdbuff>m_presentation_sec_cmdbuff;
 
 		// semaphores for synchronizing read/write images in gpu 
 		VkSemaphore m_presentComplete = VK_NULL_HANDLE;

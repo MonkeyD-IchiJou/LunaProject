@@ -29,7 +29,6 @@ namespace luna
 		Textures[YOKOHOMO_CUBEMAP_RGBA8] = new VulkanTextureCube(getAssetPath() + "Textures/cubemap_vulkan.ktx");
 		
 		/* attachments images will be auto init by fbos */
-		Textures[LDRTEX_ATTACHMENT_RGBA8] = nullptr;
 		Textures[COLOR0_ATTACHMENT_RGBA32U] = nullptr;
 		Textures[COLOR1_ATTACHMENT_RGBA32F] = nullptr;
 		Textures[COLOR2_ATTACHMENT_RGBA32F] = nullptr;

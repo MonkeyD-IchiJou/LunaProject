@@ -270,9 +270,6 @@
     <ClInclude Include="PresentationFBO.h">
       <Filter>Header Files\Resources\FBOs</Filter>
     </ClInclude>
-    <ClInclude Include="FinalFBO.h">
-      <Filter>Header Files\Resources\FBOs</Filter>
-    </ClInclude>
     <ClInclude Include="SimpleShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
@@ -459,9 +456,6 @@
       <Filter>Source Files\Resources\Scenes\Base</Filter>
     </ClCompile>
     <ClCompile Include="PresentationFBO.cpp">
-      <Filter>Source Files\Resources\FBOs</Filter>
-    </ClCompile>
-    <ClCompile Include="FinalFBO.cpp">
       <Filter>Source Files\Resources\FBOs</Filter>
     </ClCompile>
     <ClCompile Include="SimpleShader.cpp">

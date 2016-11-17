@@ -21,7 +21,6 @@
     <ClInclude Include="CompositeSubpassShader.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="enum_c.h" />
-    <ClInclude Include="FinalFBO.h" />
     <ClInclude Include="FontComponent.h" />
     <ClInclude Include="GausianBlur1DShader.h" />
     <ClInclude Include="DebugLog.h" />
@@ -87,7 +86,6 @@
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="CompositeSubpassShader.cpp" />
     <ClCompile Include="Entity.cpp" />
-    <ClCompile Include="FinalFBO.cpp" />
     <ClCompile Include="FontComponent.cpp" />
     <ClCompile Include="GausianBlur1DShader.cpp" />
     <ClCompile Include="DebugLog.cpp" />
