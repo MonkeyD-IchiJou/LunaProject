@@ -30,7 +30,7 @@ all the source codes, external libraries, assets and android mk files are in the
 
 - Basic UI, Signed Distance Fields Fonts
 
-<img src="./images/vulkanee.png" alt="pic not available" height="256px">
+<img src="./Images/vulkanee.png" alt="pic not available" height="256px">
 
 # Credits
 - SaschaWillems for his wonderful vulkan example https://github.com/SaschaWillems/Vulkan
