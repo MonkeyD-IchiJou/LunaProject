@@ -56,7 +56,7 @@ vec3 calculate_rim(vec3 N, vec3 V)
 }
 
 const vec3 lightdiff = vec3(0.5, 0.5, 0.5);
-const float lightspec = 0.3;
+const float lightspec = 0.4;
 const vec3 lightambient = vec3(0.01, 0.01, 0.01);
 const float lightconstant = 1.0;
 const float lightlinear = 0.22;
@@ -99,7 +99,7 @@ vec4 pointlight_fragment(fragment_info_t fragment)
 }
 
 const float kPi = 3.14159265;
-const float kShininess = 96.0;
+const float kShininess = 120.0;
 
 vec4 dirlight_fragment(fragment_info_t fragment)
 {
@@ -116,8 +116,7 @@ vec4 dirlight_fragment(fragment_info_t fragment)
 	vec3 diffuse = max(dot(fragment.normal, L), 0.0) * 
 					fragment.diffusecolor * lightdiff;
 				
-	const float kEnergyConservation = (8.0 + kShininess) / (8.0 * kPi);
-	float specular = kEnergyConservation * pow(max(dot(fragment.normal, H), 0.0), kShininess) * 
+	float specular = pow(max(dot(fragment.normal, H), 0.0), kShininess) * 
 						fragment.specularcolor * lightspec;
 
 	vec3 rim = vec3(0.0);
