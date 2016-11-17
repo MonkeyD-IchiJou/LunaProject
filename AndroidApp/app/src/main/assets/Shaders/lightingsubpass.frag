@@ -12,8 +12,16 @@ layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
  
 layout(push_constant) uniform PushConst
 {
-	vec3 dirlightpos;
+	vec4 diffusespec;
+	vec4 ambientlight;
+	vec4 dirlightpos;
+	vec4 campos; // campos.w == total pointlight 
 } pushconsts;
+
+// point light range
+const float lightconstant = 1.0;
+const float lightlinear = 0.22;
+const float lightquadratic = 0.20;
 
 struct pointlight
 {
@@ -21,11 +29,11 @@ struct pointlight
 	vec4 color;
 };
 
-// uniform buffer object binding at 4
-layout(set = 0, binding = 4) uniform UniformBufferObject
+// storage buffer object binding at 4
+layout(std430, set = 0, binding = 4) buffer sb
 {
-	pointlight lightinfo[10];
-} ubo_pointlights;
+	pointlight pointlightinfo[];
+};
 
 struct fragment_info_t
 {
@@ -55,12 +63,7 @@ vec3 calculate_rim(vec3 N, vec3 V)
 	return vec3(f);
 }
 
-const vec3 lightdiff = vec3(0.5, 0.5, 0.5);
-const float lightspec = 0.4;
-const vec3 lightambient = vec3(0.01, 0.01, 0.01);
-const float lightconstant = 1.0;
-const float lightlinear = 0.22;
-const float lightquadratic = 0.20;
+const float kShininess = 120.0;
 
 vec4 pointlight_fragment(fragment_info_t fragment)
 {
@@ -75,10 +78,10 @@ vec4 pointlight_fragment(fragment_info_t fragment)
 	vec3 V = vec3(0.0);
 	int i = 0;
 	
-	for(i = 0; i < 10; ++i)
+	for(i = 0; i < pushconsts.campos.w; ++i)
 	{
-		lightpos = ubo_pointlights.lightinfo[i].position.xyz;
-		lightcolor = ubo_pointlights.lightinfo[i].color.xyz;
+		lightpos = pointlightinfo[i].position.xyz;
+		lightcolor = pointlightinfo[i].color.xyz;
 		V = lightpos - fragment.wspos;
 		
 		// Attenuation
@@ -86,7 +89,7 @@ vec4 pointlight_fragment(fragment_info_t fragment)
 		attenuation = 1.0 / (lightconstant + lightlinear * distance + lightquadratic * (distance * distance));
 		
 		// ambient
-		ambient = lightambient * attenuation;
+		ambient = vec3(0.01, 0.01, 0.01) * attenuation;
 		
 		// Diffuse
 		diffuse = max(dot(norm, normalize(V)), 0.0) * 
@@ -98,13 +101,10 @@ vec4 pointlight_fragment(fragment_info_t fragment)
 	return vec4(finaloutput, 1.0);
 }
 
-const float kPi = 3.14159265;
-const float kShininess = 120.0;
-
 vec4 dirlight_fragment(fragment_info_t fragment)
 {
 	// calculate view-space light vector
-	vec3 L = normalize(pushconsts.dirlightpos - fragment.viewpos);
+	vec3 L = normalize(pushconsts.dirlightpos.xyz - fragment.viewpos);
 	
 	// calculate the view vector
 	vec3 V = normalize(-fragment.viewpos);
@@ -114,19 +114,19 @@ vec4 dirlight_fragment(fragment_info_t fragment)
 
 	// Calculate the diffuse and specular contributions
 	vec3 diffuse = max(dot(fragment.normal, L), 0.0) * 
-					fragment.diffusecolor * lightdiff;
+					fragment.diffusecolor * pushconsts.diffusespec.xyz;
 				
 	float specular = pow(max(dot(fragment.normal, H), 0.0), kShininess) * 
-						fragment.specularcolor * lightspec;
+						fragment.specularcolor * pushconsts.diffusespec.w;
 
 	vec3 rim = vec3(0.0);
 	if(fragment.materialID == 0)
 	{
-		rim = calculate_rim(fragment.normal, V) * lightdiff;
+		rim = calculate_rim(fragment.normal, V) * pushconsts.diffusespec.xyz;
 	}
 	
 	// output the final color
-	vec3 ambient = lightambient;
+	vec3 ambient = pushconsts.ambientlight.xyz;
 	return vec4(rim + ambient + diffuse + specular, 1.0);
 }
 

@@ -24,7 +24,7 @@ void main()
 	vec3 hdrc = texture(hdrColor, inUV).rgb;
 	
 	 // Exposure tone mapping
-    vec3 mapped = vec3(1.0) - exp(-hdrc * 1.15); // at night is 0.5 .. else 1.75
+    vec3 mapped = vec3(1.0) - exp(-hdrc * 1.0); // at night is 0.5 .. else 1.75
 
 	// tone mapping filmic stlye
 	vec3 result = ToneMapFilmic_Hejl2015(mapped, 1.5);
