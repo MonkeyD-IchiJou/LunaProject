@@ -62,7 +62,7 @@ namespace luna
 
 			// ubo and ssbo that are unique to this renderer
 			m_ubo = new UBO(sizeof(UBOData));
-			m_ubopointlights = new UBO(sizeof(UBOPointLightData) * 10); // max 10 point lights
+			m_pointlights_ssbo = new SSBO(64 * sizeof(PointLightData)); // 64 point lights reserve
 			m_instance_ssbo = new SSBO(MAX_INSTANCEDATA * sizeof(InstanceData)); // 100 different models reserve
 			m_fontinstance_ssbo = new SSBO(MAX_FONTDATA * sizeof(FontInstanceData)); // 256 different characters reserve
 
@@ -138,7 +138,7 @@ namespace luna
 			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32F],
 			texrsc->Textures[eTEXTURES::COLOR2_ATTACHMENT_RGBA32F],
 			texrsc->Textures[eTEXTURES::COLOR3_ATTACHMENT_RGBA16F],
-			m_ubopointlights
+			m_pointlights_ssbo
 		);
 		m_lightsubpass_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_LIGHTING);
 
@@ -222,6 +222,147 @@ namespace luna
 		commandbufferpacket = new CommandBufferPacket(m_queuefamily_index.graphicsFamily, m_logicaldevice);
 	}
 
+	void Renderer::PreRecord_()
+	{
+		// dummy record secondary buffers
+		FramePacket temp{};
+		std::vector<RenderingInfo> renderinfos;
+
+		RecordCopyDataToOptimal_Sec_(commandbufferpacket->transferdata_secondary_cmdbuff);
+
+		// record the command buffers and update the staging buffers
+		RecordGBufferSubpass_Sec_(
+			commandbufferpacket->gbuffer_secondary_cmdbuff, 
+			renderinfos
+		);
+
+		RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.maincamdata, temp.dirlightdata, 0.f);
+
+		RecordSkyboxSubpass_Sec_(commandbufferpacket->skybox_secondary_cmdbuff);
+
+		for (int i = 0; i < m_presentation_cmdbuffers.size(); ++i)
+		{
+			RecordFinalComposition_Sec_(m_presentation_sec_cmdbuff[i].CompositionCmdbuff, i);
+
+			RecordUIPass_Sec_(
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff,
+				0,
+				i
+			);
+		}
+
+		// primary command buffers, record once and for all
+		RecordOffscreen_Pri_(commandbufferpacket->offscreen_cmdbuffer);
+		RecordPresentation_Pri_();
+
+		auto& submitinfo0 = m_submitInfo[0];
+		submitinfo0.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitinfo0.commandBufferCount = 1;
+		submitinfo0.signalSemaphoreCount = 1;
+		submitinfo0.waitSemaphoreCount = 1;
+		submitinfo0.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitinfo0.pWaitSemaphores = &m_presentComplete; 
+		submitinfo0.pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
+		submitinfo0.pCommandBuffers = &commandbufferpacket->offscreen_cmdbuffer;
+
+		auto& submitinfo1 = m_submitInfo[1];
+		submitinfo1.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitinfo1.commandBufferCount = 1;
+		submitinfo1.signalSemaphoreCount = 1;
+		submitinfo1.waitSemaphoreCount = 1;
+		submitinfo1.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
+		submitinfo1.pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
+		submitinfo1.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
+	}
+
+	void Renderer::RecordOffscreen_Pri_(const VkCommandBuffer commandbuff)
+	{
+		// begin init
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		// start recording the offscreen command buffers
+		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
+
+		// transfer data to gpu first
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->transferdata_secondary_cmdbuff);
+
+		// bind the fbo
+		m_deferred_fbo->Bind(commandbuff, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		// execute the gbuffer pass
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->gbuffer_secondary_cmdbuff);
+		
+		// next subpass for lighting calculation
+		vkCmdNextSubpass(
+			commandbuff, 
+			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+		);
+
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->lightingsubpass_secondary_cmdbuff);
+
+		// next subpass for non-lighting calculation
+		vkCmdNextSubpass(
+			commandbuff, 
+			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+		);
+
+		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->skybox_secondary_cmdbuff);
+
+		// next subpass for composition calculation
+		vkCmdNextSubpass(
+			commandbuff, 
+			VK_SUBPASS_CONTENTS_INLINE
+		);
+
+		m_composite_shader->Bind(commandbuff);
+		m_composite_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+
+		// unbind the fbo
+		m_deferred_fbo->UnBind(commandbuff);
+
+		// finish recording
+		DebugLog::EC(vkEndCommandBuffer(commandbuff));
+	}
+
+	void Renderer::RecordPresentation_Pri_()
+	{	
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		// can record the command buffer liao
+		// these command buffer is for the final rendering and final presentation on the screen 
+		for (size_t i = 0; i < m_presentation_cmdbuffers.size(); ++i)
+		{
+			const VkCommandBuffer& commandbuffer = m_presentation_cmdbuffers[i];
+			PresentationFBO* presentfbo = m_presentation_fbos[i];
+
+			vkBeginCommandBuffer(commandbuffer, &beginInfo);
+
+			// starting a render pass 
+			// bind the fbo
+			presentfbo->Bind(commandbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+			// execute the secondary command buffers
+			VkCommandBuffer secondarycommandbuffer[] = { 
+				m_presentation_sec_cmdbuff[i].CompositionCmdbuff,
+				m_presentation_sec_cmdbuff[i].UIPassCmdbuff
+			};
+			vkCmdExecuteCommands(commandbuffer, 2, secondarycommandbuffer);
+
+			// unbind the fbo
+			presentfbo->UnBind(commandbuffer);
+
+			// finish recording
+			DebugLog::EC(vkEndCommandBuffer(commandbuffer));
+		}
+	}
+
 	void Renderer::RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff)
 	{
 		// NOTE: I need to rerecord this command buffer if the transfer size exceed the expectation size !!
@@ -240,7 +381,7 @@ namespace luna
 		m_instance_ssbo->Record(commandbuff);
 		m_fontinstance_ssbo->Record(commandbuff);
 		m_ubo->Record(commandbuff);
-		m_ubopointlights->Record(commandbuff);
+		m_pointlights_ssbo->Record(commandbuff);
 
 		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
@@ -299,7 +440,7 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata)
+	void Renderer::RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata, const MainDirLightData& dirlightdata, const float& totalpointlights)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
@@ -322,7 +463,10 @@ namespace luna
 		// bind the dirlight pass shader
 		m_lightsubpass_shader->Bind(commandbuff);
 		m_lightsubpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		m_lightsubpass_shader->LoadDirLightPos(commandbuff, glm::mat3(camdata.view) * glm::vec3(-100.f, 100.f, -100.f)); // dir light pos must be in view space
+
+		MainDirLightData tempdata = dirlightdata;
+		tempdata.dirlightpos = camdata.view * dirlightdata.dirlightpos; // dir light pos must be in view space
+		m_lightsubpass_shader->LoadPushConstantDatas(commandbuff, tempdata, glm::vec4(0.f, 0.f, 0.f, totalpointlights));
 		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		vkEndCommandBuffer(commandbuff);
@@ -418,147 +562,6 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::PreRecord_()
-	{
-		// dummy record secondary buffers
-		FramePacket temp{};
-		std::vector<RenderingInfo> renderinfos;
-
-		RecordCopyDataToOptimal_Sec_(commandbufferpacket->transferdata_secondary_cmdbuff);
-
-		// record the command buffers and update the staging buffers
-		RecordGBufferSubpass_Sec_(
-			commandbufferpacket->gbuffer_secondary_cmdbuff, 
-			renderinfos
-		);
-
-		RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.maincamdata);
-
-		RecordSkyboxSubpass_Sec_(commandbufferpacket->skybox_secondary_cmdbuff);
-
-		for (int i = 0; i < m_presentation_cmdbuffers.size(); ++i)
-		{
-			RecordFinalComposition_Sec_(m_presentation_sec_cmdbuff[i].CompositionCmdbuff, i);
-
-			RecordUIPass_Sec_(
-				m_presentation_sec_cmdbuff[i].UIPassCmdbuff,
-				0,
-				i
-			);
-		}
-
-		// primary command buffers, record once and for all
-		RecordOffscreen_Pri_(commandbufferpacket->offscreen_cmdbuffer);
-		RecordPresentation_Pri_();
-
-		auto& submitinfo0 = m_submitInfo[0];
-		submitinfo0.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitinfo0.commandBufferCount = 1;
-		submitinfo0.signalSemaphoreCount = 1;
-		submitinfo0.waitSemaphoreCount = 1;
-		submitinfo0.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-		submitinfo0.pWaitSemaphores = &m_presentComplete; 
-		submitinfo0.pSignalSemaphores = &m_offscreen_renderComplete; // will inform the next one, when i render finish
-		submitinfo0.pCommandBuffers = &commandbufferpacket->offscreen_cmdbuffer;
-
-		auto& submitinfo1 = m_submitInfo[1];
-		submitinfo1.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitinfo1.commandBufferCount = 1;
-		submitinfo1.signalSemaphoreCount = 1;
-		submitinfo1.waitSemaphoreCount = 1;
-		submitinfo1.pWaitDstStageMask = &m_waitStages[0]; // wait until draw finish
-		submitinfo1.pWaitSemaphores = &m_offscreen_renderComplete; // wait for someone render finish
-		submitinfo1.pSignalSemaphores = &m_presentpass_renderComplete; // will tell the swap chain to present, when i render finish
-	}
-
-	void luna::Renderer::RecordOffscreen_Pri_(const VkCommandBuffer commandbuff)
-	{
-		// begin init
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		// start recording the offscreen command buffers
-		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
-
-		// transfer data to gpu first
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->transferdata_secondary_cmdbuff);
-
-		// bind the fbo
-		m_deferred_fbo->Bind(commandbuff, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-		// execute the gbuffer pass
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->gbuffer_secondary_cmdbuff);
-		
-		// next subpass for lighting calculation
-		vkCmdNextSubpass(
-			commandbuff, 
-			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-		);
-
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->lightingsubpass_secondary_cmdbuff);
-
-		// next subpass for non-lighting calculation
-		vkCmdNextSubpass(
-			commandbuff, 
-			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-		);
-
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->skybox_secondary_cmdbuff);
-
-		// next subpass for composition calculation
-		vkCmdNextSubpass(
-			commandbuff, 
-			VK_SUBPASS_CONTENTS_INLINE
-		);
-
-		m_composite_shader->Bind(commandbuff);
-		m_composite_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
-
-		// unbind the fbo
-		m_deferred_fbo->UnBind(commandbuff);
-
-		// finish recording
-		DebugLog::EC(vkEndCommandBuffer(commandbuff));
-	}
-
-	void luna::Renderer::RecordPresentation_Pri_()
-	{	
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		// can record the command buffer liao
-		// these command buffer is for the final rendering and final presentation on the screen 
-		for (size_t i = 0; i < m_presentation_cmdbuffers.size(); ++i)
-		{
-			const VkCommandBuffer& commandbuffer = m_presentation_cmdbuffers[i];
-			PresentationFBO* presentfbo = m_presentation_fbos[i];
-
-			vkBeginCommandBuffer(commandbuffer, &beginInfo);
-
-			// starting a render pass 
-			// bind the fbo
-			presentfbo->Bind(commandbuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-			// execute the secondary command buffers
-			VkCommandBuffer secondarycommandbuffer[] = { 
-				m_presentation_sec_cmdbuff[i].CompositionCmdbuff,
-				m_presentation_sec_cmdbuff[i].UIPassCmdbuff
-			};
-			vkCmdExecuteCommands(commandbuffer, 2, secondarycommandbuffer);
-
-			// unbind the fbo
-			presentfbo->UnBind(commandbuffer);
-
-			// finish recording
-			DebugLog::EC(vkEndCommandBuffer(commandbuffer));
-		}
-	}
-
 	void Renderer::RecordAndRender(const FramePacket & framepacket, std::array<Worker*, 2>& workers)
 	{
 		// get the available image to render with
@@ -578,7 +581,7 @@ namespace luna
 			m_instance_ssbo->Update(framepacket.instancedatas);
 			m_fontinstance_ssbo->Update(framepacket.fontinstancedatas);
 			m_ubo->Update(framepacket.maincamdata);
-			m_ubopointlights->Update(framepacket.pointlightsdatas);
+			m_pointlights_ssbo->Update(framepacket.pointlightsdatas);
 
 			RecordUIPass_Sec_(
 				m_presentation_sec_cmdbuff[imageindex].UIPassCmdbuff,
@@ -586,7 +589,8 @@ namespace luna
 				imageindex
 			);
 
-			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.maincamdata);
+			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.maincamdata, 
+				framepacket.dirlightdata, static_cast<float>(framepacket.pointlightsdatas.size()));
 		});
 
 		// let all workers finish their job pls
@@ -720,10 +724,10 @@ namespace luna
 			m_ubo = nullptr;
 		}
 
-		if (m_ubopointlights != nullptr)
+		if (m_pointlights_ssbo != nullptr)
 		{
-			delete m_ubopointlights;
-			m_ubopointlights = nullptr;
+			delete m_pointlights_ssbo;
+			m_pointlights_ssbo = nullptr;
 		}
 
 		if (m_instance_ssbo != nullptr)

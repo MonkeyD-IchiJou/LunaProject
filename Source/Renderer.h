@@ -81,7 +81,7 @@ namespace luna
 		/* dynamic secondary command buffers rerecord */
 		void RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff);
 		void RecordGBufferSubpass_Sec_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
-		void RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata);
+		void RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata, const MainDirLightData& dirlightdata, const float& totalpointlights);
 		void RecordSkyboxSubpass_Sec_(const VkCommandBuffer commandbuff);
 		void RecordFinalComposition_Sec_(const VkCommandBuffer commandbuff, const int& frameindex);
 		void RecordUIPass_Sec_(const VkCommandBuffer commandbuff, const uint32_t & totaltext, const int& frameindex);
@@ -105,7 +105,7 @@ namespace luna
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 
-		/* presentation command buffer recording purpose */
+		/* command buffers recording purpose */
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_presentation_cmdbuffers;
 		VkCommandPool m_sec_commandPool = VK_NULL_HANDLE;
@@ -127,8 +127,8 @@ namespace luna
 		/* a universal UBO */
 		UBO* m_ubo = nullptr;
 
-		/* a point light ubo */
-		UBO* m_ubopointlights = nullptr;
+		/* a point light ssbo */
+		SSBO* m_pointlights_ssbo = nullptr;
 
 		/* ssbo for instancing data */
 		SSBO* m_instance_ssbo = nullptr;

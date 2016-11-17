@@ -4,11 +4,12 @@
 #include "ShaderProgram.h"
 #include "DescriptorTool.h"
 #include <glm/glm.hpp>
+#include "FramePacket.h"
 
 namespace luna
 {
 	class VulkanImageBufferObject;
-	class UBO;
+	class SSBO;
 
 	class LightingSubpassShader :
 		public ShaderProgram
@@ -26,10 +27,10 @@ namespace luna
 			const VulkanImageBufferObject* color1,
 			const VulkanImageBufferObject* color2,
 			const VulkanImageBufferObject* color3,
-			const UBO* ubo_pointlights
+			const SSBO* pointlights_ssbo
 		);
 
-		void LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3& pos);
+		void LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& maincampos);
 
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool& fixedpipeline) override;

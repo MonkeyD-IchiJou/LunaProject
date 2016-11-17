@@ -239,17 +239,20 @@ namespace luna
 
 	void WinNative::setWinDrawingSurfaceSize(const uint32_t & valx, const uint32_t & valy)
 	{
-		if (m_win_surfacesize_x == 0 || m_win_surfacesize_y == 0)
+		if (valx > 0 && valy > 0)
 		{
-			m_win_surfacesize_x = valx;
-			m_win_surfacesize_y = valy;
-		}
-		else
-		{
-			m_win_surfacesize_x = valx;
-			m_win_surfacesize_y = valy;
+			if (m_win_surfacesize_x == 0 || m_win_surfacesize_y == 0)
+			{
+				m_win_surfacesize_x = valx;
+				m_win_surfacesize_y = valy;
+			}
+			else
+			{
+				m_win_surfacesize_x = valx;
+				m_win_surfacesize_y = valy;
 
-			m_gamemanager->OnWindowSizeChange(valx, valy);
+				m_gamemanager->OnWindowSizeChange(valx, valy);
+			}
 		}
 	}
 

@@ -1,6 +1,5 @@
 #include "SceneDefault.h"
 #include "ComponentManager.h"
-#include "WinNative.h"
 
 #include "RotateScript.h"
 #include "TextChangeScript.h"
@@ -29,16 +28,19 @@ namespace luna
 
 		// every time when new entity is allocated with basicmesh to render, must renew the renderdatas again
 		// every frame gather all the transformation info for the mesh
+
+		// first worker
 		workers[0]->addJob([&]() {
 			framepacket.renderinfos = &m_renderinfos;
 			GetInstanceData_(framepacket.instancedatas, m_renderinfos);
 		});
 		
-		// gather font data
+		// second worker 
 		workers[1]->addJob([&]() {
 			m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
 			m_componentmanager->GetMainCamData(framepacket.maincamdata);
-			pointlightpos_(framepacket.pointlightsdatas);
+			m_componentmanager->GetMainDirLightData(framepacket.dirlightdata);
+			m_componentmanager->GetPointLightsData(framepacket.pointlightsdatas);
 		});
 
 		// make sure the two workers have finish all their prev jobs
@@ -162,7 +164,7 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("font", m_componentmanager);
-			entity->transformation->position = glm::vec3(5.f, WinNative::getInstance()->getWinSurfaceSizeY(), 0.f);
+			entity->transformation->position = glm::vec3(5.f, 0.f, 0.f);
 			entity->transformation->scale = glm::vec3(400.f, 400.f, 1.f);
 			FontComponent* fontc = dynamic_cast<FontComponent*>(entity->AddComponent(COMPONENT_ATYPE::FONT_ACTYPE));
 			fontc->material.fontID = FONT_EVA;
@@ -191,6 +193,32 @@ namespace luna
 			m_availableEntities.push_back(entity);
 		}
 
+		{
+			Entity* entity = GetAvailableEntity_();
+			entity->Awake("dirlight", m_componentmanager);
+			entity->transformation->position = glm::vec3(-100.f, -100.f, -100.f);
+			DirLightComponent* dirlightc = dynamic_cast<DirLightComponent*>(entity->AddComponent(COMPONENT_ATYPE::DIRLIGHT_ACTYPE));
+			dirlightc->diffuse = glm::vec3( 0.5f, 0.5f, 0.5f);
+			dirlightc->ambient = glm::vec3(0.01f, 0.01f, 0.01f);
+			dirlightc->specular = 0.5f;
+			m_availableEntities.push_back(entity);
+		}
+
+		// all point lights below
+		for(int i = 0; i < 15; ++i)
+		{
+			Entity* entity = GetAvailableEntity_();
+			entity->Awake("pointlight", m_componentmanager);
+			entity->transformation->position = glm::vec3(7.5f, -5.f + i, -5.5f + i);
+			PointLightComponent* pointlightc = dynamic_cast<PointLightComponent*>(entity->AddComponent(COMPONENT_ATYPE::POINTLIGHT_ACTYPE));
+			pointlightc->color = glm::vec3(0.5f, 0.5f, 0.5f);
+			BasicMeshComponent* basicmeshc = dynamic_cast<BasicMeshComponent*>(entity->AddComponent(COMPONENT_ATYPE::BASICMESH_ACTYPE));
+			basicmeshc->meshID = eMODELS::CUBE_MODEL;
+			basicmeshc->material.color = glm::vec4(pointlightc->color, 0.f);
+			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
+			m_availableEntities.push_back(entity);
+		}
+
 		// if have new entities with mesh info, need to renew this again
 		m_componentmanager->GetRenderingData(m_renderinfos);
 	}
@@ -198,48 +226,5 @@ namespace luna
 	void SceneDefault::DeInit_()
 	{
 		
-	}
-
-	void SceneDefault::pointlightpos_(std::array<UBOPointLightData, 10>& pointlightsdatas)
-	{
-		auto * pl = &pointlightsdatas[0];
-		pl->position = glm::vec4(7.5f, -5.f, 5.5f, 0.f);
-		pl->color = glm::vec4(1.0f, 0.2f, 0.2f, 0.f);
-
-		pl = &pointlightsdatas[1];
-		pl->position = glm::vec4(-7.5f, 5.f, 6.5f, 0.f);
-		pl->color = glm::vec4(0.2f, 1.0f, 0.2f, 0.f);
-
-		pl = &pointlightsdatas[2];
-		pl->position = glm::vec4(-2.5f, 0.f, -5.5f, 0.f);
-		pl->color = glm::vec4(0.2f, 0.2f, 1.0f, 0.f);
-
-		pl = &pointlightsdatas[3];
-		pl->position = glm::vec4(-7.5f, 5.f, -5.5f, 0.f);
-		pl->color = glm::vec4(1.0f, 0.2f, 0.5f, 0.f);
-
-		pl = &pointlightsdatas[4];
-		pl->position = glm::vec4(7.5f, 7.f, 7.5f, 0.f);
-		pl->color = glm::vec4(0.2f, 1.0f, 0.5f, 0.f);
-
-		pl = &pointlightsdatas[5];
-		pl->position = glm::vec4(0.5f, 3.f, 8.5f, 0.f);
-		pl->color = glm::vec4(0.25f, 0.25f, 1.0f, 0.f);
-
-		pl = &pointlightsdatas[6];
-		pl->position = glm::vec4(7.5f, 5.f, -7.5f, 0.f);
-		pl->color = glm::vec4(1.f, 0.75f, 0.2f, 0.f);
-
-		pl = &pointlightsdatas[7];
-		pl->position = glm::vec4(0.5f, -8.f, -1.5f, 0.f);
-		pl->color = glm::vec4(0.2f, 1.0f, 0.75f, 0.f);
-
-		pl = &pointlightsdatas[8];
-		pl->position = glm::vec4(-5.5f, -8.f, 2.5f, 0.f);
-		pl->color = glm::vec4(0.7f, 0.25f, 1.0f, 0.f);
-
-		pl = &pointlightsdatas[9];
-		pl->position = glm::vec4(-5.5f, -8.f, -2.5f, 0.f);
-		pl->color = glm::vec4(0.8f, 0.7f, 0.25f, 0.f);
 	}
 }

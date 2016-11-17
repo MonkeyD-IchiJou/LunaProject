@@ -2,7 +2,7 @@
 #include "DebugLog.h"
 #include "VulkanImageBufferObject.h"
 #include "Vertex.h"
-#include "UBO.h"
+#include "SSBO.h"
 
 namespace luna
 {
@@ -28,9 +28,12 @@ namespace luna
 		);
 	}
 
-	void LightingSubpassShader::LoadDirLightPos(const VkCommandBuffer& commandbuffer, const glm::vec3 & pos)
+	void LightingSubpassShader::LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& maincampos)
 	{
-		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pos), &pos);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::vec4), &dirlightdata.diffusespec);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4), sizeof(glm::vec4), &dirlightdata.ambientlight);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4) * 2, sizeof(glm::vec4), &dirlightdata.dirlightpos);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4) * 3, sizeof(glm::vec4), &maincampos);
 	}
 
 	void LightingSubpassShader::SetDescriptors(
@@ -38,7 +41,7 @@ namespace luna
 		const VulkanImageBufferObject* color1, 
 		const VulkanImageBufferObject* color2,
 		const VulkanImageBufferObject* color3,
-		const UBO* ubo_pointlights)
+		const SSBO* pointlights_ssbo)
 	{
 		// 5 kind of descriptors to send to
 		// set up the layout for the shaders 
@@ -71,7 +74,7 @@ namespace luna
 
 		layoutinfo[4].binding = 4;
 		layoutinfo[4].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutinfo[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		layoutinfo[4].typeflags = 0; // a buffer
 
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
@@ -83,7 +86,7 @@ namespace luna
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		poolSizes[0].descriptorCount = 4; // 4 input attachments
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		poolSizes[1].descriptorCount = 1;
 
 		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 2, poolSizes.data(), totalsets);
@@ -107,10 +110,10 @@ namespace luna
 		color3info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		color3info.imageView = color3->getImageView();
 		color3info.sampler = color3->getSampler();
-		VkDescriptorBufferInfo uboinfo{};
-		uboinfo.buffer = ubo_pointlights->getMainBuffer().buffer;
-		uboinfo.offset = 0;
-		uboinfo.range = ubo_pointlights->getUboTotalSize();
+		VkDescriptorBufferInfo ssboinfo{};
+		ssboinfo.buffer = pointlights_ssbo->getMainBuffer().buffer;
+		ssboinfo.offset = 0;
+		ssboinfo.range = pointlights_ssbo->getSSBOTotalSize();
 
 		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
 		firstdescriptorset[0].layoutinfo = layoutinfo[0];
@@ -122,7 +125,7 @@ namespace luna
 		firstdescriptorset[3].layoutinfo = layoutinfo[3];
 		firstdescriptorset[3].imageinfo = color3info;
 		firstdescriptorset[4].layoutinfo = layoutinfo[4];
-		firstdescriptorset[4].bufferinfo = uboinfo;
+		firstdescriptorset[4].bufferinfo = ssboinfo;
 
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
@@ -207,7 +210,7 @@ namespace luna
 		VkPushConstantRange pushconstant{};
 		pushconstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushconstant.offset = 0;
-		pushconstant.size = sizeof(glm::vec3);
+		pushconstant.size = sizeof(glm::vec4) * 4;
 
 		std::vector<VkDescriptorSetLayout> setlayouts;
 		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());

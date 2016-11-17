@@ -14,7 +14,6 @@ namespace luna
 
 		// update the ubodata into device memory
 		void Update(const UBOData& ubodata);
-		void Update(const std::array<UBOPointLightData, 10> &ubodata);
 		
 		inline VkDeviceSize getUboTotalSize() const { return m_uboTotalSize; }
 		inline VulkanBufferData getMainBuffer() const { return m_main_buffer; }

@@ -270,9 +270,6 @@
     <ClInclude Include="PresentationFBO.h">
       <Filter>Header Files\Resources\FBOs</Filter>
     </ClInclude>
-    <ClInclude Include="SimpleShader.h">
-      <Filter>Header Files\Resources\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="CameraComponent.h">
       <Filter>Header Files\Resources\Components</Filter>
     </ClInclude>
@@ -332,6 +329,12 @@
     </ClInclude>
     <ClInclude Include="CompositeSubpassShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="DirLightComponent.h">
+      <Filter>Header Files\Resources\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLightComponent.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -458,9 +461,6 @@
     <ClCompile Include="PresentationFBO.cpp">
       <Filter>Source Files\Resources\FBOs</Filter>
     </ClCompile>
-    <ClCompile Include="SimpleShader.cpp">
-      <Filter>Source Files\Resources\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="CameraComponent.cpp">
       <Filter>Source Files\Resources\Components</Filter>
     </ClCompile>
@@ -520,6 +520,12 @@
     </ClCompile>
     <ClCompile Include="CompositeSubpassShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="DirLightComponent.cpp">
+      <Filter>Source Files\Resources\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLightComponent.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -25,93 +25,93 @@ namespace luna
 
 	void VulkanSwapchain::RecreateSwapChain()
 	{
-		/* check for surface available or not */
-		if (m_surface == VK_NULL_HANDLE)
-		{
-			DebugLog::throwEx("surface not avalable for swap chain");
-			return;
-		}
-
-		/* get the surface capabilities and adjust the width and height */
-		VkSurfaceCapabilitiesKHR surface_capabilities{};
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_gpu, m_surface, &surface_capabilities);
-
-		// If width (and height) equals the special value 0xFFFFFFFF, the size of the surface will be set by the swapchain
-		if (surface_capabilities.currentExtent.width == (uint32_t)-1)
-		{
-			// If the surface size is undefined, the size is set to
-			// the size of the images requested.
-			m_swapchainExtent.width = WinNative::getInstance()->getWinSurfaceSizeX();
-			m_swapchainExtent.height = WinNative::getInstance()->getWinSurfaceSizeY();
-		}
-		else
-		{
-			// If the surface size is defined, the swap chain size must match
-			m_swapchainExtent = surface_capabilities.currentExtent;
-
-			WinNative::getInstance()->setWinDrawingSurfaceSizeX(m_swapchainExtent.width);
-			WinNative::getInstance()->setWinDrawingSurfaceSizeY(m_swapchainExtent.height);
-
-			DebugLog::printF("\n x: %u, y: %u", m_swapchainExtent.width, m_swapchainExtent.height);
-		}
-
-		/* get all the available present mode */
-		uint32_t presentModeCount = 0;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(m_gpu, m_surface, &presentModeCount, nullptr);
-		std::vector<VkPresentModeKHR> m_presentmode_list(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(m_gpu, m_surface, &presentModeCount, m_presentmode_list.data());
-		// default present mode is FIFO
-		VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; 
-
-#if VK_USE_PLATFORM_WIN32_KHR
-		// find the best present mode --> MAILBOX 
-		for (auto i : m_presentmode_list)
-		{
-			if (i == VK_PRESENT_MODE_MAILBOX_KHR)
-				presentMode = i;
-		}
-#endif
-
-		// Find the transformation of the surface
-		VkSurfaceTransformFlagsKHR preTransform;
-		if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-		{
-			// We prefer a non-rotated transform
-			preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-		}
-		else
-		{
-			preTransform = surface_capabilities.currentTransform;
-		}
-
-		/* swap chain creation start */
-		VkSwapchainKHR newSwapChain = VK_NULL_HANDLE;
-
-		VkSwapchainCreateInfoKHR swapchain_create_info{};
-		swapchain_create_info.sType	= VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		swapchain_create_info.surface = m_surface;
-		swapchain_create_info.minImageCount = m_imagecount;
-		swapchain_create_info.imageFormat = m_colorformat;
-		swapchain_create_info.imageColorSpace = m_colorspace;
-		swapchain_create_info.imageExtent = m_swapchainExtent;
-		swapchain_create_info.imageArrayLayers = 1; // how many layer does the images have (vr need 2)
-		swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		swapchain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		swapchain_create_info.queueFamilyIndexCount	= 0;
-		swapchain_create_info.pQueueFamilyIndices = nullptr;
-		swapchain_create_info.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
-		swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		swapchain_create_info.presentMode = presentMode;
-		swapchain_create_info.clipped = VK_TRUE;
-		swapchain_create_info.oldSwapchain = m_swapchain; // useful when resizing the windows
-
-		DebugLog::EC(vkCreateSwapchainKHR(m_logicalDevice, &swapchain_create_info, nullptr, &newSwapChain));
-
-		// If an existing sawp chain is re-created, destroy the old swap chain
-		// This also cleans up all the presentable images
-		// prevent memory leak 
 		if (m_swapchain != VK_NULL_HANDLE)
 		{
+			/* check for surface available or not */
+			if (m_surface == VK_NULL_HANDLE)
+			{
+				DebugLog::throwEx("surface not avalable for swap chain");
+				return;
+			}
+
+			/* get the surface capabilities and adjust the width and height */
+			VkSurfaceCapabilitiesKHR surface_capabilities{};
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_gpu, m_surface, &surface_capabilities);
+
+			// If width (and height) equals the special value 0xFFFFFFFF, the size of the surface will be set by the swapchain
+			if (surface_capabilities.currentExtent.width == (uint32_t)-1)
+			{
+				// If the surface size is undefined, the size is set to
+				// the size of the images requested.
+				m_swapchainExtent.width = WinNative::getInstance()->getWinSurfaceSizeX();
+				m_swapchainExtent.height = WinNative::getInstance()->getWinSurfaceSizeY();
+			}
+			else
+			{
+				// If the surface size is defined, the swap chain size must match
+				m_swapchainExtent = surface_capabilities.currentExtent;
+
+				WinNative::getInstance()->setWinDrawingSurfaceSizeX(m_swapchainExtent.width);
+				WinNative::getInstance()->setWinDrawingSurfaceSizeY(m_swapchainExtent.height);
+
+				DebugLog::printF("\n x: %u, y: %u", m_swapchainExtent.width, m_swapchainExtent.height);
+			}
+
+			/* get all the available present mode */
+			uint32_t presentModeCount = 0;
+			vkGetPhysicalDeviceSurfacePresentModesKHR(m_gpu, m_surface, &presentModeCount, nullptr);
+			std::vector<VkPresentModeKHR> m_presentmode_list(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(m_gpu, m_surface, &presentModeCount, m_presentmode_list.data());
+			// default present mode is FIFO
+			VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+#if VK_USE_PLATFORM_WIN32_KHR
+			// find the best present mode --> MAILBOX 
+			for (auto i : m_presentmode_list)
+			{
+				if (i == VK_PRESENT_MODE_MAILBOX_KHR)
+					presentMode = i;
+			}
+#endif
+
+			// Find the transformation of the surface
+			VkSurfaceTransformFlagsKHR preTransform;
+			if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+			{
+				// We prefer a non-rotated transform
+				preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+			}
+			else
+			{
+				preTransform = surface_capabilities.currentTransform;
+			}
+
+			/* swap chain creation start */
+			VkSwapchainKHR newSwapChain = VK_NULL_HANDLE;
+
+			VkSwapchainCreateInfoKHR swapchain_create_info{};
+			swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+			swapchain_create_info.surface = m_surface;
+			swapchain_create_info.minImageCount = m_imagecount;
+			swapchain_create_info.imageFormat = m_colorformat;
+			swapchain_create_info.imageColorSpace = m_colorspace;
+			swapchain_create_info.imageExtent = m_swapchainExtent;
+			swapchain_create_info.imageArrayLayers = 1; // how many layer does the images have (vr need 2)
+			swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			swapchain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			swapchain_create_info.queueFamilyIndexCount = 0;
+			swapchain_create_info.pQueueFamilyIndices = nullptr;
+			swapchain_create_info.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+			swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+			swapchain_create_info.presentMode = presentMode;
+			swapchain_create_info.clipped = VK_TRUE;
+			swapchain_create_info.oldSwapchain = m_swapchain; // useful when resizing the windows
+
+			DebugLog::EC(vkCreateSwapchainKHR(m_logicalDevice, &swapchain_create_info, nullptr, &newSwapChain));
+
+			// If an existing sawp chain is re-created, destroy the old swap chain
+			// This also cleans up all the presentable images
+			// prevent memory leak
 			for (uint32_t i = 0; i < m_imagecount; i++)
 			{
 				vkDestroyImageView(m_logicalDevice, m_buffers[i].imageview, nullptr);
@@ -121,38 +121,38 @@ namespace luna
 
 			vkDestroySwapchainKHR(m_logicalDevice, m_swapchain, nullptr);
 			m_swapchain = VK_NULL_HANDLE;
-		}
 
-		m_swapchain = newSwapChain;
+			m_swapchain = newSwapChain;
 
-		/* buffers recreation start below */
+			/* buffers recreation start below */
 
-		// get the number of images count and all the images in the swap chain
-		vkGetSwapchainImagesKHR(m_logicalDevice, m_swapchain, &m_imagecount, nullptr);
-		m_images.resize(m_imagecount);
-		vkGetSwapchainImagesKHR(m_logicalDevice, m_swapchain, &m_imagecount, m_images.data());
+			// get the number of images count and all the images in the swap chain
+			vkGetSwapchainImagesKHR(m_logicalDevice, m_swapchain, &m_imagecount, nullptr);
+			m_images.resize(m_imagecount);
+			vkGetSwapchainImagesKHR(m_logicalDevice, m_swapchain, &m_imagecount, m_images.data());
 
-		m_buffers.resize(m_imagecount);
-		for (uint32_t i = 0; i < m_imagecount; ++i)
-		{
-			m_buffers[i].image = m_images[i];
+			m_buffers.resize(m_imagecount);
+			for (uint32_t i = 0; i < m_imagecount; ++i)
+			{
+				m_buffers[i].image = m_images[i];
 
-			VkImageViewCreateInfo imgview_createInfo{};
-			imgview_createInfo.sType								= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			imgview_createInfo.image								= m_buffers[i].image;
-			imgview_createInfo.viewType								= VK_IMAGE_VIEW_TYPE_2D;
-			imgview_createInfo.format								= m_colorformat;
-			imgview_createInfo.components.r							= VK_COMPONENT_SWIZZLE_IDENTITY;
-			imgview_createInfo.components.g							= VK_COMPONENT_SWIZZLE_IDENTITY;
-			imgview_createInfo.components.b							= VK_COMPONENT_SWIZZLE_IDENTITY;
-			imgview_createInfo.components.a							= VK_COMPONENT_SWIZZLE_IDENTITY;
-			imgview_createInfo.subresourceRange.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
-			imgview_createInfo.subresourceRange.baseMipLevel		= 0;
-			imgview_createInfo.subresourceRange.levelCount			= 1;
-			imgview_createInfo.subresourceRange.baseArrayLayer		= 0;
-			imgview_createInfo.subresourceRange.layerCount			= 1;
+				VkImageViewCreateInfo imgview_createInfo{};
+				imgview_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+				imgview_createInfo.image = m_buffers[i].image;
+				imgview_createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+				imgview_createInfo.format = m_colorformat;
+				imgview_createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+				imgview_createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+				imgview_createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+				imgview_createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+				imgview_createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imgview_createInfo.subresourceRange.baseMipLevel = 0;
+				imgview_createInfo.subresourceRange.levelCount = 1;
+				imgview_createInfo.subresourceRange.baseArrayLayer = 0;
+				imgview_createInfo.subresourceRange.layerCount = 1;
 
-			DebugLog::EC(vkCreateImageView(m_logicalDevice, &imgview_createInfo, nullptr, &m_buffers[i].imageview));
+				DebugLog::EC(vkCreateImageView(m_logicalDevice, &imgview_createInfo, nullptr, &m_buffers[i].imageview));
+			}
 		}
 	}
 

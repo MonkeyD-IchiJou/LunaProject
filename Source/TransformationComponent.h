@@ -20,7 +20,7 @@ namespace luna
 		glm::mat4 GetModel() const { return m_model; }
 
 	public:
-		glm::vec3 position{};
+		glm::vec3 position = {};
 		glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f);
 		glm::vec3 eulerangles = glm::vec3(0.f, 0.f, 0.f);
 

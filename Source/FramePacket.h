@@ -13,7 +13,7 @@ namespace luna
 		glm::mat4 view, proj;
 	};
 
-	struct UBOPointLightData
+	struct PointLightData
 	{
 		glm::vec4 position{};
 		glm::vec4 color{};
@@ -32,6 +32,13 @@ namespace luna
 		glm::vec2 uv[4];
 	};
 
+	struct MainDirLightData
+	{
+		glm::vec4 diffusespec{};
+		glm::vec4 ambientlight{};
+		glm::vec4 dirlightpos{};
+	};
+
 	class BasicMeshComponent;
 	struct RenderingInfo
 	{
@@ -47,7 +54,8 @@ namespace luna
 		std::vector<RenderingInfo>* renderinfos = nullptr;
 		std::vector<InstanceData> instancedatas;
 		std::vector<FontInstanceData> fontinstancedatas;
-		std::array<UBOPointLightData, 10> pointlightsdatas{};
+		std::vector<PointLightData> pointlightsdatas{};
+		MainDirLightData dirlightdata{};
 		UBOData maincamdata{};
 	};
 }

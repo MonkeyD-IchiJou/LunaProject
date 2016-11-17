@@ -6,7 +6,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 namespace luna
 {
@@ -19,6 +19,8 @@ namespace luna
 		m_basicmeshContainer.m_components.resize(MAX_COMPONENTS);
 		m_fontContainer.m_components.resize(MAX_COMPONENTS);
 		m_cameraContainer.m_components.resize(MAX_COMPONENTS);
+		m_dirlightContainer.m_components.resize(MAX_COMPONENTS);
+		m_pointlightContainer.m_components.resize(MAX_COMPONENTS);
 		m_scriptContainer.m_components.resize(MAX_COMPONENTS);
 	}
 
@@ -31,6 +33,8 @@ namespace luna
 	{
 		m_basicmeshContainer.Update();
 		m_fontContainer.Update();
+		m_dirlightContainer.Update();
+		m_pointlightContainer.Update();
 		m_scriptContainer.Update();
 		m_cameraContainer.Update();
 		m_transformationContainer.Update(); // transformation always the last one to update
@@ -161,6 +165,37 @@ namespace luna
 					fid.fontMaterials[2] = material.outlinecolor; // outline color
 					fid.fontMaterials[3] = glm::vec4(material.borderOffset, 0.f, 0.f); // border offset
 				}
+			}
+		}
+	}
+
+	void ComponentManager::GetMainDirLightData(MainDirLightData & maindirlightdata)
+	{
+		for (auto& dirlight : m_dirlightContainer.m_components)
+		{
+			if (dirlight.isActive())
+			{
+				maindirlightdata.diffusespec = glm::vec4(dirlight.diffuse, dirlight.specular);
+				maindirlightdata.ambientlight = glm::vec4(dirlight.ambient, 0.f);
+				maindirlightdata.dirlightpos = glm::vec4(dirlight.GetOwner()->transformation->position, 1.f);
+				break;
+			}
+		}
+	}
+
+	void ComponentManager::GetPointLightsData(std::vector<PointLightData>& pointlightdata)
+	{
+		if (pointlightdata.size() > 0)
+			pointlightdata.clear();
+
+		for (auto& pointlight : m_pointlightContainer.m_components)
+		{
+			if (pointlight.isActive())
+			{
+				PointLightData p{};
+				p.color =  glm::vec4(pointlight.color, 1.0f);
+				p.position = glm::vec4(pointlight.GetOwner()->transformation->position, 1.0f);
+				pointlightdata.emplace_back(p);
 			}
 		}
 	}

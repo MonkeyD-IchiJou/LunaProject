@@ -90,6 +90,14 @@ namespace luna
 				component = m_componentManager->m_cameraContainer.GetComponent();
 				break;
 
+			case COMPONENT_ATYPE::DIRLIGHT_ACTYPE:
+				component = m_componentManager->m_dirlightContainer.GetComponent();
+				break;
+
+			case COMPONENT_ATYPE::POINTLIGHT_ACTYPE:
+				component = m_componentManager->m_pointlightContainer.GetComponent();
+				break;
+
 			case COMPONENT_ATYPE::SCRIPT_ACTYPE:
 				component = m_componentManager->m_scriptContainer.GetComponent();
 				break;

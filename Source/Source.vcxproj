@@ -19,6 +19,7 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
     <ClInclude Include="CompositeSubpassShader.h" />
+    <ClInclude Include="DirLightComponent.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="enum_c.h" />
     <ClInclude Include="FontComponent.h" />
@@ -31,6 +32,7 @@
     <ClInclude Include="Global.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="IOManager.h" />
+    <ClInclude Include="PointLightComponent.h" />
     <ClInclude Include="TextChangeScript.h" />
     <ClInclude Include="TextChangeScript2.h" />
     <ClInclude Include="vulkanandroid.h" />
@@ -57,7 +59,6 @@
     <ClInclude Include="SceneVolume.h" />
     <ClInclude Include="ScreenQuadMesh.h" />
     <ClInclude Include="ShaderProgram.h" />
-    <ClInclude Include="SimpleShader.h" />
     <ClInclude Include="SkyBoxShader.h" />
     <ClInclude Include="SSBO.h" />
     <ClInclude Include="FramePacket.h" />
@@ -85,6 +86,7 @@
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="CompositeSubpassShader.cpp" />
+    <ClCompile Include="DirLightComponent.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FontComponent.cpp" />
     <ClCompile Include="GausianBlur1DShader.cpp" />
@@ -96,6 +98,7 @@
     <ClCompile Include="Global.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IOManager.cpp" />
+    <ClCompile Include="PointLightComponent.cpp" />
     <ClCompile Include="TextChangeScript.cpp" />
     <ClCompile Include="TextChangeScript2.cpp" />
     <ClCompile Include="vulkanandroid.cpp" />
@@ -123,7 +126,6 @@
     <ClCompile Include="SceneVolume.cpp" />
     <ClCompile Include="ScreenQuadMesh.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
-    <ClCompile Include="SimpleShader.cpp" />
     <ClCompile Include="SkyBoxShader.cpp" />
     <ClCompile Include="SSBO.cpp" />
     <ClCompile Include="TextShader.cpp" />

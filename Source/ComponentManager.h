@@ -5,7 +5,9 @@
 #include "FontComponent.h"
 #include "BasicMeshComponent.h"
 #include "CameraComponent.h"
+#include "DirLightComponent.h"
 #include "ScriptComponent.h"
+#include "PointLightComponent.h"
 
 #include "FramePacket.h"
 #include "DebugLog.h"
@@ -68,6 +70,12 @@ namespace luna
 		/* fill up the fonts instance data */
 		void GetFontInstanceData(std::vector<FontInstanceData>& fontinstancedatas);
 
+		/* get the main dirlight data */
+		void GetMainDirLightData(MainDirLightData& maindirlightdata);
+
+		/* get all the pointlights data */
+		void GetPointLightsData(std::vector<PointLightData>& pointlightdata);
+
 		/* get main camera data */
 		void GetMainCamData(UBOData& maincamdata);
 
@@ -87,6 +95,12 @@ namespace luna
 
 		/* all the camera components are here */
 		ComponentData<CameraComponent> m_cameraContainer;
+
+		/* all the dirlight components are here */
+		ComponentData<DirLightComponent> m_dirlightContainer;
+
+		/* all the point light components are here */
+		ComponentData<PointLightComponent> m_pointlightContainer;
 
 		/* all the script components are here */
 		ComponentData<ScriptComponent> m_scriptContainer;
