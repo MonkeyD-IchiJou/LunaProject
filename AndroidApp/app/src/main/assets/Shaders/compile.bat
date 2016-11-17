@@ -3,7 +3,6 @@ D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V gbuffersubpass.frag -o gbuffer
 
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V screenquad.vert -o screenquad_vert.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V lightingsubpass.frag -o lightingsubpass_frag.spv
-D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V simpleshader.frag -o simpleshader_frag.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V finalpass.frag -o finalpass_frag.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V compositesubpass.frag -o compositesubpass_frag.spv
 
