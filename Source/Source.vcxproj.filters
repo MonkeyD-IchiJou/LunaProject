@@ -334,6 +334,9 @@
       <Filter>Header Files\Resources\Components</Filter>
     </ClInclude>
     <ClInclude Include="PointLightComponent.h">
+      <Filter>Header Files\Resources\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="PointlightRandomScript.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -525,7 +528,10 @@
       <Filter>Source Files\Resources\Components</Filter>
     </ClCompile>
     <ClCompile Include="PointLightComponent.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Resources\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="PointlightRandomScript.cpp">
+      <Filter>Source Files\Resources\Components\Scripts</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

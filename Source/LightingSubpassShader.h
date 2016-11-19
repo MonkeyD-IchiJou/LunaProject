@@ -30,7 +30,7 @@ namespace luna
 			const SSBO* pointlights_ssbo
 		);
 
-		void LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& maincampos);
+		void LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& campos);
 
 	private:
 		void SetUpFixedPipeline_(FixedPipelineCreationTool& fixedpipeline) override;

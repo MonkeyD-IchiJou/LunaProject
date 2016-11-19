@@ -77,7 +77,7 @@ namespace luna
 		void GetPointLightsData(std::vector<PointLightData>& pointlightdata);
 
 		/* get main camera data */
-		void GetMainCamData(UBOData& maincamdata);
+		void GetMainCamData(UBOData& maincamdata, glm::vec3& maincampos);
 
 	private:
 		static void StoreNewRenderingData_(BasicMeshComponent* mesh, std::vector<RenderingInfo>& renderdatas, RenderingInfo& rd);

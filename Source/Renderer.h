@@ -81,7 +81,7 @@ namespace luna
 		/* dynamic secondary command buffers rerecord */
 		void RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff);
 		void RecordGBufferSubpass_Sec_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
-		void RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata, const MainDirLightData& dirlightdata, const float& totalpointlights);
+		void RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const MainDirLightData& dirlightdata, const float& totalpointlights, const glm::vec3& campos);
 		void RecordSkyboxSubpass_Sec_(const VkCommandBuffer commandbuff);
 		void RecordFinalComposition_Sec_(const VkCommandBuffer commandbuff, const int& frameindex);
 		void RecordUIPass_Sec_(const VkCommandBuffer commandbuff, const uint32_t & totaltext, const int& frameindex);

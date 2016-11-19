@@ -177,7 +177,7 @@ namespace luna
 			{
 				maindirlightdata.diffusespec = glm::vec4(dirlight.diffuse, dirlight.specular);
 				maindirlightdata.ambientlight = glm::vec4(dirlight.ambient, 0.f);
-				maindirlightdata.dirlightpos = glm::vec4(dirlight.GetOwner()->transformation->position, 1.f);
+				maindirlightdata.dirlightdir = glm::vec4(dirlight.GetOwner()->transformation->position, 1.f);
 				break;
 			}
 		}
@@ -200,7 +200,7 @@ namespace luna
 		}
 	}
 
-	void ComponentManager::GetMainCamData(UBOData & maincamdata)
+	void ComponentManager::GetMainCamData(UBOData & maincamdata, glm::vec3& maincampos)
 	{
 		for (auto& cam : m_cameraContainer.m_components)
 		{
@@ -208,6 +208,7 @@ namespace luna
 			{
 				maincamdata.view = cam.GetView();
 				maincamdata.proj = cam.GetProjection();
+				maincampos = cam.GetOwner()->transformation->position;
 				break;
 			}
 		}

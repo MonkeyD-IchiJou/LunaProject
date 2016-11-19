@@ -36,7 +36,7 @@ namespace luna
 	{
 		glm::vec4 diffusespec{};
 		glm::vec4 ambientlight{};
-		glm::vec4 dirlightpos{};
+		glm::vec4 dirlightdir{};
 	};
 
 	class BasicMeshComponent;
@@ -57,6 +57,7 @@ namespace luna
 		std::vector<PointLightData> pointlightsdatas{};
 		MainDirLightData dirlightdata{};
 		UBOData maincamdata{};
+		glm::vec3 maincampos{};
 	};
 }
 

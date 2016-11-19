@@ -28,12 +28,12 @@ namespace luna
 		);
 	}
 
-	void LightingSubpassShader::LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& maincampos)
+	void LightingSubpassShader::LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& campos)
 	{
 		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::vec4), &dirlightdata.diffusespec);
 		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4), sizeof(glm::vec4), &dirlightdata.ambientlight);
-		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4) * 2, sizeof(glm::vec4), &dirlightdata.dirlightpos);
-		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4) * 3, sizeof(glm::vec4), &maincampos);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4) * 2, sizeof(glm::vec4), &dirlightdata.dirlightdir);
+		vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::vec4) * 3, sizeof(glm::vec4), &campos);
 	}
 
 	void LightingSubpassShader::SetDescriptors(

@@ -33,6 +33,7 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="IOManager.h" />
     <ClInclude Include="PointLightComponent.h" />
+    <ClInclude Include="PointlightRandomScript.h" />
     <ClInclude Include="TextChangeScript.h" />
     <ClInclude Include="TextChangeScript2.h" />
     <ClInclude Include="vulkanandroid.h" />
@@ -99,6 +100,7 @@
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IOManager.cpp" />
     <ClCompile Include="PointLightComponent.cpp" />
+    <ClCompile Include="PointlightRandomScript.cpp" />
     <ClCompile Include="TextChangeScript.cpp" />
     <ClCompile Include="TextChangeScript2.cpp" />
     <ClCompile Include="vulkanandroid.cpp" />

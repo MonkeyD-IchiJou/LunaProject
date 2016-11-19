@@ -5,6 +5,7 @@
 #include "TextChangeScript.h"
 #include "TextChangeScript2.h"
 #include "CameraControlScript.h"
+#include "PointlightRandomScript.h"
 
 namespace luna
 {
@@ -38,7 +39,7 @@ namespace luna
 		// second worker 
 		workers[1]->addJob([&]() {
 			m_componentmanager->GetFontInstanceData(framepacket.fontinstancedatas);
-			m_componentmanager->GetMainCamData(framepacket.maincamdata);
+			m_componentmanager->GetMainCamData(framepacket.maincamdata, framepacket.maincampos);
 			m_componentmanager->GetMainDirLightData(framepacket.dirlightdata);
 			m_componentmanager->GetPointLightsData(framepacket.pointlightsdatas);
 		});
@@ -60,11 +61,11 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("platform cube", m_componentmanager);
-			entity->transformation->position = glm::vec3(0.f, 1.f, 0.f);
+			entity->transformation->position = glm::vec3(0.f, 4.f, 0.f);
 			entity->transformation->scale = glm::vec3(20.f, 20.f, 20.f);
 			BasicMeshComponent* basicmeshc = dynamic_cast<BasicMeshComponent*>(entity->AddComponent(COMPONENT_ATYPE::BASICMESH_ACTYPE));
 			basicmeshc->meshID = eMODELS::SKYBOX_MODEL;
-			basicmeshc->material.color = glm::vec4(1.f, 1.f, 1.f, 0.f);
+			basicmeshc->material.color = glm::vec4(1.f, 1.f, 1.f, 2.f);
 			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
 			m_availableEntities.push_back(entity);
 		}
@@ -196,11 +197,11 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("dirlight", m_componentmanager);
-			entity->transformation->position = glm::vec3(-100.f, -100.f, -100.f);
+			entity->transformation->position = glm::vec3(1.0f, 1.0f, 1.0f);
 			DirLightComponent* dirlightc = dynamic_cast<DirLightComponent*>(entity->AddComponent(COMPONENT_ATYPE::DIRLIGHT_ACTYPE));
-			dirlightc->diffuse = glm::vec3( 0.5f, 0.5f, 0.5f);
+			dirlightc->diffuse = glm::vec3( 0.3f, 0.3f, 0.3f);
 			dirlightc->ambient = glm::vec3(0.01f, 0.01f, 0.01f);
-			dirlightc->specular = 0.5f;
+			dirlightc->specular = 0.3f;
 			m_availableEntities.push_back(entity);
 		}
 
@@ -209,13 +210,9 @@ namespace luna
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("pointlight", m_componentmanager);
-			entity->transformation->position = glm::vec3(7.5f, -5.f + i, -5.5f + i);
-			PointLightComponent* pointlightc = dynamic_cast<PointLightComponent*>(entity->AddComponent(COMPONENT_ATYPE::POINTLIGHT_ACTYPE));
-			pointlightc->color = glm::vec3(0.5f, 0.5f, 0.5f);
-			BasicMeshComponent* basicmeshc = dynamic_cast<BasicMeshComponent*>(entity->AddComponent(COMPONENT_ATYPE::BASICMESH_ACTYPE));
-			basicmeshc->meshID = eMODELS::CUBE_MODEL;
-			basicmeshc->material.color = glm::vec4(pointlightc->color, 0.f);
-			basicmeshc->material.textureID = MESH_TEX::BLACK_TEX;
+			entity->AddComponent(COMPONENT_ATYPE::POINTLIGHT_ACTYPE);
+			ScriptComponent* script = dynamic_cast<ScriptComponent*>(entity->AddComponent(COMPONENT_ATYPE::SCRIPT_ACTYPE));
+			script->script = new PointlightRandomScript();
 			m_availableEntities.push_back(entity);
 		}
 

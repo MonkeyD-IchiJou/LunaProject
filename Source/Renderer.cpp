@@ -36,6 +36,7 @@
 #endif
 #define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
+#define MAX_POINTLIGHTS 64
 
 namespace luna
 {
@@ -62,7 +63,7 @@ namespace luna
 
 			// ubo and ssbo that are unique to this renderer
 			m_ubo = new UBO(sizeof(UBOData));
-			m_pointlights_ssbo = new SSBO(64 * sizeof(PointLightData)); // 64 point lights reserve
+			m_pointlights_ssbo = new SSBO(MAX_POINTLIGHTS * sizeof(PointLightData)); // 64 point lights reserve
 			m_instance_ssbo = new SSBO(MAX_INSTANCEDATA * sizeof(InstanceData)); // 100 different models reserve
 			m_fontinstance_ssbo = new SSBO(MAX_FONTDATA * sizeof(FontInstanceData)); // 256 different characters reserve
 
@@ -91,7 +92,7 @@ namespace luna
 	void Renderer::CreateRenderPassResources_()
 	{
 		VkClearValue clearvalue{};
-		clearvalue.color = {0.f, 1.f, 1.f, 1.f};
+		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
 
 		// deferred fbo with 2 subpass
 		m_deferred_fbo = new DeferredFBO();
@@ -105,7 +106,7 @@ namespace luna
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
 		// create framebuffer for each swapchain images
-		clearvalue.color = {0.f, 1.f, 0.f, 1.f};
+		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
 		m_presentation_fbos.resize(m_swapchain->getImageCount());
 		for (int i = 0; i < m_presentation_fbos.size(); i++)
 		{
@@ -236,7 +237,7 @@ namespace luna
 			renderinfos
 		);
 
-		RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.maincamdata, temp.dirlightdata, 0.f);
+		RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.dirlightdata, 0.f, temp.maincampos);
 
 		RecordSkyboxSubpass_Sec_(commandbufferpacket->skybox_secondary_cmdbuff);
 
@@ -440,7 +441,7 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const UBOData& camdata, const MainDirLightData& dirlightdata, const float& totalpointlights)
+	void Renderer::RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const MainDirLightData& dirlightdata, const float& totalpointlights, const glm::vec3& campos)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
@@ -465,8 +466,9 @@ namespace luna
 		m_lightsubpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
 
 		MainDirLightData tempdata = dirlightdata;
-		tempdata.dirlightpos = camdata.view * dirlightdata.dirlightpos; // dir light pos must be in view space
-		m_lightsubpass_shader->LoadPushConstantDatas(commandbuff, tempdata, glm::vec4(0.f, 0.f, 0.f, totalpointlights));
+		tempdata.dirlightdir = dirlightdata.dirlightdir; // dir light pos in world space
+		tempdata.dirlightdir.w = totalpointlights; // last w-component stored total num of pointlights
+		m_lightsubpass_shader->LoadPushConstantDatas(commandbuff, tempdata, glm::vec4(campos, 0.f));
 		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		vkEndCommandBuffer(commandbuff);
@@ -589,8 +591,8 @@ namespace luna
 				imageindex
 			);
 
-			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.maincamdata, 
-				framepacket.dirlightdata, static_cast<float>(framepacket.pointlightsdatas.size()));
+			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.dirlightdata, 
+				static_cast<float>(framepacket.pointlightsdatas.size()), framepacket.maincampos);
 		});
 
 		// let all workers finish their job pls
