@@ -12,16 +12,11 @@ layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
  
 layout(push_constant) uniform PushConst
 {
-	vec4 diffusespec;
-	vec4 ambientlight;
-	vec4 dirlightpos;
-	vec4 campos; // campos.w == total pointlight 
+	vec4 dirdifspec;
+	vec4 dirambientlight;
+	vec4 dirlightdir; // dirlightpos.w == total pointlight
+	vec4 campos;
 } pushconsts;
-
-// point light range
-const float lightconstant = 1.0;
-const float lightlinear = 0.22;
-const float lightquadratic = 0.20;
 
 struct pointlight
 {
@@ -47,8 +42,7 @@ struct fragment_info_t
 };
 
 const float rim_power = 7.0;
-
-vec3 calculate_rim(vec3 N, vec3 V)
+vec3 rimCalc(vec3 N, vec3 V)
 {
 	// Calculate the rim factor
 	float f = 1.0 - max(dot(N, V), 0.0);
@@ -63,71 +57,65 @@ vec3 calculate_rim(vec3 N, vec3 V)
 	return vec3(f);
 }
 
-const float kShininess = 120.0;
-
-vec4 pointlight_fragment(fragment_info_t fragment)
+vec3 diffuseCalc(vec3 lightDiff, float n_dot_l)
 {
-	vec3 norm = fragment.wsnormal;
-	vec3 lightpos = vec3(0.0);
-	vec3 lightcolor = vec3(0.0);
-	vec3 finaloutput = vec3(0.0);
-	float distance = 0.0;
-	float attenuation = 0.0;
-	vec3 ambient = vec3(0.0);
-	vec3 diffuse = vec3(0.0);
-	vec3 V = vec3(0.0);
-	int i = 0;
-	
-	for(i = 0; i < pushconsts.campos.w; ++i)
-	{
-		lightpos = pointlightinfo[i].position.xyz;
-		lightcolor = pointlightinfo[i].color.xyz;
-		V = lightpos - fragment.wspos;
-		
-		// Attenuation
-		distance = length(V);
-		attenuation = 1.0 / (lightconstant + lightlinear * distance + lightquadratic * (distance * distance));
-		
-		// ambient
-		ambient = vec3(0.01, 0.01, 0.01) * attenuation;
-		
-		// Diffuse
-		diffuse = max(dot(norm, normalize(V)), 0.0) * 
-					fragment.diffusecolor * lightcolor * attenuation;
-		
-		finaloutput += ambient + diffuse;
-	}
-	
-	return vec4(finaloutput, 1.0);
+	return lightDiff *  n_dot_l;
 }
 
-vec4 dirlight_fragment(fragment_info_t fragment)
+vec3 specularCalc(vec3 lightSpecular, vec3 normal, vec3 lightDir, vec3 viewDir, 
+					vec3 specularColor, float n_dot_l)
 {
-	// calculate view-space light vector
-	vec3 L = normalize(pushconsts.dirlightpos.xyz - fragment.viewpos);
-	
-	// calculate the view vector
-	vec3 V = normalize(-fragment.viewpos);
-	
-	// calculate the half vector, H
-	vec3 H = normalize(L + V);
-
-	// Calculate the diffuse and specular contributions
-	vec3 diffuse = max(dot(fragment.normal, L), 0.0) * 
-					fragment.diffusecolor * pushconsts.diffusespec.xyz;
-				
-	float specular = pow(max(dot(fragment.normal, H), 0.0), kShininess) * 
-						fragment.specularcolor * pushconsts.diffusespec.w;
-
-	vec3 rim = vec3(0.0);
-	if(fragment.materialID == 0)
+	vec3 specular = vec3(0.0);
+	if(n_dot_l > 0.0)
 	{
-		rim = calculate_rim(fragment.normal, V) * pushconsts.diffusespec.xyz;
+		specular = (lightSpecular * 
+				pow( max(dot(normal, normalize(lightDir + viewDir)), 0.0), 120.0) * specularColor);
+	}
+
+	return specular;
+}
+
+vec3 dirlight_fragment(fragment_info_t fragment, vec3 viewDir)
+{
+	// rmb all calculation in world space
+	vec3 lightDir = normalize(-pushconsts.dirlightdir.xyz);
+	vec3 dirlightdiff = pushconsts.dirdifspec.xyz;
+	float n_dot_l = max( dot(lightDir, fragment.wsnormal), 0.0);
+	vec4 result = vec4(0.0);
+	
+	vec3 ambient = pushconsts.dirambientlight.xyz;
+	vec3 diffuse = diffuseCalc(dirlightdiff, n_dot_l);
+	vec3 specular = specularCalc(vec3(pushconsts.dirdifspec.w), fragment.wsnormal, 
+					lightDir, viewDir, vec3(fragment.specularcolor), n_dot_l);
+	
+	return specular + diffuse + ambient;
+}
+
+vec3 pointlight_fragment(fragment_info_t fragment, vec3 viewDir)
+{
+	int i = 0;
+	vec3 result = vec3(0.0);
+	vec3 ld = vec3(0.0);
+	vec3 lightDir = vec3(0.0);
+	float n_dot_l = 0.0;
+	float distance = 0.0;
+	
+	for(i = 0; i < pushconsts.dirlightdir.w; ++i)
+	{
+		// rmb all calculation in world space
+		ld = pointlightinfo[i].position.xyz - fragment.wspos;
+		lightDir = normalize(ld);
+		n_dot_l = max( dot(lightDir, fragment.wsnormal), 0.0);
+				
+		// Attenuation
+		distance = length(ld);
+		
+		result += (diffuseCalc(pointlightinfo[i].color.xyz, n_dot_l) + 
+				specularCalc(vec3(0.5), fragment.wsnormal,lightDir, viewDir, vec3(fragment.specularcolor), n_dot_l)) * 
+				1.0 / (1.0 +  0.35 * distance + 0.44 * (distance * distance));
 	}
 	
-	// output the final color
-	vec3 ambient = pushconsts.ambientlight.xyz;
-	return vec4(rim + ambient + diffuse + specular, 1.0);
+	return result;
 }
 
 void unpackGBuffer(out fragment_info_t fragment)
@@ -156,10 +144,17 @@ void main()
 	fragment_info_t fragmentinfo;
 	
 	unpackGBuffer(fragmentinfo);
+	vec3 viewDir = normalize(pushconsts.campos.xyz - fragmentinfo.wspos);
 	
 	// do some lighting calculation
-	vec4 dirlightcompute = dirlight_fragment(fragmentinfo);
-	vec4 pointlightcompute = pointlight_fragment(fragmentinfo);
+	vec3 dirlightcompute = dirlight_fragment(fragmentinfo, viewDir);
+	vec3 pointlightcompute = pointlight_fragment(fragmentinfo, viewDir);
 	
-	outFragcolor = vec4(dirlightcompute.xyz + pointlightcompute.xyz, 1.0);
+	vec3 rim = vec3(0.0);
+	if(fragmentinfo.materialID == 0)
+	{
+		rim = rimCalc(fragmentinfo.normal, normalize(-fragmentinfo.viewpos)) * pushconsts.dirdifspec.xyz;
+	}
+	
+	outFragcolor = vec4((fragmentinfo.diffusecolor * (dirlightcompute + pointlightcompute)) + rim, 1.0);
 }

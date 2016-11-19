@@ -10,8 +10,5 @@ layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
  
 void main()
 {
-	vec3 lightcolor = subpassLoad(attachmentColor0).xyz;
-	vec3 nonlightcolor = subpassLoad(attachmentColor1).xyz;
-
-	outFragcolor = vec4(lightcolor + nonlightcolor, 1.0);
+	outFragcolor = vec4(subpassLoad(attachmentColor0).xyz + subpassLoad(attachmentColor1).xyz, 1.0);
 }

@@ -21,13 +21,7 @@ vec3 ToneMapFilmic_Hejl2015(vec3 hdr, float whitePt)
 void main()
 {
 	// tone mapping (hdr to ldr) here
-	vec3 hdrc = texture(hdrColor, inUV).rgb;
-	
 	 // Exposure tone mapping
-    vec3 mapped = vec3(1.0) - exp(-hdrc * 1.0); // at night is 0.5 .. else 1.75
-
 	// tone mapping filmic stlye
-	vec3 result = ToneMapFilmic_Hejl2015(mapped, 1.5);
-	
-	outFragcolor = vec4(result, 1.0);
+	outFragcolor = vec4(ToneMapFilmic_Hejl2015(vec3(1.0) - exp(-texture(hdrColor, inUV).rgb * 1.0), 1.5), 1.0);
 }
