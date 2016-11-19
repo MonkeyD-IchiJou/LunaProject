@@ -17,7 +17,10 @@ namespace luna
 
 	private:
 		bool firstInit = false;
-		glm::vec3 dir = {};
+		glm::vec3 center = {0.f, 2.0f, 0.f};
+		glm::vec3 angle = {};
+		glm::vec3 radius = {7.6f, 6.6f, 7.5f};
+		glm::vec3 speed = { 2.1f, 1.5f, 1.85f };
 	};
 }
 

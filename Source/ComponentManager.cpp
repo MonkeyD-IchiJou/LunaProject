@@ -177,7 +177,7 @@ namespace luna
 			{
 				maindirlightdata.diffusespec = glm::vec4(dirlight.diffuse, dirlight.specular);
 				maindirlightdata.ambientlight = glm::vec4(dirlight.ambient, 0.f);
-				maindirlightdata.dirlightdir = glm::vec4(dirlight.GetOwner()->transformation->position, 1.f);
+				maindirlightdata.dirlightdir = glm::vec4(dirlight.direction, 1.f);
 				break;
 			}
 		}

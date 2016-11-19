@@ -111,7 +111,7 @@ vec3 pointlight_fragment(fragment_info_t fragment, vec3 viewDir)
 		distance = length(ld);
 		
 		result += (diffuseCalc(pointlightinfo[i].color.xyz, n_dot_l) + 
-				specularCalc(vec3(0.5), fragment.wsnormal,lightDir, viewDir, vec3(fragment.specularcolor), n_dot_l)) * 
+				specularCalc(vec3(0.75), fragment.wsnormal,lightDir, viewDir, vec3(fragment.specularcolor), n_dot_l)) * 
 				1.0 / (1.0 +  0.35 * distance + 0.44 * (distance * distance));
 	}
 	
@@ -150,11 +150,11 @@ void main()
 	vec3 dirlightcompute = dirlight_fragment(fragmentinfo, viewDir);
 	vec3 pointlightcompute = pointlight_fragment(fragmentinfo, viewDir);
 	
-	vec3 rim = vec3(0.0);
-	if(fragmentinfo.materialID == 0)
-	{
-		rim = rimCalc(fragmentinfo.normal, normalize(-fragmentinfo.viewpos)) * pushconsts.dirdifspec.xyz;
-	}
+	//vec3 rim = vec3(0.0);
+	//if(fragmentinfo.materialID == 0)
+	//{
+	//	  rim = rimCalc(fragmentinfo.normal, normalize(-fragmentinfo.viewpos)) * pushconsts.dirdifspec.xyz;
+	//}
 	
-	outFragcolor = vec4((fragmentinfo.diffusecolor * (dirlightcompute + pointlightcompute)) + rim, 1.0);
+	outFragcolor = vec4(fragmentinfo.diffusecolor * (dirlightcompute + pointlightcompute), 1.0);
 }

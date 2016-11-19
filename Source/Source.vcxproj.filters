@@ -337,7 +337,7 @@
       <Filter>Header Files\Resources\Components</Filter>
     </ClInclude>
     <ClInclude Include="PointlightRandomScript.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Resources\Components\Scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

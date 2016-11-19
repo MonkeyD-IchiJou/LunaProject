@@ -22,6 +22,7 @@ namespace luna
 		this->m_owner = nullptr;
 		this->m_active = false;
 
+		direction = {0.f, -1.f, 0.f};
 		diffuse = { 0.5f, 0.5f, 0.5f };
 		ambient = { 0.01f, 0.01f, 0.01f };
 		specular = 0.4f;

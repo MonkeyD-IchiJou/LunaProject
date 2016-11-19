@@ -29,7 +29,7 @@ namespace luna
 	{
 		auto pointlight = entity->findComponentT<PointLightComponent>();
 		auto transformation = entity->transformation;
-
+		
 		if (!firstInit)
 		{
 			float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
@@ -37,12 +37,29 @@ namespace luna
 			float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 
 			pointlight->color = glm::vec3(r, g, b);
-			transformation->position = glm::vec3(r, -5.f, b);
-			dir = glm::vec3(r, 0.f, b);
+			
+			float LO = 0.5f;
+			float HI = 2.25f;
+			speed.x = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+			speed.y = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+			speed.z = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+
 			firstInit = true;
 		}
 
-		transformation->position += dir * glm::vec3(global::DeltaTime, global::DeltaTime, global::DeltaTime);
+		transformation->position =
+			center + 
+			glm::vec3(cos(angle.x), sin(angle.y), cos(angle.z)) * 
+			radius;
+
+		angle += speed * glm::vec3(global::DeltaTime);
+
+		if (angle.x >= 360.f)
+			angle.x -= 360.f;
+		if (angle.y >= 360.f)
+			angle.y -= 360.f;
+		if (angle.z >= 360.f)
+			angle.z -= 360.f;
 	}
 
 }
