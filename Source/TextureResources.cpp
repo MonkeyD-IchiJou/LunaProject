@@ -30,9 +30,8 @@ namespace luna
 		
 		/* attachments images will be auto init by fbos */
 		Textures[COLOR0_ATTACHMENT_RGBA32U] = nullptr;
-		Textures[COLOR1_ATTACHMENT_RGBA32F] = nullptr;
+		Textures[COLOR1_ATTACHMENT_RGBA32U] = nullptr;
 		Textures[COLOR2_ATTACHMENT_RGBA32F] = nullptr;
-		Textures[COLOR3_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[LIGHTINGTEX_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[NONLIGHTINGTEX_ATTACHMENT_RGBA8U] = nullptr;
 		Textures[HDRTEX_ATTACHMENT_RGBA16F] = nullptr;

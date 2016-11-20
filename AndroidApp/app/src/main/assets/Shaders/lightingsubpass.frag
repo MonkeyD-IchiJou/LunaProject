@@ -3,9 +3,8 @@
 #extension GL_ARB_shading_language_420pack : enable
 
 layout (input_attachment_index = 0, set = 0, binding = 0) uniform usubpassInput attachmentColor0;
-layout (input_attachment_index = 1, set = 0, binding = 1) uniform subpassInput attachmentColor1;
+layout (input_attachment_index = 1, set = 0, binding = 1) uniform usubpassInput attachmentColor1;
 layout (input_attachment_index = 2, set = 0, binding = 2) uniform subpassInput attachmentColor2;
-layout (input_attachment_index = 3, set = 0, binding = 3) uniform subpassInput attachmentColor3;
 
 // output as hdr color
 layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
@@ -25,7 +24,7 @@ struct pointlight
 };
 
 // storage buffer object binding at 4
-layout(std430, set = 0, binding = 4) buffer sb
+layout(std430, set = 0, binding = 3) buffer sb
 {
 	pointlight pointlightinfo[];
 };
@@ -122,21 +121,21 @@ void unpackGBuffer(out fragment_info_t fragment)
 {
 	// Get G-Buffer values
 	uvec4 data0 = subpassLoad(attachmentColor0);
-	vec4 data1 = subpassLoad(attachmentColor1);
+	uvec4 data1 = subpassLoad(attachmentColor1);
 	vec4 data2 = subpassLoad(attachmentColor2);
-	vec4 data3 = subpassLoad(attachmentColor3);
 	
 	vec2 temp = unpackHalf2x16(data0.y);
 	fragment.diffusecolor = vec3(unpackHalf2x16(data0.x), temp.x);
 	fragment.wsnormal = vec3(temp.y, unpackHalf2x16(data0.z));
-	fragment.materialID = data0.w;
+	temp = unpackHalf2x16(data0.w); // specular color and matID stored here
+	fragment.specularcolor = temp.x;
+	fragment.materialID = temp.y;
 	
-	fragment.viewpos = data1.xyz;
-	fragment.specularcolor = data1.w;
+	temp = unpackHalf2x16(data1.y);
+	fragment.viewpos = vec3(unpackHalf2x16(data1.x), temp.x);
+	fragment.normal = vec3(temp.y, unpackHalf2x16(data1.z));
 	
 	fragment.wspos = data2.xyz;
-	
-	fragment.normal = data3.xyz;
 }
  
 void main()

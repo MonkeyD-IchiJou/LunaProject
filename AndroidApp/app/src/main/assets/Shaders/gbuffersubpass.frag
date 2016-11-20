@@ -17,14 +17,13 @@ layout(location = 5) in vec2 inUV;
 
 // output as color attachment
 layout (location = 0) out uvec4 color0;
-layout (location = 1) out vec4 color1;
+layout (location = 1) out uvec4 color1;
 layout (location = 2) out vec4 color2;
-layout (location = 3) out vec4 color3;
 
 void main()
 {
 	uvec4 outvec0 = uvec4(0);
-	vec4 outvec1 = vec4(0.0);
+	uvec4 outvec1 = uvec4(0);
 	
 	vec4 color = texture(samplerColor, inUV) + vec4(inMaterialColor.xyz, 0.0);
 	
@@ -34,13 +33,14 @@ void main()
 	outvec0.x = packHalf2x16(color.xy);
 	outvec0.y = packHalf2x16(vec2(color.z, NormalizedWSNormal.x));
 	outvec0.z = packHalf2x16(NormalizedWSNormal.yz);
-	outvec0.w = uint(inMaterialColor.a);
+	outvec0.w = packHalf2x16(vec2(color.a, inMaterialColor.a)); // specular color and material id
 	
-	outvec1.xyz = inViewPos.xyz;
-	outvec1.w = color.a;
+	outvec1.x = packHalf2x16(inViewPos.xy);
+	outvec1.y = packHalf2x16(vec2(inViewPos.z, NormalizedViewNormal.x));
+	outvec1.z = packHalf2x16(NormalizedViewNormal.yz);
+	outvec1.w = packHalf2x16(vec2(0.0, 0.0)); // depth && ??
 	
 	color0 = outvec0;
 	color1 = outvec1;
 	color2 = inWSPos;
-	color3 = vec4(NormalizedViewNormal, 0.0);
 }

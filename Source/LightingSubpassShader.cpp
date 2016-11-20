@@ -40,12 +40,11 @@ namespace luna
 		const VulkanImageBufferObject* color0, 
 		const VulkanImageBufferObject* color1, 
 		const VulkanImageBufferObject* color2,
-		const VulkanImageBufferObject* color3,
 		const SSBO* pointlights_ssbo)
 	{
 		// 5 kind of descriptors to send to
 		// set up the layout for the shaders 
-		const int totalbinding = 5;
+		const int totalbinding = 4;
 		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
 
 		// color0
@@ -66,26 +65,21 @@ namespace luna
 		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		layoutinfo[2].typeflags = 1; // an image
 
-		// color3
+		// for pointlights storage
 		layoutinfo[3].binding = 3;
 		layoutinfo[3].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[3].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		layoutinfo[3].typeflags = 1; // an image
-
-		layoutinfo[4].binding = 4;
-		layoutinfo[4].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		layoutinfo[4].typeflags = 0; // a buffer
+		layoutinfo[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo[3].typeflags = 0; // a buffer
 
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
 
 		// create the poolsize to hold all my descriptors
-		const int totaldescriptors = 5; // total num of descriptors
+		const int totaldescriptors = 4; // total num of descriptors
 		const int totalsets = 1; // total num of descriptor sets i will have
 
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[0].descriptorCount = 4; // 4 input attachments
+		poolSizes[0].descriptorCount = 3; // 3 input attachments
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		poolSizes[1].descriptorCount = 1;
 
@@ -106,10 +100,6 @@ namespace luna
 		color2info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		color2info.imageView = color2->getImageView();
 		color2info.sampler = color2->getSampler();
-		VkDescriptorImageInfo color3info{};
-		color3info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		color3info.imageView = color3->getImageView();
-		color3info.sampler = color3->getSampler();
 		VkDescriptorBufferInfo ssboinfo{};
 		ssboinfo.buffer = pointlights_ssbo->getMainBuffer().buffer;
 		ssboinfo.offset = 0;
@@ -123,9 +113,7 @@ namespace luna
 		firstdescriptorset[2].layoutinfo = layoutinfo[2];
 		firstdescriptorset[2].imageinfo = color2info;
 		firstdescriptorset[3].layoutinfo = layoutinfo[3];
-		firstdescriptorset[3].imageinfo = color3info;
-		firstdescriptorset[4].layoutinfo = layoutinfo[4];
-		firstdescriptorset[4].bufferinfo = ssboinfo;
+		firstdescriptorset[3].bufferinfo = ssboinfo;
 
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
