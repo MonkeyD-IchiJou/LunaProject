@@ -20,6 +20,10 @@ namespace luna
 		// only update the component when is active
 		if (m_active)
 		{
+			// store the prev model
+			m_prevmodel = m_model;
+
+			// current model update
 			m_model = glm::translate(glm::mat4(), position) *
 				glm::toMat4(glm::quat(glm::radians(eulerangles))) *
 				glm::scale(glm::mat4(), scale);

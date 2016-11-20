@@ -13,6 +13,8 @@ namespace luna
 		virtual ~RotateScript();
 
 		void Update(Entity* entity) override;
+		float timer = 0.f;
+		bool change = false;
 	};
 }
 

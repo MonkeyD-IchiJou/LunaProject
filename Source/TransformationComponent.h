@@ -18,6 +18,7 @@ namespace luna
 		void Reset() override;
 
 		glm::mat4 GetModel() const { return m_model; }
+		glm::mat4 GetPrevModel() const { return m_prevmodel; }
 
 	public:
 		glm::vec3 position = {};
@@ -26,6 +27,7 @@ namespace luna
 
 	private:
 		glm::mat4 m_model = {};
+		glm::mat4 m_prevmodel = {};
 	};
 }
 

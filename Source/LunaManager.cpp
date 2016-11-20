@@ -75,7 +75,6 @@ namespace luna
 			// start of this frame
 			time_start = clock::now();
 
-			// update game logic
 			m_scene->Update(framepackets[updateFrame], firstset);
 			
 			// wait for the previous frame to render finish

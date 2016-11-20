@@ -2,7 +2,7 @@
 #define FRAME_PACKET_H
 
 #include <vector>
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 #include <array>
 #include "enum_c.h"
 
@@ -10,7 +10,7 @@ namespace luna
 {
 	struct UBOData
 	{
-		glm::mat4 view, proj;
+		glm::mat4 view, transposeinverseview, proj, prevprojview;
 	};
 
 	struct PointLightData
@@ -22,6 +22,8 @@ namespace luna
 	struct InstanceData
 	{
 		glm::mat4 model{};
+		glm::mat4 transposeinversemodel{};
+		glm::mat4 prevmodel{};
 		glm::vec4 material{};
 	};
 

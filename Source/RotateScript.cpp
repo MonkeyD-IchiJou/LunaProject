@@ -22,9 +22,32 @@ namespace luna
 	void RotateScript::Update(Entity * entity)
 	{
 		auto t = entity->transformation;
-		t->eulerangles.x += 50.0f * global::DeltaTime;
-		t->eulerangles.y += 50.0f * global::DeltaTime;
-		t->eulerangles.z += 50.0f * global::DeltaTime;
+		//t->eulerangles.x += 10.0f * global::DeltaTime;
+		t->eulerangles.y += 200.0f * global::DeltaTime;
+		//t->eulerangles.z += 10.0f * global::DeltaTime;
+
+		/*if (!change)
+		{
+			timer += global::DeltaTime;
+			t->position.y += 30.f * global::DeltaTime;
+
+			if (timer > 0.5f)
+			{
+				change = true;
+				timer = 0.f;
+			}
+		}
+		else
+		{
+			timer += global::DeltaTime;
+			t->position.y -= 30.f * global::DeltaTime;
+
+			if (timer > 0.5f)
+			{
+				change = false;
+				timer = 0.f;
+			}
+		}*/
 	
 		if (t->eulerangles.x > 360.f)
 			t->eulerangles.x -= 360.f;

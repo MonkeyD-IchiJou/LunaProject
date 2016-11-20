@@ -18,6 +18,7 @@ namespace luna
 
 		glm::mat4 GetView() const { return this->m_view; }
 		glm::mat4 GetProjection() const { return this->m_projection; }
+		glm::mat4 GetPrevProjView() const { return this->m_prevprojview; }
 
 	public:
 		glm::vec3 target = {};
@@ -32,6 +33,7 @@ namespace luna
 	private:
 		glm::mat4 m_view = {};
 		glm::mat4 m_projection = {};
+		glm::mat4 m_prevprojview = {};
 	};
 }
 

@@ -66,12 +66,12 @@ namespace luna
 			VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
 #if VK_USE_PLATFORM_WIN32_KHR
-			// find the best present mode --> MAILBOX 
-			for (auto i : m_presentmode_list)
-			{
-				if (i == VK_PRESENT_MODE_MAILBOX_KHR)
-					presentMode = i;
-			}
+			//// find the best present mode --> MAILBOX 
+			//for (auto i : m_presentmode_list)
+			//{
+			//	if (i == VK_PRESENT_MODE_MAILBOX_KHR)
+			//		presentMode = i;
+			//}
 #endif
 
 			// Find the transformation of the surface
@@ -260,11 +260,11 @@ namespace luna
 
 #if VK_USE_PLATFORM_WIN32_KHR
 		// find the best present mode --> MAILBOX 
-		for (auto i : m_presentmode_list)
+		/*for (auto i : m_presentmode_list)
 		{
 			if (i == VK_PRESENT_MODE_MAILBOX_KHR)
 				presentMode = i;
-		}
+		}*/
 #endif
 
 		// Find the transformation of the surface

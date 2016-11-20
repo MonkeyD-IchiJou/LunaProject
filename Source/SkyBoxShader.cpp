@@ -162,6 +162,7 @@ namespace luna
 	{
 		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
 		depthStencil.depthWriteEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_FALSE;
 	}
 
 	void SkyBoxShader::CreatePipelineLayout_()

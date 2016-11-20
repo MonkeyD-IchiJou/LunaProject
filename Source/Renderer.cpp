@@ -31,8 +31,8 @@
 #define BASE_RESOLUTION_X 1920
 #define BASE_RESOLUTION_Y 1080
 #else
-#define BASE_RESOLUTION_X 1280
-#define BASE_RESOLUTION_Y 720
+#define BASE_RESOLUTION_X 540
+#define BASE_RESOLUTION_Y 1440
 #endif
 #define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
@@ -98,7 +98,9 @@ namespace luna
 		m_deferred_fbo = new DeferredFBO();
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR0_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR2_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::LIGHTINGCOLOR_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::NONLIGHTINGCOLOR_ATTACHMENT);
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
 		clearvalue.depthStencil = {1.f, 0};
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTH32F_ATTACHMENT);
@@ -136,7 +138,6 @@ namespace luna
 		m_lightsubpass_shader->SetDescriptors(
 			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U],
 			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32U],
-			texrsc->Textures[eTEXTURES::COLOR2_ATTACHMENT_RGBA32F],
 			m_pointlights_ssbo
 		);
 		m_lightsubpass_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_LIGHTING);
