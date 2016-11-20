@@ -4,7 +4,6 @@
 
 layout (input_attachment_index = 0, set = 0, binding = 0) uniform usubpassInput attachmentColor0;
 layout (input_attachment_index = 1, set = 0, binding = 1) uniform usubpassInput attachmentColor1;
-layout (input_attachment_index = 2, set = 0, binding = 2) uniform subpassInput attachmentColor2;
 
 // output as hdr color
 layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
@@ -23,8 +22,8 @@ struct pointlight
 	vec4 color;
 };
 
-// storage buffer object binding at 4
-layout(std430, set = 0, binding = 3) buffer sb
+// storage buffer object binding at 2
+layout(std430, set = 0, binding = 2) buffer sb
 {
 	pointlight pointlightinfo[];
 };
@@ -36,8 +35,8 @@ struct fragment_info_t
 	vec3 wsnormal;
 	vec3 viewpos;
 	vec3 wspos;
+	vec2 velocity;
 	float specularcolor;
-	float materialID;
 };
 
 const float rim_power = 7.0;
@@ -122,20 +121,19 @@ void unpackGBuffer(out fragment_info_t fragment)
 	// Get G-Buffer values
 	uvec4 data0 = subpassLoad(attachmentColor0);
 	uvec4 data1 = subpassLoad(attachmentColor1);
-	vec4 data2 = subpassLoad(attachmentColor2);
 	
-	vec2 temp = unpackHalf2x16(data0.y);
-	fragment.diffusecolor = vec3(unpackHalf2x16(data0.x), temp.x);
-	fragment.wsnormal = vec3(temp.y, unpackHalf2x16(data0.z));
-	temp = unpackHalf2x16(data0.w); // specular color and matID stored here
-	fragment.specularcolor = temp.x;
-	fragment.materialID = temp.y;
+	vec4 temp_albedo = unpackUnorm4x8(data0.x);
+	fragment.diffusecolor = temp_albedo.rgb;
+	fragment.specularcolor = temp_albedo.a;
+	
+	vec2 temp = unpackHalf2x16(data0.z);
+	fragment.wsnormal = vec3(unpackHalf2x16(data0.y), temp.x);
+	fragment.wspos = vec3(temp.y, unpackHalf2x16(data0.w));
 	
 	temp = unpackHalf2x16(data1.y);
 	fragment.viewpos = vec3(unpackHalf2x16(data1.x), temp.x);
 	fragment.normal = vec3(temp.y, unpackHalf2x16(data1.z));
-	
-	fragment.wspos = data2.xyz;
+	fragment.velocity = unpackHalf2x16(data1.w);
 }
  
 void main()

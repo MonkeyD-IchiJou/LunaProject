@@ -19,7 +19,9 @@ out gl_PerVertex
 layout(set = 0, binding = 0) uniform UniformBufferObject
 {
 	mat4 view;
+	mat4 transpose_inverse_view;
 	mat4 proj;
+	mat4 prevprojview;
 } ubo;
 
 layout(push_constant) uniform PushConst
