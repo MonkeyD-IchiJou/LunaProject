@@ -22,11 +22,11 @@ struct pointlight
 	vec4 color;
 };
 
-// storage buffer object binding at 2
-layout(std430, set = 0, binding = 2) buffer sb
+// uniform buffer object binding at 2
+layout(set = 0, binding = 2) uniform UniformBufferObject
 {
-	pointlight pointlightinfo[];
-};
+	pointlight pointlights[100]; // max 100 pointlights available
+} ubo_pls;
 
 struct fragment_info_t
 {
@@ -101,14 +101,14 @@ vec3 pointlight_fragment(fragment_info_t fragment, vec3 viewDir)
 	for(i = 0; i < pushconsts.dirlightdir.w; ++i)
 	{
 		// rmb all calculation in world space
-		ld = pointlightinfo[i].position.xyz - fragment.wspos;
+		ld = ubo_pls.pointlights[i].position.xyz - fragment.wspos;
 		lightDir = normalize(ld);
 		n_dot_l = max( dot(lightDir, fragment.wsnormal), 0.0);
 				
 		// Attenuation
 		distance = length(ld);
 		
-		result += (diffuseCalc(pointlightinfo[i].color.xyz, n_dot_l) + 
+		result += (diffuseCalc(ubo_pls.pointlights[i].color.xyz, n_dot_l) + 
 				specularCalc(vec3(0.75), fragment.wsnormal,lightDir, viewDir, vec3(fragment.specularcolor), n_dot_l)) * 
 				1.0 / (1.0 +  0.35 * distance + 0.44 * (distance * distance));
 	}
