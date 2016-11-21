@@ -163,7 +163,19 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.stencilTestEnable = VK_FALSE; // stencil test disable
+		depthStencil.stencilTestEnable = VK_TRUE; // stencil test enable
+
+		VkStencilOpState frontstate{};
+		frontstate.compareOp = VK_COMPARE_OP_GREATER_OR_EQUAL; // the comparison operator used in the stencil test
+		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
+		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
+
+		depthStencil.front = frontstate;
+		depthStencil.back = {}; // dun care about the back facing polygon
 
 		// vertex attributes for screen quad
 		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
@@ -177,6 +189,17 @@ namespace luna
 		vertexInputInfo.pVertexBindingDescriptions = &fixedpipeline.bindingDescription;
 		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)fixedpipeline.attributeDescription.size();
 		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
+
+		// dynamic state 
+		fixedpipeline.dynamicState.resize(5);
+		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
+		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
+		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
+		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
+
+		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
+		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
 	void LightingSubpassShader::CreatePipelineLayout_()

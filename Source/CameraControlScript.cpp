@@ -70,11 +70,7 @@ namespace luna
 			up = glm::cross(right, direction);
 
 			int scrolldelta = input::Mouse.scrolldelta;
-			float scrollspeed = 15.f;
-#if VK_USE_PLATFORM_ANDROID_KHR
-			scrollspeed = 1.f;
-#endif // VK_USE_ANDROID_PLATFORM
-
+			float scrollspeed = 1.5f;
 
 			if (scrolldelta < 0)
 			{

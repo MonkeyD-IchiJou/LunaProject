@@ -226,6 +226,34 @@ namespace luna
 		colorBlending.logicOp = VK_LOGIC_OP_CLEAR;
 		colorBlending.attachmentCount = static_cast<uint32_t>(fixedpipeline.colorBlendAttachments.size());
 		colorBlending.pAttachments = fixedpipeline.colorBlendAttachments.data();
+
+
+		// stencil enable
+		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
+		depthStencil.stencilTestEnable = VK_TRUE;
+
+		VkStencilOpState frontstate{};
+		frontstate.compareOp = VK_COMPARE_OP_ALWAYS; // the comparison operator used in the stencil test
+		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
+		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
+
+		depthStencil.front = frontstate;
+		depthStencil.back = {}; // dun care about the back facing polygon
+
+		// dynamic state
+		fixedpipeline.dynamicState.resize(5);
+		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
+		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
+		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
+		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
+
+		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
+		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
 	void GBufferSubpassShader::CreatePipelineLayout_()

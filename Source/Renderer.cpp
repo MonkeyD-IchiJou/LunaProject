@@ -100,10 +100,9 @@ namespace luna
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::LIGHTINGCOLOR_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::NONLIGHTINGCOLOR_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
-		clearvalue.depthStencil = {1.f, 0};
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTH32F_ATTACHMENT);
+		clearvalue.depthStencil = {1.f, 0xff};
+		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
 		// create framebuffer for each swapchain images
@@ -416,6 +415,10 @@ namespace luna
 			m_gbuffersubpass_shader->Bind(commandbuff);
 			m_gbuffersubpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
 
+			vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+			vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
+			vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value 1
+
 			// record the first renderinfo first
 			const auto& ri = renderinfos[0];
 			m_gbuffersubpass_shader->BindTexture(commandbuff, ri.textureID);
@@ -463,6 +466,10 @@ namespace luna
 		// bind the dirlight pass shader
 		m_lightsubpass_shader->Bind(commandbuff);
 		m_lightsubpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+
+		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
+		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
+		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
 
 		MainDirLightData tempdata = dirlightdata;
 		tempdata.dirlightdir = dirlightdata.dirlightdir; // dir light pos in world space

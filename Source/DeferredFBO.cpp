@@ -45,7 +45,7 @@ namespace luna
 			m_attachments[DFR_FBOATTs::LIGHTINGCOLOR_ATTACHMENT].view,
 			m_attachments[DFR_FBOATTs::NONLIGHTINGCOLOR_ATTACHMENT].view,
 			m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].view,
-			m_attachments[DFR_FBOATTs::DEPTH32F_ATTACHMENT].view
+			m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].view
 		};
 
 		// create the framebuffer
@@ -173,12 +173,12 @@ namespace luna
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 			VK_FORMAT_D24_UNORM_S8_UINT,
 #else
-            VK_FORMAT_D32_SFLOAT_S8_UINT,
+            VK_FORMAT_D32_SFLOAT_S8_UINT, // only stronger gpu support this format
 #endif
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);
-		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTH32F_ATTACHMENT); // depth stencil attachment
+		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT); // depth stencil attachment
 	}
 
 	void DeferredFBO::CreateRenderPass_()
@@ -249,19 +249,19 @@ namespace luna
 				descs->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // for other shaders to access it
 
 				// depth attachment description
-				descs = &attachmentDescs[DFR_FBOATTs::DEPTH32F_ATTACHMENT];
-				descs->format = m_attachments[DFR_FBOATTs::DEPTH32F_ATTACHMENT].format;
+				descs = &attachmentDescs[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT];
+				descs->format = m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // not going to store this depth/stencil buffer
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear the stencils bits 
+				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; 
 				descs->initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			}
 
 			// attachment ref preparation
-			VkAttachmentReference depthstencilAttachmentRef = {DFR_FBOATTs::DEPTH32F_ATTACHMENT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+			VkAttachmentReference depthstencilAttachmentRef = {DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
 			std::array<VkAttachmentReference, 2> Gbuff_outputAttachmentRef = {};
 			Gbuff_outputAttachmentRef[0] = { DFR_FBOATTs::COLOR0_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
@@ -284,22 +284,23 @@ namespace luna
 			// i have 3 subpass
 			std::array<VkSubpassDescription, DFR_FBOATTs::ALL_SUBPASS> subPass{};
 
-			// subpass 1 - g-buffer generation
+			// subpass 0 - g-buffer generation
 			subPass[DFR_FBOATTs::eSUBPASS_GBUFFER].flags = 0;
 			subPass[DFR_FBOATTs::eSUBPASS_GBUFFER].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subPass[DFR_FBOATTs::eSUBPASS_GBUFFER].colorAttachmentCount = static_cast<uint32_t>(Gbuff_outputAttachmentRef.size());
 			subPass[DFR_FBOATTs::eSUBPASS_GBUFFER].pColorAttachments = Gbuff_outputAttachmentRef.data();
 			subPass[DFR_FBOATTs::eSUBPASS_GBUFFER].pDepthStencilAttachment = &depthstencilAttachmentRef;
 
-			// subpass 2 - lighting
+			// subpass 1 - lighting
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].flags = 0;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].inputAttachmentCount = static_cast<uint32_t>(Gbuff_inputAttachmentRef.size());;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pInputAttachments = Gbuff_inputAttachmentRef.data();
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].colorAttachmentCount = 1;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pColorAttachments = &lighting_outputAttachmentRef;
+			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pDepthStencilAttachment = &depthstencilAttachmentRef;
 
-			// subpass 3 - non lighting pass
+			// subpass 2 - non lighting pass
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].flags = 0;
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].colorAttachmentCount = 1;
@@ -308,7 +309,7 @@ namespace luna
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].preserveAttachmentCount = 1;
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].pPreserveAttachments = reserveattachment;
 
-			// subpass 4 - composite
+			// subpass 3 - composite
 			subPass[DFR_FBOATTs::eSUBPASS_COMPOSITE].flags = 0;
 			subPass[DFR_FBOATTs::eSUBPASS_COMPOSITE].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subPass[DFR_FBOATTs::eSUBPASS_COMPOSITE].inputAttachmentCount = static_cast<uint32_t>(Composite_inputAttachmentRef.size());;
@@ -317,7 +318,7 @@ namespace luna
 			subPass[DFR_FBOATTs::eSUBPASS_COMPOSITE].pColorAttachments = &composite_outputAttachmentRef;
 
 			// Subpass dependencies for layout transitions
-			std::array<VkSubpassDependency, 6> dependencies;
+			std::array<VkSubpassDependency, 7> dependencies;
 
 			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 			dependencies[0].dstSubpass = DFR_FBOATTs::eSUBPASS_GBUFFER;
@@ -345,17 +346,17 @@ namespace luna
 			dependencies[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-			// composite pass wait for lighting pass to finish
+			// non-lighting pass depends on lighting pass to use finish the depth-stencil buffer
 			dependencies[3].srcSubpass = DFR_FBOATTs::eSUBPASS_LIGHTING;
-			dependencies[3].dstSubpass = DFR_FBOATTs::eSUBPASS_COMPOSITE;
+			dependencies[3].dstSubpass = DFR_FBOATTs::eSUBPASS_NONLIGHTING;
 			dependencies[3].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dependencies[3].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			dependencies[3].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			dependencies[3].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			dependencies[3].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-			// composite pass wait for non lighting pass to finish
-			dependencies[4].srcSubpass = DFR_FBOATTs::eSUBPASS_NONLIGHTING;
+			// composite pass wait for lighting pass to finish
+			dependencies[4].srcSubpass = DFR_FBOATTs::eSUBPASS_LIGHTING;
 			dependencies[4].dstSubpass = DFR_FBOATTs::eSUBPASS_COMPOSITE;
 			dependencies[4].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dependencies[4].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -363,13 +364,22 @@ namespace luna
 			dependencies[4].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			dependencies[4].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-			dependencies[5].srcSubpass = DFR_FBOATTs::eSUBPASS_COMPOSITE;
-			dependencies[5].dstSubpass = VK_SUBPASS_EXTERNAL;
+			// composite pass wait for non lighting pass to finish
+			dependencies[5].srcSubpass = DFR_FBOATTs::eSUBPASS_NONLIGHTING;
+			dependencies[5].dstSubpass = DFR_FBOATTs::eSUBPASS_COMPOSITE;
 			dependencies[5].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependencies[5].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			dependencies[5].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dependencies[5].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			dependencies[5].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dependencies[5].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependencies[5].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			dependencies[5].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+			dependencies[6].srcSubpass = DFR_FBOATTs::eSUBPASS_COMPOSITE;
+			dependencies[6].dstSubpass = VK_SUBPASS_EXTERNAL;
+			dependencies[6].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependencies[6].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			dependencies[6].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependencies[6].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			dependencies[6].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 			// Render pass create
 			VkRenderPassCreateInfo renderpass_create_info{};
