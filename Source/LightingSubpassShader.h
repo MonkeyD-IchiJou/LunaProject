@@ -9,7 +9,7 @@
 namespace luna
 {
 	class VulkanImageBufferObject;
-	class SSBO;
+	class UBO;
 
 	class LightingSubpassShader :
 		public ShaderProgram
@@ -25,7 +25,7 @@ namespace luna
 		void SetDescriptors(
 			const VulkanImageBufferObject* color0,
 			const VulkanImageBufferObject* color1,
-			const SSBO* pointlights_ssbo
+			const UBO* pointlights_ubo
 		);
 
 		void LoadPushConstantDatas(const VkCommandBuffer& commandbuffer, const MainDirLightData& dirlightdata, const glm::vec4& campos);

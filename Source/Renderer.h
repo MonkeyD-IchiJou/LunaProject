@@ -21,7 +21,6 @@ namespace luna
 	class GBufferSubpassShader;
 	class LightingSubpassShader;
 	class SkyBoxShader;
-	class CompositeSubpassShader;
 	class FinalPassShader;
 	class TextShader;
 
@@ -101,7 +100,6 @@ namespace luna
 		GBufferSubpassShader* m_gbuffersubpass_shader = nullptr;
 		LightingSubpassShader* m_lightsubpass_shader = nullptr;
 		SkyBoxShader* m_skybox_shader = nullptr;
-		CompositeSubpassShader* m_composite_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 
@@ -127,8 +125,8 @@ namespace luna
 		/* a universal UBO */
 		UBO* m_ubo = nullptr;
 
-		/* a point light ssbo */
-		SSBO* m_pointlights_ssbo = nullptr;
+		/* a point light ubo */
+		UBO* m_pointlights_ubo = nullptr;
 
 		/* ssbo for instancing data */
 		SSBO* m_instance_ssbo = nullptr;

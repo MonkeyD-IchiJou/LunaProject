@@ -23,6 +23,20 @@ namespace luna
 		vkUnmapMemory(m_logicaldevice, m_staging_mem);
 	}
 
+	void UBO::Update(const std::vector<PointLightData>& pointlightdatas)
+	{
+		// get the total size in bytes
+		auto currentsize = pointlightdatas.size() * sizeof(PointLightData);
+
+		if (currentsize < m_uboTotalSize)
+		{
+			void* data = nullptr;
+			vkMapMemory(m_logicaldevice, m_staging_mem, 0, currentsize, 0, &data);
+			memcpy(data, pointlightdatas.data(), (size_t)currentsize);
+			vkUnmapMemory(m_logicaldevice, m_staging_mem);
+		}
+	}
+
 	void UBO::Record(const VkCommandBuffer cmdbuff)
 	{
 		// start the copy cmd

@@ -11,7 +11,6 @@
 #include "GBufferSubpassShader.h"
 #include "LightingSubpassShader.h"
 #include "SkyBoxShader.h"
-#include "CompositeSubpassShader.h"
 #include "FinalPassShader.h"
 #include "TextShader.h"
 
@@ -36,7 +35,7 @@
 #endif
 #define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
-#define MAX_POINTLIGHTS 32
+#define MAX_POINTLIGHTS 100
 
 namespace luna
 {
@@ -63,7 +62,7 @@ namespace luna
 
 			// ubo and ssbo that are unique to this renderer
 			m_ubo = new UBO(sizeof(UBOData));
-			m_pointlights_ssbo = new SSBO(MAX_POINTLIGHTS * sizeof(PointLightData)); // 64 point lights reserve
+			m_pointlights_ubo = new UBO(MAX_POINTLIGHTS * sizeof(PointLightData)); // 64 point lights reserve
 			m_instance_ssbo = new SSBO(MAX_INSTANCEDATA * sizeof(InstanceData)); // 100 different models reserve
 			m_fontinstance_ssbo = new SSBO(MAX_FONTDATA * sizeof(FontInstanceData)); // 256 different characters reserve
 
@@ -98,10 +97,8 @@ namespace luna
 		m_deferred_fbo = new DeferredFBO();
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR0_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::LIGHTINGCOLOR_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::NONLIGHTINGCOLOR_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
-		clearvalue.depthStencil = {1.f, 0xff};
+		clearvalue.depthStencil = {1.f, 0};
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
@@ -137,7 +134,7 @@ namespace luna
 		m_lightsubpass_shader->SetDescriptors(
 			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U],
 			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32U],
-			m_pointlights_ssbo
+			m_pointlights_ubo
 		);
 		m_lightsubpass_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_LIGHTING);
 
@@ -145,12 +142,6 @@ namespace luna
 		m_skybox_shader = new SkyBoxShader();
 		m_skybox_shader->SetDescriptors(m_ubo, texrsc->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_RGBA8]);
 		m_skybox_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_NONLIGHTING);
-
-		// composite pass shader init
-		m_composite_shader = new CompositeSubpassShader();
-		m_composite_shader->SetDescriptors(texrsc->Textures[eTEXTURES::LIGHTINGTEX_ATTACHMENT_RGBA16F],
-			texrsc->Textures[eTEXTURES::NONLIGHTINGTEX_ATTACHMENT_RGBA8U]);
-		m_composite_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_COMPOSITE);
 
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
@@ -299,7 +290,6 @@ namespace luna
 			commandbuff, 
 			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 		);
-
 		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->lightingsubpass_secondary_cmdbuff);
 
 		// next subpass for non-lighting calculation
@@ -307,18 +297,7 @@ namespace luna
 			commandbuff, 
 			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 		);
-
 		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->skybox_secondary_cmdbuff);
-
-		// next subpass for composition calculation
-		vkCmdNextSubpass(
-			commandbuff, 
-			VK_SUBPASS_CONTENTS_INLINE
-		);
-
-		m_composite_shader->Bind(commandbuff);
-		m_composite_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
@@ -380,7 +359,7 @@ namespace luna
 		m_instance_ssbo->Record(commandbuff);
 		m_fontinstance_ssbo->Record(commandbuff);
 		m_ubo->Record(commandbuff);
-		m_pointlights_ssbo->Record(commandbuff);
+		m_pointlights_ubo->Record(commandbuff);
 
 		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
@@ -414,10 +393,6 @@ namespace luna
 			// bind the gbuffer shader
 			m_gbuffersubpass_shader->Bind(commandbuff);
 			m_gbuffersubpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-
-			vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-			vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff); // if is 0, then stencil is disable
-			vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 1); // set stencil value 1
 
 			// record the first renderinfo first
 			const auto& ri = renderinfos[0];
@@ -466,10 +441,6 @@ namespace luna
 		// bind the dirlight pass shader
 		m_lightsubpass_shader->Bind(commandbuff);
 		m_lightsubpass_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-
-		vkCmdSetStencilCompareMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0xff);
-		vkCmdSetStencilWriteMask(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 0); // if is 0, then stencil is disable
-		vkCmdSetStencilReference(commandbuff, VK_STENCIL_FACE_FRONT_BIT, 2); // stencil value to compare with
 
 		MainDirLightData tempdata = dirlightdata;
 		tempdata.dirlightdir = dirlightdata.dirlightdir; // dir light pos in world space
@@ -589,7 +560,7 @@ namespace luna
 			m_instance_ssbo->Update(framepacket.instancedatas);
 			m_fontinstance_ssbo->Update(framepacket.fontinstancedatas);
 			m_ubo->Update(framepacket.maincamdata);
-			m_pointlights_ssbo->Update(framepacket.pointlightsdatas);
+			m_pointlights_ubo->Update(framepacket.pointlightsdatas);
 
 			RecordUIPass_Sec_(
 				m_presentation_sec_cmdbuff[imageindex].UIPassCmdbuff,
@@ -597,7 +568,7 @@ namespace luna
 				imageindex
 			);
 
-			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.dirlightdata, 
+			RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, framepacket.dirlightdata,
 				static_cast<float>(framepacket.pointlightsdatas.size()), framepacket.maincampos);
 		});
 
@@ -732,10 +703,10 @@ namespace luna
 			m_ubo = nullptr;
 		}
 
-		if (m_pointlights_ssbo != nullptr)
+		if (m_pointlights_ubo != nullptr)
 		{
-			delete m_pointlights_ssbo;
-			m_pointlights_ssbo = nullptr;
+			delete m_pointlights_ubo;
+			m_pointlights_ubo = nullptr;
 		}
 
 		if (m_instance_ssbo != nullptr)
@@ -769,13 +740,6 @@ namespace luna
 			m_skybox_shader->Destroy();
 			delete m_skybox_shader;
 			m_skybox_shader = nullptr;
-		}
-
-		if (m_composite_shader != nullptr)
-		{
-			m_composite_shader->Destroy();
-			delete m_composite_shader;
-			m_composite_shader = nullptr;
 		}
 
 		if (m_finalpass_shader != nullptr)

@@ -31,12 +31,10 @@ namespace luna
 		/* attachments images will be auto init by fbos */
 		Textures[COLOR0_ATTACHMENT_RGBA32U] = nullptr;
 		Textures[COLOR1_ATTACHMENT_RGBA32U] = nullptr;
-		Textures[LIGHTINGTEX_ATTACHMENT_RGBA16F] = nullptr;
-		Textures[NONLIGHTINGTEX_ATTACHMENT_RGBA8U] = nullptr;
 		Textures[HDRTEX_ATTACHMENT_RGBA16F] = nullptr;
 		Textures[DEPTHSTENCIL_ATTACHMENT_32F] = nullptr;
 
-		Textures[HORBLUR_2D_RGBA16F] = new VulkanTexture2D(
+		/*Textures[HORBLUR_2D_RGBA16F] = new VulkanTexture2D(
 			512, 512, 
 			VK_FORMAT_R16G16B16A16_SFLOAT,
 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -48,7 +46,7 @@ namespace luna
 			VK_FORMAT_R16G16B16A16_SFLOAT,
 			VK_IMAGE_USAGE_STORAGE_BIT,
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL
-		);
+		);*/
 
 		// font resource init
 		Fonts.resize(MAX_FONT);

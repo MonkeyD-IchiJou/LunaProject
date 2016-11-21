@@ -2,7 +2,7 @@
 #include "DebugLog.h"
 #include "VulkanImageBufferObject.h"
 #include "Vertex.h"
-#include "SSBO.h"
+#include "UBO.h"
 
 namespace luna
 {
@@ -39,7 +39,7 @@ namespace luna
 	void LightingSubpassShader::SetDescriptors(
 		const VulkanImageBufferObject* color0, 
 		const VulkanImageBufferObject* color1,
-		const SSBO* pointlights_ssbo)
+		const UBO* pointlights_ubo)
 	{
 		// 5 kind of descriptors to send to
 		// set up the layout for the shaders 
@@ -61,7 +61,7 @@ namespace luna
 		// for pointlights storage
 		layoutinfo[2].binding = 2;
 		layoutinfo[2].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutinfo[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutinfo[2].typeflags = 0; // a buffer
 
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
@@ -73,7 +73,7 @@ namespace luna
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		poolSizes[0].descriptorCount = 2; // 2 input attachments
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[1].descriptorCount = 1;
 
 		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 2, poolSizes.data(), totalsets);
@@ -89,10 +89,10 @@ namespace luna
 		color1info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		color1info.imageView = color1->getImageView();
 		color1info.sampler = color1->getSampler();
-		VkDescriptorBufferInfo ssboinfo{};
-		ssboinfo.buffer = pointlights_ssbo->getMainBuffer().buffer;
-		ssboinfo.offset = 0;
-		ssboinfo.range = pointlights_ssbo->getSSBOTotalSize();
+		VkDescriptorBufferInfo uboinfo{};
+		uboinfo.buffer = pointlights_ubo->getMainBuffer().buffer;
+		uboinfo.offset = 0;
+		uboinfo.range = pointlights_ubo->getUboTotalSize();
 
 		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
 		firstdescriptorset[0].layoutinfo = layoutinfo[0];
@@ -100,7 +100,7 @@ namespace luna
 		firstdescriptorset[1].layoutinfo = layoutinfo[1];
 		firstdescriptorset[1].imageinfo = color1info;
 		firstdescriptorset[2].layoutinfo = layoutinfo[2];
-		firstdescriptorset[2].bufferinfo = ssboinfo;
+		firstdescriptorset[2].bufferinfo = uboinfo;
 
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
@@ -163,19 +163,19 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.stencilTestEnable = VK_TRUE; // stencil test enable
+		depthStencil.stencilTestEnable = VK_FALSE; // stencil test enable
 
-		VkStencilOpState frontstate{};
-		frontstate.compareOp = VK_COMPARE_OP_GREATER_OR_EQUAL; // the comparison operator used in the stencil test
-		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
-		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
-		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
-		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
-		frontstate.compareMask = 0; // selects the bits of the unsigned integer stencil values participating in the stencil test
-		frontstate.reference = 0; // is an integer reference value that is used in the unsigned stencil comparison
+		//VkStencilOpState frontstate{};
+		//frontstate.compareOp = VK_COMPARE_OP_EQUAL; // the comparison operator used in the stencil test
+		//frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		//frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		//frontstate.passOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass both the depth and stencil tests
+		//frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		//frontstate.compareMask = 0xff; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		//frontstate.reference = 1; // is an integer reference value that is used in the unsigned stencil comparison
 
-		depthStencil.front = frontstate;
-		depthStencil.back = {}; // dun care about the back facing polygon
+		//depthStencil.front = frontstate;
+		//depthStencil.back = {}; // dun care about the back facing polygon
 
 		// vertex attributes for screen quad
 		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
@@ -189,17 +189,6 @@ namespace luna
 		vertexInputInfo.pVertexBindingDescriptions = &fixedpipeline.bindingDescription;
 		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)fixedpipeline.attributeDescription.size();
 		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
-
-		// dynamic state 
-		fixedpipeline.dynamicState.resize(5);
-		fixedpipeline.dynamicState[0] = VK_DYNAMIC_STATE_VIEWPORT;
-		fixedpipeline.dynamicState[1] = VK_DYNAMIC_STATE_SCISSOR;
-		fixedpipeline.dynamicState[2] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-		fixedpipeline.dynamicState[3] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
-		fixedpipeline.dynamicState[4] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
-
-		fixedpipeline.dynamicStateInfo.dynamicStateCount = (uint32_t)fixedpipeline.dynamicState.size();
-		fixedpipeline.dynamicStateInfo.pDynamicStates = fixedpipeline.dynamicState.data();
 	}
 
 	void LightingSubpassShader::CreatePipelineLayout_()

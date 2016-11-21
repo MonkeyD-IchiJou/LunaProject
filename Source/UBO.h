@@ -12,8 +12,9 @@ namespace luna
 		UBO(const VkDeviceSize& totalsize);
 		~UBO();
 
-		// update the ubodata into device memory
+		// update the data into device memory
 		void Update(const UBOData& ubodata);
+		void Update(const std::vector<PointLightData>& pointlightdatas);
 		
 		inline VkDeviceSize getUboTotalSize() const { return m_uboTotalSize; }
 		inline VulkanBufferData getMainBuffer() const { return m_main_buffer; }
