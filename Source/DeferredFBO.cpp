@@ -134,9 +134,9 @@ namespace luna
 		imageattachment = &texrsc->Textures[eTEXTURES::DEPTHSTENCIL_ATTACHMENT_32F];
 		*imageattachment = new VulkanTexture2D(
 			m_resolution.width, m_resolution.height,
-            VK_FORMAT_D16_UNORM,
+            VK_FORMAT_D24_UNORM_S8_UINT,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-			VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT); // depth stencil attachment
 	}
@@ -192,7 +192,7 @@ namespace luna
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // not going to store this depth/stencil buffer
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; 
 				descs->initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;

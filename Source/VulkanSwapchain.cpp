@@ -240,8 +240,10 @@ namespace luna
 		}
 
 		// Determine the number of images
-		m_imagecount = surface_capabilities.minImageCount;
-
+		if (m_imagecount < surface_capabilities.minImageCount + 1)
+		{
+			m_imagecount = surface_capabilities.minImageCount + 1;
+		}
 		// if is 0 .. means unlimited swapchain image
 		if (surface_capabilities.maxImageCount > 0) 
 		{

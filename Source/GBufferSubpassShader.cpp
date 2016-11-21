@@ -230,19 +230,19 @@ namespace luna
 
 		// stencil enable
 		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
-		depthStencil.stencilTestEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_TRUE;
 
-		//VkStencilOpState frontstate{};
-		//frontstate.compareOp = VK_COMPARE_OP_ALWAYS; // the comparison operator used in the stencil test
-		//frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
-		//frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
-		//frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
-		//frontstate.writeMask = 0xff; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
-		//frontstate.compareMask = 0xff; // selects the bits of the unsigned integer stencil values participating in the stencil test
-		//frontstate.reference = 1; // is an integer reference value that is used in the unsigned stencil comparison
+		VkStencilOpState frontstate{};
+		frontstate.compareOp = VK_COMPARE_OP_ALWAYS; // the comparison operator used in the stencil test
+		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		frontstate.passOp = VK_STENCIL_OP_REPLACE; // the action performed on samples that pass both the depth and stencil tests
+		frontstate.writeMask = 0xff; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		frontstate.compareMask = 0xff; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		frontstate.reference = 1; // is an integer reference value that is used in the unsigned stencil comparison
 
-		//depthStencil.front = frontstate;
-		//depthStencil.back = {}; // dun care about the back facing polygon
+		depthStencil.front = frontstate;
+		depthStencil.back = {}; // dun care about the back facing polygon
 	}
 
 	void GBufferSubpassShader::CreatePipelineLayout_()

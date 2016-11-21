@@ -163,19 +163,19 @@ namespace luna
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.stencilTestEnable = VK_FALSE; // stencil test enable
+		depthStencil.stencilTestEnable = VK_TRUE; // stencil test enable
 
-		//VkStencilOpState frontstate{};
-		//frontstate.compareOp = VK_COMPARE_OP_EQUAL; // the comparison operator used in the stencil test
-		//frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
-		//frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
-		//frontstate.passOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass both the depth and stencil tests
-		//frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
-		//frontstate.compareMask = 0xff; // selects the bits of the unsigned integer stencil values participating in the stencil test
-		//frontstate.reference = 1; // is an integer reference value that is used in the unsigned stencil comparison
+		VkStencilOpState frontstate{};
+		frontstate.compareOp = VK_COMPARE_OP_EQUAL; // the comparison operator used in the stencil test
+		frontstate.failOp = VK_STENCIL_OP_KEEP; // the action performed on samples that fail the stencil test
+		frontstate.depthFailOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass the stencil test and fail the depth test
+		frontstate.passOp = VK_STENCIL_OP_KEEP; // the action performed on samples that pass both the depth and stencil tests
+		frontstate.writeMask = 0; // selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment
+		frontstate.compareMask = 0xff; // selects the bits of the unsigned integer stencil values participating in the stencil test
+		frontstate.reference = 1; // is an integer reference value that is used in the unsigned stencil comparison
 
-		//depthStencil.front = frontstate;
-		//depthStencil.back = {}; // dun care about the back facing polygon
+		depthStencil.front = frontstate;
+		depthStencil.back = {}; // dun care about the back facing polygon
 
 		// vertex attributes for screen quad
 		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
