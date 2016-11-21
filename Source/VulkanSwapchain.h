@@ -35,7 +35,7 @@ namespace luna
 		VkSwapchainKHR getSwapchain() const { return m_swapchain; }
 		VkFormat getColorFormat() const { return m_colorformat; }
 		VkColorSpaceKHR getColorSpace() const { return m_colorspace; }
-		uint32_t getImageCount() const { return m_imagecount; }
+		uint32_t getTotalImage() const { return m_imagecount; }
 		VkExtent2D getExtent() const { return m_swapchainExtent; }
 
 		std::vector<SwapChainBuffer> m_buffers;

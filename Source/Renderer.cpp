@@ -104,7 +104,7 @@ namespace luna
 
 		// create framebuffer for each swapchain images
 		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
-		m_presentation_fbos.resize(m_swapchain->getImageCount());
+		m_presentation_fbos.resize(m_swapchain->getTotalImage());
 		for (int i = 0; i < m_presentation_fbos.size(); i++)
 		{
 			m_presentation_fbos[i] = new PresentationFBO();
