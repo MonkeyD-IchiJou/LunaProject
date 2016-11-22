@@ -163,6 +163,22 @@ namespace luna
 		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
 		depthStencil.depthWriteEnable = VK_FALSE; // only depth testing, dont write anything on it
 		depthStencil.stencilTestEnable = VK_FALSE;
+
+		// Blend attachment states required for all color attachments
+		// This is important, as color write mask will otherwise be 0x0 and you
+		// won't see anything rendered to the attachment
+		fixedpipeline.colorBlendAttachments.clear();
+		fixedpipeline.colorBlendAttachments.resize(2);
+
+		fixedpipeline.colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		fixedpipeline.colorBlendAttachments[0].blendEnable = VK_FALSE;
+		fixedpipeline.colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		fixedpipeline.colorBlendAttachments[1].blendEnable = VK_FALSE;
+
+		VkPipelineColorBlendStateCreateInfo& colorBlending = fixedpipeline.colorBlending;
+		colorBlending.logicOp = VK_LOGIC_OP_CLEAR;
+		colorBlending.attachmentCount = static_cast<uint32_t>(fixedpipeline.colorBlendAttachments.size());
+		colorBlending.pAttachments = fixedpipeline.colorBlendAttachments.data();
 	}
 
 	void SkyBoxShader::CreatePipelineLayout_()

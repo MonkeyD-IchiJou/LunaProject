@@ -1,20 +1,20 @@
-#include "CompositeSubpassShader.h"
+#include "MotionBlurShader.h"
 #include "DebugLog.h"
 #include "VulkanImageBufferObject.h"
 #include "Vertex.h"
 
 namespace luna
 {
-	CompositeSubpassShader::CompositeSubpassShader()
+	MotionBlurShader::MotionBlurShader()
 	{
 	}
 
-	CompositeSubpassShader::~CompositeSubpassShader()
+	MotionBlurShader::~MotionBlurShader()
 	{
 		Destroy();
 	}
 
-	void CompositeSubpassShader::Bind(const VkCommandBuffer & commandbuffer)
+	void MotionBlurShader::Bind(const VkCommandBuffer & commandbuffer)
 	{
 		// Graphics Pipeline Binding (shaders binding)
 		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
@@ -27,25 +27,24 @@ namespace luna
 		);
 	}
 
-	void CompositeSubpassShader::SetDescriptors(const VulkanImageBufferObject* comp1, const VulkanImageBufferObject* comp2)
+	void MotionBlurShader::SetDescriptors(const VulkanImageBufferObject* dataimage, const VulkanImageBufferObject* colorimage)
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 
-		// 2 kind of descriptors to send to
 		// set up the layout for the shaders 
 		const int totalbinding = 2;
 		std::array<VulkanDescriptorLayoutInfo, totalbinding> layoutinfo{};
 
-		// color0
+		// data image
 		layoutinfo[0].binding = 0;
 		layoutinfo[0].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		layoutinfo[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		layoutinfo[0].typeflags = 1; // an image
 
-		// color1
+		// color image
 		layoutinfo[1].binding = 1;
 		layoutinfo[1].shaderstage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		layoutinfo[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		layoutinfo[1].typeflags = 1; // an image
 
 		m_descriptorTool.SetUpDescriptorLayout(m_logicaldevice, totalbinding, layoutinfo.data());
@@ -54,9 +53,9 @@ namespace luna
 		const int totaldescriptors = 2; // total num of descriptors
 		const int totalsets = 1; // total num of descriptor sets i will have
 
-		VkDescriptorPoolSize poolSize;
-		poolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSize.descriptorCount = totaldescriptors; // all my descriptors are the same type
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSize.descriptorCount = 2; // 2 image
 
 		m_descriptorTool.SetUpDescriptorPools(m_logicaldevice, 1, &poolSize, totalsets);
 		m_descriptorTool.descriptorsInfo[0].descriptorSets.resize(1); // first layout has 1 descriptorsets
@@ -64,13 +63,13 @@ namespace luna
 
 		// first descriptor set update
 		VkDescriptorImageInfo color0info{};
-		color0info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		color0info.imageView = comp1->getImageView();
-		color0info.sampler = comp1->getSampler();
+		color0info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		color0info.imageView = dataimage->getImageView();
+		color0info.sampler = dataimage->getSampler();
 		VkDescriptorImageInfo color1info{};
-		color1info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		color1info.imageView = comp2->getImageView();
-		color1info.sampler = comp2->getSampler();
+		color1info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		color1info.imageView = colorimage->getImageView();
+		color1info.sampler = colorimage->getSampler();
 
 		std::array<VulkanDescriptorSetInfo, totalbinding> firstdescriptorset{};
 		firstdescriptorset[0].layoutinfo = layoutinfo[0];
@@ -81,7 +80,7 @@ namespace luna
 		m_descriptorTool.UpdateDescriptorSets(m_logicaldevice, 0, 0, totalbinding, firstdescriptorset.data());
 	}
 
-	void CompositeSubpassShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
+	void MotionBlurShader::Init(const VkRenderPass & renderpass, uint32_t subpassindex)
 	{
 		// only when it has not created
 		if (m_Pipeline == VK_NULL_HANDLE)
@@ -91,7 +90,7 @@ namespace luna
 			vertinfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 			vertinfo.pName = "main";
 
-			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/compositesubpass_frag.spv");
+			VkPipelineShaderStageCreateInfo fraginfo = CreateShaders_(getAssetPath() + "Shaders/motionblur_frag.spv");
 			fraginfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			fraginfo.pName = "main";
 
@@ -131,14 +130,14 @@ namespace luna
 		}
 	}
 
-	void CompositeSubpassShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
+	void MotionBlurShader::SetUpFixedPipeline_(FixedPipelineCreationTool & fixedpipeline)
 	{
 		// no depth test
 		VkPipelineDepthStencilStateCreateInfo& depthStencil = fixedpipeline.depthStencil;
 		depthStencil.depthTestEnable = VK_FALSE;
 		depthStencil.depthWriteEnable = VK_FALSE;
 		depthStencil.depthCompareOp	= VK_COMPARE_OP_NEVER; // lower depth == closer
-		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_FALSE; // stencil test enable
 
 		// vertex attributes for screen quad
 		fixedpipeline.bindingDescription = ScreenQuadVertex::getBindingDescription();
@@ -154,7 +153,7 @@ namespace luna
 		vertexInputInfo.pVertexAttributeDescriptions = fixedpipeline.attributeDescription.data();
 	}
 
-	void CompositeSubpassShader::CreatePipelineLayout_()
+	void MotionBlurShader::CreatePipelineLayout_()
 	{
 		std::vector<VkDescriptorSetLayout> setlayouts;
 		setlayouts.resize(m_descriptorTool.descriptorsInfo.size());
@@ -171,7 +170,7 @@ namespace luna
 		DebugLog::EC(vkCreatePipelineLayout(m_logicaldevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 	}
 
-	void CompositeSubpassShader::Destroy()
+	void MotionBlurShader::Destroy()
 	{
 		m_descriptorTool.Destroy(m_logicaldevice);
 

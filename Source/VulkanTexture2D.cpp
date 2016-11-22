@@ -121,11 +121,11 @@ namespace luna
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
 	
-		m_sampler = CreateSampler_(true,  static_cast<float>(m_mipLevels), true, 16.f);
+		m_sampler = CreateSampler_(true, VK_FILTER_LINEAR, static_cast<float>(m_mipLevels), true, 16.f);
 	}
 
 	VulkanTexture2D::VulkanTexture2D(const uint32_t& width, const uint32_t& height, 
-		const VkFormat& format, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspectMask, const VkImageLayout& imagelayout)
+		const VkFormat& format, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspectMask, const VkImageLayout& imagelayout, VkFilter filter)
 	{
 		m_format = format; 
 		m_texsize = 0; // determined by memReqs;
@@ -200,7 +200,7 @@ namespace luna
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
 	
-		m_sampler = CreateSampler_();
+	    m_sampler = CreateSampler_(false, filter);
 	}
 
 	VulkanTexture2D::~VulkanTexture2D()

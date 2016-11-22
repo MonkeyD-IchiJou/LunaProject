@@ -26,7 +26,7 @@ namespace luna
 		__android_log_vprint(ANDROID_LOG_INFO, "LunaInfo", pMessage, varArgs);
 #elif VK_USE_PLATFORM_WIN32_KHR
 #if _DEBUG
-		printf(pMessage, varArgs);
+		vprintf(pMessage, varArgs);
 #endif
 #endif
 		va_end(varArgs);

@@ -50,7 +50,7 @@ namespace luna
 		VkFramebufferCreateInfo framebuffer_createinfo{};
 		framebuffer_createinfo.sType			= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebuffer_createinfo.renderPass		= m_renderpass;
-		framebuffer_createinfo.attachmentCount	= (uint32_t)m_attachments.size();
+		framebuffer_createinfo.attachmentCount	= static_cast<uint32_t>(m_attachments.size());
 		framebuffer_createinfo.pAttachments		= imageviews;
 		framebuffer_createinfo.width			= m_resolution.width;
 		framebuffer_createinfo.height			= m_resolution.height;
@@ -115,7 +115,7 @@ namespace luna
 		*imageattachment = new VulkanTexture2D(
 			m_resolution.width, m_resolution.height,
 			VK_FORMAT_R32G32B32A32_UINT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT, // will be used by subpasses
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // will be used by post-processing pass
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::COLOR1_ATTACHMENT);
@@ -130,7 +130,7 @@ namespace luna
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
 
-		// depth buffer
+		// depth stencil buffer
 		imageattachment = &texrsc->Textures[eTEXTURES::DEPTHSTENCIL_ATTACHMENT_32F];
 		*imageattachment = new VulkanTexture2D(
 			m_resolution.width, m_resolution.height,
@@ -140,7 +140,8 @@ namespace luna
 #else
 			VK_FORMAT_D32_SFLOAT_S8_UINT,
 #endif
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT); // depth stencil attachment
@@ -174,18 +175,18 @@ namespace luna
 				descs->format = m_attachments[DFR_FBOATTs::COLOR1_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // dun care about storing this attachment
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this attachment
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-				descs->finalLayout = VK_IMAGE_LAYOUT_GENERAL; // for second subpass to input it
+				descs->finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // for other shaders to access it
 
 				// hdr attachment description
 				descs = &attachmentDescs[DFR_FBOATTs::HDRCOLOR_ATTACHMENT];
 				descs->format = m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // going to store this attachment, to be used to present later
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // going to store this attachment
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -196,9 +197,9 @@ namespace luna
 				descs->format = m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // not going to store this depth/stencil buffer
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this depth buffer
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; 
+				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE; // store this stencil buffer
 				descs->initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			}
@@ -210,11 +211,14 @@ namespace luna
 			Gbuff_outputAttachmentRef[0] = { DFR_FBOATTs::COLOR0_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 			Gbuff_outputAttachmentRef[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
-			std::array<VkAttachmentReference, 2> Gbuff_inputAttachmentRef = {};
+			std::array<VkAttachmentReference, 1> Gbuff_inputAttachmentRef = {};
 			Gbuff_inputAttachmentRef[0] = { DFR_FBOATTs::COLOR0_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
-			Gbuff_inputAttachmentRef[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL };
 
 			VkAttachmentReference composite_outputAttachmentRef{DFR_FBOATTs::HDRCOLOR_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+
+			std::array<VkAttachmentReference, 2> nonlighting_outputAttachmentRef = {};
+			nonlighting_outputAttachmentRef[0] = { DFR_FBOATTs::HDRCOLOR_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+			nonlighting_outputAttachmentRef[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }; // post processing data
 
 			// all the subpasses
 			std::array<VkSubpassDescription, DFR_FBOATTs::ALL_SUBPASS> subPass{};
@@ -229,7 +233,7 @@ namespace luna
 			// subpass 1 - lighting
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].flags = 0;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].inputAttachmentCount = static_cast<uint32_t>(Gbuff_inputAttachmentRef.size());;
+			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].inputAttachmentCount = static_cast<uint32_t>(Gbuff_inputAttachmentRef.size());
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pInputAttachments = Gbuff_inputAttachmentRef.data();
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].colorAttachmentCount = 1;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pColorAttachments = &composite_outputAttachmentRef;
@@ -238,12 +242,12 @@ namespace luna
 			// subpass 2 - non lighting pass
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].flags = 0;
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].colorAttachmentCount = 1;
-			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].pColorAttachments = &composite_outputAttachmentRef; // output to the same hdr texture
+			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].colorAttachmentCount = static_cast<uint32_t>(nonlighting_outputAttachmentRef.size());
+			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].pColorAttachments = nonlighting_outputAttachmentRef.data(); // output to the same hdr texture
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].pDepthStencilAttachment = &depthstencilAttachmentRef;
 
 			// Subpass dependencies for layout transitions
-			std::array<VkSubpassDependency, 4> dependencies;
+			std::array<VkSubpassDependency, 4> dependencies{};
 
 			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 			dependencies[0].dstSubpass = DFR_FBOATTs::eSUBPASS_GBUFFER;

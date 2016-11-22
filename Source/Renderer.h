@@ -16,11 +16,13 @@ namespace luna
 	class SSBO;
 
 	class DeferredFBO;
+	class HighPostProcessingFBO;
 	class PresentationFBO;
 
 	class GBufferSubpassShader;
 	class LightingSubpassShader;
 	class SkyBoxShader;
+	class MotionBlurShader;
 	class FinalPassShader;
 	class TextShader;
 
@@ -78,10 +80,8 @@ namespace luna
 		void RecordPresentation_Pri_();
 
 		/* dynamic secondary command buffers rerecord */
-		void RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff);
 		void RecordGBufferSubpass_Sec_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos);
 		void RecordLightingSubpass_Sec_(const VkCommandBuffer commandbuff, const MainDirLightData& dirlightdata, const float& totalpointlights, const glm::vec3& campos);
-		void RecordSkyboxSubpass_Sec_(const VkCommandBuffer commandbuff);
 		void RecordFinalComposition_Sec_(const VkCommandBuffer commandbuff, const int& frameindex);
 		void RecordUIPass_Sec_(const VkCommandBuffer commandbuff, const uint32_t & totaltext, const int& frameindex);
 		
@@ -94,12 +94,14 @@ namespace luna
 
 		/* fbos for gpu to read/write */
 		DeferredFBO* m_deferred_fbo = nullptr;
+		HighPostProcessingFBO* m_highpp_fbo = nullptr;
 		std::vector<PresentationFBO*> m_presentation_fbos;
 
 		/* all the shaders */
 		GBufferSubpassShader* m_gbuffersubpass_shader = nullptr;
 		LightingSubpassShader* m_lightsubpass_shader = nullptr;
 		SkyBoxShader* m_skybox_shader = nullptr;
+		MotionBlurShader* m_motionblur_shader = nullptr;
 		FinalPassShader* m_finalpass_shader = nullptr;
 		TextShader* m_text_shader = nullptr;
 

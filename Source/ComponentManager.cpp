@@ -31,10 +31,10 @@ namespace luna
 
 	void ComponentManager::Update()
 	{
-		m_basicmeshContainer.Update();
+		/*m_basicmeshContainer.Update();
 		m_fontContainer.Update();
 		m_dirlightContainer.Update();
-		m_pointlightContainer.Update();
+		m_pointlightContainer.Update();*/
 		m_scriptContainer.Update();
 		m_cameraContainer.Update();
 		m_transformationContainer.Update(); // transformation always the last one to update

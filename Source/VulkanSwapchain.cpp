@@ -54,7 +54,7 @@ namespace luna
 				WinNative::getInstance()->setWinDrawingSurfaceSizeX(m_swapchainExtent.width);
 				WinNative::getInstance()->setWinDrawingSurfaceSizeY(m_swapchainExtent.height);
 
-				DebugLog::printF("\n x: %u, y: %u", m_swapchainExtent.width, m_swapchainExtent.height);
+				DebugLog::printF("x: %u, y: %u \n", m_swapchainExtent.width, m_swapchainExtent.height);
 			}
 
 			/* get all the available present mode */
@@ -236,7 +236,7 @@ namespace luna
 
 			WinNative::getInstance()->setWinDrawingSurfaceSizeX(m_swapchainExtent.width);
 			WinNative::getInstance()->setWinDrawingSurfaceSizeY(m_swapchainExtent.height);
-			DebugLog::printF("\n x: %u, y: %u", m_swapchainExtent.width, m_swapchainExtent.height);
+			DebugLog::printF("x: %u, y: %u \n", m_swapchainExtent.width, m_swapchainExtent.height);
 		}
 
 		// Determine the number of images

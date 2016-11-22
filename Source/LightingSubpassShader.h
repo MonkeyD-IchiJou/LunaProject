@@ -24,7 +24,6 @@ namespace luna
 		
 		void SetDescriptors(
 			const VulkanImageBufferObject* color0,
-			const VulkanImageBufferObject* color1,
 			const UBO* pointlights_ubo
 		);
 

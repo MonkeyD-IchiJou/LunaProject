@@ -239,13 +239,13 @@ namespace luna
 		DebugLog::EC(vkQueueWaitIdle(queue));
 	}
 
-	VkSampler VulkanImageBufferObject::CreateSampler_(bool mipmap , float miplevel, bool anisotropy, float anisotropylevel)
+	VkSampler VulkanImageBufferObject::CreateSampler_(bool mipmap, VkFilter filter, float miplevel, bool anisotropy, float anisotropylevel)
 	{
 		// image sampler creation
 		VkSamplerCreateInfo samplerinfo{};
 		samplerinfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerinfo.magFilter = VK_FILTER_LINEAR;
-		samplerinfo.minFilter = VK_FILTER_LINEAR;
+		samplerinfo.magFilter = filter;
+		samplerinfo.minFilter = filter;
 		samplerinfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerinfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
 		samplerinfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;

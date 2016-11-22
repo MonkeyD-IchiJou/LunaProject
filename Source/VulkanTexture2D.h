@@ -12,8 +12,8 @@ namespace luna
 		VulkanTexture2D(const std::string& filename);
 
 		// attachment texture to be read/write later
-		VulkanTexture2D(const uint32_t& width, const uint32_t& height, 
-			const VkFormat& format, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspectMask, const VkImageLayout& imagelayout);
+		VulkanTexture2D(const uint32_t& width, const uint32_t& height,
+			const VkFormat& format, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspectMask, const VkImageLayout& imagelayout, VkFilter filter = VK_FILTER_LINEAR);
 
 		virtual ~VulkanTexture2D();
 		

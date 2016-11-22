@@ -92,8 +92,6 @@ namespace luna
 				DebugLog::printF("\n \t");
 				DebugLog::printF(i.extensionName);
 			}
-
-			DebugLog::printF("\n");
 		}
 
 		// only in debug mode we can see the line

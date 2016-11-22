@@ -48,6 +48,8 @@ namespace luna
 			VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL
 		);*/
 
+		Textures[HPP_ATTACHMENT_RGBA16F] = nullptr;
+
 		// font resource init
 		Fonts.resize(MAX_FONT);
 

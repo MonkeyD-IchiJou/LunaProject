@@ -134,7 +134,7 @@ namespace luna
 		DebugLog::EC(vkCreateImageView(m_logicaldevice, &viewInfo, nullptr, &m_imageview));
 	
 		// create sampler for this cube map.. take note of mipmap
-		m_sampler = CreateSampler_(true, static_cast<float>(m_mipLevels), true, 16.f);
+		m_sampler = CreateSampler_(true, VK_FILTER_LINEAR, static_cast<float>(m_mipLevels), true, 16.f);
 	}
 
 	VulkanTextureCube::~VulkanTextureCube()

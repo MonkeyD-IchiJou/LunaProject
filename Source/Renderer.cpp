@@ -6,11 +6,13 @@
 #include "UBO.h"
 
 #include "DeferredFBO.h"
+#include "HighPostProcessingFBO.h"
 #include "PresentationFBO.h"
 
 #include "GBufferSubpassShader.h"
 #include "LightingSubpassShader.h"
 #include "SkyBoxShader.h"
+#include "MotionBlurShader.h"
 #include "FinalPassShader.h"
 #include "TextShader.h"
 
@@ -30,8 +32,8 @@
 #define BASE_RESOLUTION_X 1920
 #define BASE_RESOLUTION_Y 1080
 #else
-#define BASE_RESOLUTION_X 540
-#define BASE_RESOLUTION_Y 1440
+#define BASE_RESOLUTION_X 720
+#define BASE_RESOLUTION_Y 1280
 #endif
 #define MAX_INSTANCEDATA 100
 #define MAX_FONTDATA 256
@@ -62,7 +64,7 @@ namespace luna
 
 			// ubo and ssbo that are unique to this renderer
 			m_ubo = new UBO(sizeof(UBOData));
-			m_pointlights_ubo = new UBO(MAX_POINTLIGHTS * sizeof(PointLightData)); // 64 point lights reserve
+			m_pointlights_ubo = new UBO(MAX_POINTLIGHTS * sizeof(PointLightData)); // 100 point lights reserve
 			m_instance_ssbo = new SSBO(MAX_INSTANCEDATA * sizeof(InstanceData)); // 100 different models reserve
 			m_fontinstance_ssbo = new SSBO(MAX_FONTDATA * sizeof(FontInstanceData)); // 256 different characters reserve
 
@@ -93,7 +95,7 @@ namespace luna
 		VkClearValue clearvalue{};
 		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
 
-		// deferred fbo with 2 subpass
+		// deferred fbo with multiple subpass
 		m_deferred_fbo = new DeferredFBO();
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR0_ATTACHMENT);
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
@@ -101,6 +103,12 @@ namespace luna
 		clearvalue.depthStencil = {1.f, 0};
 		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
+
+		// high post processing fbo, full screen post effects de
+		m_highpp_fbo = new HighPostProcessingFBO();
+		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
+		m_highpp_fbo->Clear(clearvalue, HPP_FBOATTs::HDRCOLOR_ATTACHMENT);
+		m_highpp_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y}); 
 
 		// create framebuffer for each swapchain images
 		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
@@ -133,7 +141,6 @@ namespace luna
 		m_lightsubpass_shader = new LightingSubpassShader();
 		m_lightsubpass_shader->SetDescriptors(
 			texrsc->Textures[eTEXTURES::COLOR0_ATTACHMENT_RGBA32U],
-			texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32U],
 			m_pointlights_ubo
 		);
 		m_lightsubpass_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_LIGHTING);
@@ -143,9 +150,14 @@ namespace luna
 		m_skybox_shader->SetDescriptors(m_ubo, texrsc->Textures[eTEXTURES::YOKOHOMO_CUBEMAP_RGBA8]);
 		m_skybox_shader->Init(DeferredFBO::getRenderPass(), DFR_FBOATTs::eSUBPASS_NONLIGHTING);
 
+		// motion blur shader 
+		m_motionblur_shader = new MotionBlurShader();
+		m_motionblur_shader->SetDescriptors(texrsc->Textures[eTEXTURES::COLOR1_ATTACHMENT_RGBA32U], texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
+		m_motionblur_shader->Init(HighPostProcessingFBO::getRenderPass(), 0);
+
 		// final pass shader init
 		m_finalpass_shader = new FinalPassShader();
-		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HDRTEX_ATTACHMENT_RGBA16F]);
+		m_finalpass_shader->SetDescriptors(texrsc->Textures[eTEXTURES::HPP_ATTACHMENT_RGBA16F]);
 		m_finalpass_shader->Init(PresentationFBO::getRenderPass());
 
 		// text shader init
@@ -207,7 +219,6 @@ namespace luna
 			}
 		}
 
-
 		/* each frames */
 		commandbufferpacket = new CommandBufferPacket(m_queuefamily_index.graphicsFamily, m_logicaldevice);
 	}
@@ -218,8 +229,6 @@ namespace luna
 		FramePacket temp{};
 		std::vector<RenderingInfo> renderinfos;
 
-		RecordCopyDataToOptimal_Sec_(commandbufferpacket->transferdata_secondary_cmdbuff);
-
 		// record the command buffers and update the staging buffers
 		RecordGBufferSubpass_Sec_(
 			commandbufferpacket->gbuffer_secondary_cmdbuff, 
@@ -227,8 +236,6 @@ namespace luna
 		);
 
 		RecordLightingSubpass_Sec_(commandbufferpacket->lightingsubpass_secondary_cmdbuff, temp.dirlightdata, 0.f, temp.maincampos);
-
-		RecordSkyboxSubpass_Sec_(commandbufferpacket->skybox_secondary_cmdbuff);
 
 		for (int i = 0; i < m_presentation_cmdbuffers.size(); ++i)
 		{
@@ -276,10 +283,13 @@ namespace luna
 		// start recording the offscreen command buffers
 		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
 
-		// transfer data to gpu first
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->transferdata_secondary_cmdbuff);
+		// must transfer datas to gpu first
+		m_instance_ssbo->Record(commandbuff);
+		m_fontinstance_ssbo->Record(commandbuff);
+		m_ubo->Record(commandbuff);
+		m_pointlights_ubo->Record(commandbuff);
 
-		// bind the fbo
+		// bind the deferred fbo
 		m_deferred_fbo->Bind(commandbuff, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		// execute the gbuffer pass
@@ -295,12 +305,36 @@ namespace luna
 		// next subpass for non-lighting calculation
 		vkCmdNextSubpass(
 			commandbuff, 
-			VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+			VK_SUBPASS_CONTENTS_INLINE
 		);
-		vkCmdExecuteCommands(commandbuff, 1, &commandbufferpacket->skybox_secondary_cmdbuff);
+		
+		// draw skybox last
+		m_skybox_shader->Bind(commandbuff);
+		m_skybox_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
+
+		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
+		auto s = glm::scale(glm::mat4(), glm::vec3(200.f, 200.f, 200.f));
+		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
+		m_skybox_shader->LoadModel(commandbuff, t * s * r);
+		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(commandbuff);
 
 		// unbind the fbo
 		m_deferred_fbo->UnBind(commandbuff);
+
+
+		// all Post-Processing render pass Begin here
+
+
+		// Hight post-processing effect render pass begin
+		m_highpp_fbo->Bind(commandbuff);
+
+		m_motionblur_shader->Bind(commandbuff);
+		m_motionblur_shader->SetViewPort(commandbuff, m_highpp_fbo->getResolution());
+
+		ModelResources::getInstance()->Models[QUAD_MODEL]->Draw(commandbuff);
+
+		// unbind the fbo
+		m_highpp_fbo->UnBind(commandbuff);
 
 		// finish recording
 		DebugLog::EC(vkEndCommandBuffer(commandbuff));
@@ -339,29 +373,6 @@ namespace luna
 			// finish recording
 			DebugLog::EC(vkEndCommandBuffer(commandbuffer));
 		}
-	}
-
-	void Renderer::RecordCopyDataToOptimal_Sec_(const VkCommandBuffer commandbuff)
-	{
-		// NOTE: I need to rerecord this command buffer if the transfer size exceed the expectation size !!
-		DebugLog::EC(vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
-
-		VkCommandBufferInheritanceInfo inheritanceinfo{};
-		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = &inheritanceinfo;
-
-		DebugLog::EC(vkBeginCommandBuffer(commandbuff, &beginInfo));
-
-		m_instance_ssbo->Record(commandbuff);
-		m_fontinstance_ssbo->Record(commandbuff);
-		m_ubo->Record(commandbuff);
-		m_pointlights_ubo->Record(commandbuff);
-
-		DebugLog::EC(vkEndCommandBuffer(commandbuff));
 	}
 
 	void Renderer::RecordGBufferSubpass_Sec_(const VkCommandBuffer commandbuff, const std::vector<RenderingInfo>& renderinfos)
@@ -451,39 +462,6 @@ namespace luna
 		vkEndCommandBuffer(commandbuff);
 	}
 
-	void Renderer::RecordSkyboxSubpass_Sec_(const VkCommandBuffer commandbuff)
-	{
-		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-
-		VkCommandBufferInheritanceInfo inheritanceinfo{};
-		inheritanceinfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceinfo.framebuffer = m_deferred_fbo->getFramebuffer();
-		inheritanceinfo.subpass = DFR_FBOATTs::eSUBPASS_NONLIGHTING;
-		inheritanceinfo.occlusionQueryEnable = VK_FALSE;
-		inheritanceinfo.renderPass = DeferredFBO::getRenderPass();
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = &inheritanceinfo;
-
-		// start recording the geometry pass command buffer
-		vkBeginCommandBuffer(commandbuff, &beginInfo);
-
-		// draw skybox last
-		m_skybox_shader->Bind(commandbuff);
-		m_skybox_shader->SetViewPort(commandbuff, m_deferred_fbo->getResolution());
-
-		auto t = glm::translate(glm::mat4(), glm::vec3(0.f, 0, 0.f));
-		auto s = glm::scale(glm::mat4(), glm::vec3(200.f, 200.f, 200.f));
-		auto r = glm::rotate(glm::mat4(),  glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f));
-		m_skybox_shader->LoadModel(commandbuff, t * s * r);
-		ModelResources::getInstance()->Models[SKYBOX_MODEL]->Draw(commandbuff);
-
-		// end geometry pass cmd buff
-		vkEndCommandBuffer(commandbuff);
-	}
-
 	void Renderer::RecordFinalComposition_Sec_(const VkCommandBuffer commandbuff, const int& frameindex)
 	{
 		vkResetCommandBuffer(commandbuff, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
@@ -545,7 +523,6 @@ namespace luna
 	{
 		// get the available image to render with
 		uint32_t imageindex = 0;
-
 		DebugLog::EC(m_swapchain->AcquireNextImage(m_presentComplete, &imageindex));
 
 		workers[0]->addJob([&]() {
@@ -587,8 +564,10 @@ namespace luna
 
 	void Renderer::RecreateSwapChain()
 	{
+		// must wait for the gpu to finish everything first
 		vkDeviceWaitIdle(m_logicaldevice);
 
+		// recreate the swapchain
 		m_swapchain->RecreateSwapChain();
 
 		// destroy the presentation fbos and then create them again
@@ -728,6 +707,13 @@ namespace luna
 			m_gbuffersubpass_shader = nullptr;
 		}
 
+		if (m_motionblur_shader != nullptr)
+		{
+			m_motionblur_shader->Destroy();
+			delete m_motionblur_shader;
+			m_motionblur_shader = nullptr;
+		}
+
 		if (m_lightsubpass_shader != nullptr)
 		{
 			m_lightsubpass_shader->Destroy();
@@ -761,6 +747,13 @@ namespace luna
 			m_deferred_fbo->Destroy();
 			delete m_deferred_fbo;
 			m_deferred_fbo = nullptr;
+		}
+
+		if (m_highpp_fbo != nullptr)
+		{
+			m_highpp_fbo->Destroy();
+			delete m_highpp_fbo;
+			m_highpp_fbo = nullptr;
 		}
 
 		for (auto &fbo : m_presentation_fbos)

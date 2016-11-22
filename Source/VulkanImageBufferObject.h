@@ -39,7 +39,7 @@ namespace luna
 		static void CreateStagingBuffer_(const VkDeviceSize& size, VkBuffer& stagingbuffer, VkDeviceMemory& stagingmemory, VkMemoryRequirements& memReqs);
 		static void CopyBufferToImageBuffer_(const std::vector<VkBufferImageCopy>& bufferCopyRegions, 
 			const VkImage& srcImage, VkBuffer& stagingbuffer, VkDeviceMemory& stagingmemory, const VkImageSubresourceRange& subresourceRange);
-		static VkSampler CreateSampler_(bool mipmap = false, float miplevel = 0.0f, bool anisotropy = false, float anisotropylevel = 0.0f);
+		static VkSampler CreateSampler_(bool mipmap = false, VkFilter filter = VK_FILTER_LINEAR, float miplevel = 0.0f, bool anisotropy = false, float anisotropylevel = 0.0f);
 
 		VkFormat m_format = VK_FORMAT_UNDEFINED;
 		size_t m_texsize = 0;

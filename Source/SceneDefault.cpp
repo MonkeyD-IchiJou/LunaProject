@@ -206,7 +206,7 @@ namespace luna
 		}
 
 		// all point lights below
-		for(int i = 0; i < 32; ++i)
+		for(int i = 0; i < 15; ++i)
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("pointlight", m_componentmanager);

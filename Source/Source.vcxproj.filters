@@ -327,9 +327,6 @@
     <ClInclude Include="LightingSubpassShader.h">
       <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="CompositeSubpassShader.h">
-      <Filter>Header Files\Resources\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="DirLightComponent.h">
       <Filter>Header Files\Resources\Components</Filter>
     </ClInclude>
@@ -338,6 +335,12 @@
     </ClInclude>
     <ClInclude Include="PointlightRandomScript.h">
       <Filter>Header Files\Resources\Components\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="HighPostProcessingFBO.h">
+      <Filter>Header Files\Resources\FBOs</Filter>
+    </ClInclude>
+    <ClInclude Include="MotionBlurShader.h">
+      <Filter>Header Files\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -521,9 +524,6 @@
     <ClCompile Include="LightingSubpassShader.cpp">
       <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="CompositeSubpassShader.cpp">
-      <Filter>Source Files\Resources\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="DirLightComponent.cpp">
       <Filter>Source Files\Resources\Components</Filter>
     </ClCompile>
@@ -532,6 +532,12 @@
     </ClCompile>
     <ClCompile Include="PointlightRandomScript.cpp">
       <Filter>Source Files\Resources\Components\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="HighPostProcessingFBO.cpp">
+      <Filter>Source Files\Resources\FBOs</Filter>
+    </ClCompile>
+    <ClCompile Include="MotionBlurShader.cpp">
+      <Filter>Source Files\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

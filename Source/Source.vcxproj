@@ -18,7 +18,6 @@
     <ClInclude Include="CommandBufferPacket.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
-    <ClInclude Include="CompositeSubpassShader.h" />
     <ClInclude Include="DirLightComponent.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="enum_c.h" />
@@ -28,10 +27,12 @@
     <ClInclude Include="DeferredFBO.h" />
     <ClInclude Include="GBufferSubpassShader.h" />
     <ClInclude Include="DescriptorTool.h" />
+    <ClInclude Include="HighPostProcessingFBO.h" />
     <ClInclude Include="LightingSubpassShader.h" />
     <ClInclude Include="Global.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="IOManager.h" />
+    <ClInclude Include="MotionBlurShader.h" />
     <ClInclude Include="PointLightComponent.h" />
     <ClInclude Include="PointlightRandomScript.h" />
     <ClInclude Include="TextChangeScript.h" />
@@ -86,7 +87,6 @@
     <ClCompile Include="CommandBufferPacket.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
-    <ClCompile Include="CompositeSubpassShader.cpp" />
     <ClCompile Include="DirLightComponent.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FontComponent.cpp" />
@@ -95,10 +95,12 @@
     <ClCompile Include="DeferredFBO.cpp" />
     <ClCompile Include="GBufferSubpassShader.cpp" />
     <ClCompile Include="DescriptorTool.cpp" />
+    <ClCompile Include="HighPostProcessingFBO.cpp" />
     <ClCompile Include="LightingSubpassShader.cpp" />
     <ClCompile Include="Global.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IOManager.cpp" />
+    <ClCompile Include="MotionBlurShader.cpp" />
     <ClCompile Include="PointLightComponent.cpp" />
     <ClCompile Include="PointlightRandomScript.cpp" />
     <ClCompile Include="TextChangeScript.cpp" />
