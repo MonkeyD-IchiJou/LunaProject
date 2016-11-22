@@ -12,8 +12,12 @@ layout(location = 0) in vec3 inUVW;
 
 // output as hdr color
 layout (location = 0) out vec4 outFragcolor; // output to hdr texture attachment
+layout (location = 1) out uvec4 outdata;
 
 void main()
 {
 	outFragcolor = texture(samplerCubeMap, inUVW);
+	
+	outdata = uvec4(0.0);
+	
 }

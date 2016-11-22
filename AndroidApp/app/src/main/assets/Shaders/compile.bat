@@ -4,7 +4,7 @@ D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V gbuffersubpass.frag -o gbuffer
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V screenquad.vert -o screenquad_vert.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V lightingsubpass.frag -o lightingsubpass_frag.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V finalpass.frag -o finalpass_frag.spv
-D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V compositesubpass.frag -o compositesubpass_frag.spv
+D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V motionblur.frag -o motionblur_frag.spv
 
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V skybox.vert -o skybox_vert.spv
 D:/VulkanSDK/1.0.30.0/Bin/glslangValidator.exe -V skybox.frag -o skybox_frag.spv
