@@ -10,7 +10,7 @@ namespace luna
 {
 	struct UBOData
 	{
-		glm::mat4 view, transposeinverseview, proj, prevprojview;
+		glm::mat4 view, transposeinverseview, proj, prevview;
 	};
 
 	struct PointLightData

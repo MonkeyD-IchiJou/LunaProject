@@ -23,7 +23,7 @@ namespace luna
 	{
 		auto t = entity->transformation;
 		//t->eulerangles.x += 10.0f * global::DeltaTime;
-		t->eulerangles.y += 200.0f * global::DeltaTime;
+		t->eulerangles.y += 700.0f * global::DeltaTime;
 		//t->eulerangles.z += 10.0f * global::DeltaTime;
 
 		/*if (!change)

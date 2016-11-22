@@ -209,7 +209,7 @@ namespace luna
 				maincamdata.view = cam.GetView();
 				maincamdata.transposeinverseview = glm::transpose(glm::inverse(maincamdata.view));
 				maincamdata.proj = cam.GetProjection();
-				maincamdata.prevprojview = cam.GetPrevProjView();
+				maincamdata.prevview = cam.GetPrevView();
 				maincampos = cam.GetOwner()->transformation->position;
 				break;
 			}

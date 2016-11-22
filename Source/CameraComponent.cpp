@@ -21,7 +21,7 @@ namespace luna
 		if (m_active)
 		{
 			// store the prev proj * view mat4
-			m_prevprojview = m_projection * m_view;
+			m_prevview = m_view;
 
 			auto position = m_owner->transformation->position;
 			m_view = glm::lookAt(position, target, up);

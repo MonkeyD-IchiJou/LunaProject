@@ -247,9 +247,9 @@ namespace luna
 		samplerinfo.magFilter = filter;
 		samplerinfo.minFilter = filter;
 		samplerinfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerinfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-		samplerinfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-		samplerinfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		samplerinfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerinfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerinfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerinfo.compareEnable = VK_FALSE;
 		samplerinfo.compareOp = VK_COMPARE_OP_NEVER; // used for percentage-closer filtering on shadow maps
 		samplerinfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;

@@ -141,7 +141,7 @@ namespace luna
 			VK_FORMAT_D32_SFLOAT_S8_UINT,
 #endif
 
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		);
 		SetAttachment(*imageattachment, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT); // depth stencil attachment
@@ -197,9 +197,9 @@ namespace luna
 				descs->format = m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
 				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this depth buffer
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE; // store this stencil buffer
+				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			}
@@ -220,6 +220,9 @@ namespace luna
 			nonlighting_outputAttachmentRef[0] = { DFR_FBOATTs::HDRCOLOR_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 			nonlighting_outputAttachmentRef[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }; // post processing data
 
+			uint32_t preserveattachment[1] = { DFR_FBOATTs::COLOR1_ATTACHMENT };
+
+
 			// all the subpasses
 			std::array<VkSubpassDescription, DFR_FBOATTs::ALL_SUBPASS> subPass{};
 
@@ -238,6 +241,8 @@ namespace luna
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].colorAttachmentCount = 1;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pColorAttachments = &composite_outputAttachmentRef;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pDepthStencilAttachment = &depthstencilAttachmentRef;
+			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].preserveAttachmentCount = 1;
+			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pPreserveAttachments = preserveattachment;
 
 			// subpass 2 - non lighting pass
 			subPass[DFR_FBOATTs::eSUBPASS_NONLIGHTING].flags = 0;
