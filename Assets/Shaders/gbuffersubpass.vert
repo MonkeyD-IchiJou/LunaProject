@@ -14,8 +14,8 @@ layout(location = 1) out vec4 outWSPos;
 layout(location = 2) out vec4 outMaterialColor;
 layout(location = 3) out vec4 outViewNormal;
 layout(location = 4) out vec4 outWSNormal;
-layout(location = 5) out vec4 outVPos;
-layout(location = 6) out vec4 outVPrevPos;
+layout(location = 5) smooth out vec4 outVPos;
+layout(location = 6) smooth out vec4 outVPrevPos;
 
 out gl_PerVertex
 {
@@ -28,7 +28,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject
 	mat4 view;
 	mat4 transpose_inverse_view;
 	mat4 proj;
-	mat4 prevprojview;
+	mat4 prevview;
 } ubo;
 
 // instance data struct
@@ -61,7 +61,7 @@ void main()
 	outWSPos = instance[index].model * posL;
 	outViewPos = ubo.view * instance[index].model * posL;
 	outVPos = ubo.proj * outViewPos;
-	outVPrevPos = ubo.prevprojview * instance[index].prevmodel * posL;
+	outVPrevPos = ubo.proj * ubo.prevview * instance[index].prevmodel * posL;
 	
 	// texcoord mix with the two normal
 	

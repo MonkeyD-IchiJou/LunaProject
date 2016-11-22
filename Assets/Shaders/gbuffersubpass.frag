@@ -13,8 +13,8 @@ layout(location = 1) in vec4 inWSPos;
 layout(location = 2) in vec4 inMaterialColor;
 layout(location = 3) in vec4 inViewNormal;
 layout(location = 4) in vec4 inWSNormal;
-layout(location = 5) in vec4 inVPos;
-layout(location = 6) in vec4 inVPrevPos;
+layout(location = 5) smooth in vec4 inVPos;
+layout(location = 6) smooth in vec4 inVPrevPos;
 
 // output as color attachment
 layout (location = 0) out uvec4 color0;
