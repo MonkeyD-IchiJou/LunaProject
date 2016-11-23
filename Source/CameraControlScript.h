@@ -3,7 +3,7 @@
 
 #include "Script.h"
 
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 namespace luna
 {
@@ -20,7 +20,7 @@ namespace luna
 		glm::vec2 mouseSpeed{ -0.005f, 0.005f };
 		glm::vec2 currentmousepos{};
 		glm::vec2 prevmousepos{};
-		float magnitude = 25.f;
+		float magnitude = 55.f;
 		float speed = 3.0f; // 3 units / second
 		bool firstclick = true;
 	};

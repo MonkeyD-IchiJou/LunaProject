@@ -199,14 +199,14 @@ namespace luna
 			entity->Awake("dirlight", m_componentmanager);
 			DirLightComponent* dirlightc = dynamic_cast<DirLightComponent*>(entity->AddComponent(COMPONENT_ATYPE::DIRLIGHT_ACTYPE));
 			dirlightc->direction = glm::vec3(0.5f, -0.5f, 1.0f);
-			dirlightc->diffuse = glm::vec3( 0.1f, 0.1f, 0.1f);
+			dirlightc->diffuse = glm::vec3( 0.5f, 0.5f, 0.5f);
 			dirlightc->ambient = glm::vec3(0.01f, 0.01f, 0.01f);
-			dirlightc->specular = 0.1f;
+			dirlightc->specular = 0.5f;
 			m_availableEntities.push_back(entity);
 		}
 
 		// all point lights below
-		for(int i = 0; i < 15; ++i)
+		for(int i = 0; i < 10; ++i)
 		{
 			Entity* entity = GetAvailableEntity_();
 			entity->Awake("pointlight", m_componentmanager);
