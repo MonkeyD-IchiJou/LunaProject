@@ -16,7 +16,7 @@ layout (location = 1) out uvec4 outdata;
 
 void main()
 {
-	outFragcolor = texture(samplerCubeMap, inUVW);
+	outFragcolor = vec4(0.0, 0.0, 0.0, 1.0);
 	
 	outdata = uvec4(0.0);
 	
