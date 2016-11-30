@@ -63,18 +63,17 @@ namespace luna
 			std::vector<VkPresentModeKHR> m_presentmode_list(presentModeCount);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(m_gpu, m_surface, &presentModeCount, m_presentmode_list.data());
 			// default present mode is FIFO
-			VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+			VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // v-sync on
 
 #if VK_USE_PLATFORM_WIN32_KHR
-			//// find the best present mode --> MAILBOX 
-			//for (auto i : m_presentmode_list)
-			//{
-			//	if (i == VK_PRESENT_MODE_MAILBOX_KHR)
-			//	{
-			//		presentMode = i;
-			//		m_totalimageavailable = 2;
-			//	}
-			//}
+			// find the best present mode --> MAILBOX 
+			/*for (auto i : m_presentmode_list)
+			{
+				if (i == VK_PRESENT_MODE_MAILBOX_KHR)
+				{
+					presentMode = i;
+				}
+			}*/
 #endif
 
 			// Find the transformation of the surface
@@ -240,6 +239,7 @@ namespace luna
 		}
 
 		// Determine the number of images
+		// make it 3 even if is in fifo mode
 		if (m_imagecount < surface_capabilities.minImageCount + 1)
 		{
 			m_imagecount = surface_capabilities.minImageCount + 1;
@@ -259,18 +259,17 @@ namespace luna
 		std::vector<VkPresentModeKHR> m_presentmode_list(presentModeCount);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(m_gpu, m_surface, &presentModeCount, m_presentmode_list.data());
 		// default present mode is FIFO
-		VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // v-sync on
 
 #if VK_USE_PLATFORM_WIN32_KHR
-		//// find the best present mode --> MAILBOX 
-		//for (auto i : m_presentmode_list)
-		//{
-		//	if (i == VK_PRESENT_MODE_MAILBOX_KHR)
-		//	{
-		//		presentMode = i;
-		//		m_totalimageavailable = 3;
-		//	}
-		//}
+		// find the best present mode --> MAILBOX 
+		/*for (auto i : m_presentmode_list)
+		{
+			if (i == VK_PRESENT_MODE_MAILBOX_KHR)
+			{
+				presentMode = i;
+			}
+		}*/
 #endif
 
 		// Find the transformation of the surface

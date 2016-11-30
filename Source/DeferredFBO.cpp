@@ -63,8 +63,6 @@ namespace luna
 		m_renderPassInfo.framebuffer = m_framebuffer;
 		m_renderPassInfo.renderArea.offset = { 0, 0 };
 		m_renderPassInfo.renderArea.extent = m_resolution;
-		m_renderPassInfo.clearValueCount = static_cast<uint32_t>(m_clearvalues.size());
-		m_renderPassInfo.pClearValues = m_clearvalues.data();
 	}
 
 	void DeferredFBO::Bind(const VkCommandBuffer & commandbuffer, VkSubpassContents subpasscontent)
@@ -163,7 +161,7 @@ namespace luna
 				auto* descs = &attachmentDescs[DFR_FBOATTs::COLOR0_ATTACHMENT];
 				descs->format = m_attachments[DFR_FBOATTs::COLOR0_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
-				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				descs->loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // dun care about storing this attachment
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -174,7 +172,7 @@ namespace luna
 				descs = &attachmentDescs[DFR_FBOATTs::COLOR1_ATTACHMENT];
 				descs->format = m_attachments[DFR_FBOATTs::COLOR1_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
-				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				descs->loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this attachment
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -185,8 +183,8 @@ namespace luna
 				descs = &attachmentDescs[DFR_FBOATTs::HDRCOLOR_ATTACHMENT];
 				descs->format = m_attachments[DFR_FBOATTs::HDRCOLOR_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
-				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // going to store this attachment
+				descs->loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				descs->storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this attachment
 				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -196,9 +194,9 @@ namespace luna
 				descs = &attachmentDescs[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT];
 				descs->format = m_attachments[DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT].format;
 				descs->samples = VK_SAMPLE_COUNT_1_BIT;
-				descs->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				descs->loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				descs->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descs->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descs->initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 				descs->finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;

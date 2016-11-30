@@ -92,26 +92,15 @@ namespace luna
 
 	void Renderer::CreateRenderPassResources_()
 	{
-		VkClearValue clearvalue{};
-		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
-
 		// deferred fbo with multiple subpass
 		m_deferred_fbo = new DeferredFBO();
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR0_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::COLOR1_ATTACHMENT);
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::HDRCOLOR_ATTACHMENT);
-		clearvalue.depthStencil = {1.f, 0};
-		m_deferred_fbo->Clear(clearvalue, DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT);
 		m_deferred_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y});
 
 		// high post processing fbo, full screen post effects de
 		m_highpp_fbo = new HighPostProcessingFBO();
-		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
-		m_highpp_fbo->Clear(clearvalue, HPP_FBOATTs::HDRCOLOR_ATTACHMENT);
 		m_highpp_fbo->Init({BASE_RESOLUTION_X, BASE_RESOLUTION_Y}); 
 
 		// create framebuffer for each swapchain images
-		clearvalue.color = {0.f, 0.f, 0.f, 1.f};
 		m_presentation_fbos.resize(m_swapchain->getTotalImage());
 		for (int i = 0; i < m_presentation_fbos.size(); i++)
 		{
@@ -122,7 +111,6 @@ namespace luna
 				m_swapchain->getColorFormat(), 
 				PRESENT_FBOATTs::COLOR_ATTACHMENT
 			);
-			m_presentation_fbos[i]->Clear(clearvalue, PRESENT_FBOATTs::COLOR_ATTACHMENT);
 			m_presentation_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
 		}
 
@@ -395,6 +383,18 @@ namespace luna
 
 		// start recording the geometry pass command buffer
 		vkBeginCommandBuffer(commandbuff, &beginInfo);
+
+		// first .. clear all attachments once only 
+		VkClearAttachment att{};
+		att.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+		att.clearValue.depthStencil = { 1.f, 0 };
+		att.colorAttachment = DFR_FBOATTs::DEPTHSTENCIL_ATTACHMENT;
+		VkClearRect rect{};
+		rect.baseArrayLayer = 0;
+		rect.layerCount = 1;
+		rect.rect.extent = m_deferred_fbo->getResolution();
+		rect.rect.offset = { 0, 0 };
+		vkCmdClearAttachments(commandbuff, 1, &att, 1, &rect);
 
 		auto totalrenderinfosize = renderinfos.size();
 

@@ -56,8 +56,6 @@ namespace luna
 		m_renderPassInfo.framebuffer = m_framebuffer;
 		m_renderPassInfo.renderArea.offset = { 0, 0 };
 		m_renderPassInfo.renderArea.extent = m_resolution;
-		m_renderPassInfo.clearValueCount = static_cast<uint32_t>(m_clearvalues.size());
-		m_renderPassInfo.pClearValues = m_clearvalues.data();
 	}
 
 	void PresentationFBO::Bind(const VkCommandBuffer & commandbuffer, VkSubpassContents subpasscontent)
@@ -82,7 +80,7 @@ namespace luna
 			{
 				attachmentDesc.format = m_attachments[PRESENT_FBOATTs::COLOR_ATTACHMENT].format;
 				attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-				attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store this image so that i can present it on the screen
 				attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
