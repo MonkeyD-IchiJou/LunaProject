@@ -13,7 +13,7 @@ LOCAL_CPPFLAGS += -DVK_USE_PLATFORM_ANDROID_KHR
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../Libraries/glm
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../Libraries/gli
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../Libraries/VulkanSDK/1.0.30.0/Include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../Libraries/VulkanSDK/1.0.33.0/Include
 
 LOCAL_SRC_FILES := $(call LS_CPP,$(LOCAL_PATH))
 
