@@ -169,7 +169,7 @@ namespace luna
 		// find a memory type that is suitable for the buffer
 		for (uint32_t i = 0; i < m_gpu_memProperties.memoryTypeCount; ++i)
 		{
-			auto check = (typeFilter & (1 << i)); // must be more than 0
+			auto check = (typeFilter & (1 << i)); // check with second bits
 
 			if (check)
 			{

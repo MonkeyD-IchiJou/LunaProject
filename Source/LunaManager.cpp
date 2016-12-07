@@ -11,6 +11,7 @@
 #define RESOURCEUPDATE3_WORKERID 3
 #define RENDER_WORKERID 4
 #define GAMELOOPING_WORKERID 5
+#define USE_BASICLOOP 1
 
 namespace luna
 {
@@ -47,8 +48,7 @@ namespace luna
 
 	void LunaManager::GameLoop_()
 	{
-		using clock = std::chrono::steady_clock;
-		clock::time_point time_start = clock::now();
+#ifdef USE_BASICLOOP
 
 		auto win = WinNative::getInstance();
 
@@ -66,6 +66,15 @@ namespace luna
 		std::array<Worker*, 2> secondset{};
 		secondset[0] = &workers[RESOURCEUPDATE2_WORKERID];
 		secondset[1] = &workers[RESOURCEUPDATE3_WORKERID];
+
+		// timer preparation
+		using clock = std::chrono::steady_clock;
+
+		std::chrono::nanoseconds lag(0);
+		clock::time_point time_start = clock::now();
+
+		// we use a fixed timestep of 1 / (60 fps) = 16 milliseconds
+		constexpr std::chrono::nanoseconds timestep(16666666);
 
 		while (!win->isClose())
 		{
@@ -97,6 +106,79 @@ namespace luna
 		{
 			workers[i].wait();
 		}
+
+#else
+
+		auto win = WinNative::getInstance();
+
+		// framepacket datas
+		FramePacket framepacket{};
+
+		// first set of worker
+		std::array<Worker*, 2> firstset{};
+		firstset[0] = &workers[RESOURCEUPDATE0_WORKERID];
+		firstset[1] = &workers[RESOURCEUPDATE1_WORKERID];
+
+		// second set of worker
+		std::array<Worker*, 2> secondset{};
+		secondset[0] = &workers[RESOURCEUPDATE2_WORKERID];
+		secondset[1] = &workers[RESOURCEUPDATE3_WORKERID];
+
+		// timer preparation
+		using clock = std::chrono::steady_clock;
+
+		std::chrono::nanoseconds lag(0);
+		clock::time_point time_start = clock::now();
+
+		// we use a fixed timestep of 1 / (60 fps) = 16 milliseconds
+		constexpr std::chrono::nanoseconds timestep(int(0.016 * 1000000000));
+		global::DeltaTime = 0.016f;
+		int updateloop = 0;
+
+		// pre update
+		m_scene->Update(framepacket, firstset);
+
+		while (!win->isClose())
+		{
+			// calc how much time have elapsed from prev frame
+			auto delta_time = clock::now() - time_start;
+
+			// start of this frame
+			time_start = clock::now();
+
+			// add it until more than timestep
+			lag += delta_time;
+
+			// update game logic as lag permits
+			// Fix Time Stamp!!
+			while (lag >= timestep)
+			{
+				// update my scenes
+				m_scene->Update(framepacket, firstset);
+
+				// check how many loops alr
+				updateloop++;
+
+				// reduce it until less than my time stamp
+				lag -= timestep;
+			}
+
+			updateloop = 0;
+
+			workers[RENDER_WORKERID].addJob([&]() {
+				// update datas to the gpu
+				m_renderer->RecordAndRender(framepacket, secondset);
+			});
+			workers[RENDER_WORKERID].wait();
+		}
+
+		// wait for all the worker except the game looping one
+		for (int i = 0; i < GAMELOOPING_WORKERID; ++i)
+		{
+			workers[i].wait();
+		}
+#endif
+
 	}
 
 	void LunaManager::InitResources_()

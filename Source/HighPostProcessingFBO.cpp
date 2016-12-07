@@ -13,7 +13,6 @@ namespace luna
 	HighPostProcessingFBO::HighPostProcessingFBO()
 	{
 		m_attachments.resize(HPP_FBOATTs::ALL_ATTACHMENTS);
-		m_clearvalues.resize(HPP_FBOATTs::ALL_ATTACHMENTS);
 	}
 
 	HighPostProcessingFBO::~HighPostProcessingFBO()
@@ -56,6 +55,7 @@ namespace luna
 
 		// init the renderpass info
 		m_renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		m_renderPassInfo.clearValueCount = 0;
 		m_renderPassInfo.renderPass = m_renderpass;
 		m_renderPassInfo.framebuffer = m_framebuffer;
 		m_renderPassInfo.renderArea.offset = { 0, 0 };

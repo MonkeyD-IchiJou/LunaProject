@@ -13,7 +13,6 @@ namespace luna
 	DeferredFBO::DeferredFBO()
 	{
 		m_attachments.resize(DFR_FBOATTs::ALL_ATTACHMENTS);
-		m_clearvalues.resize(DFR_FBOATTs::ALL_ATTACHMENTS);
 	}
 
 	DeferredFBO::~DeferredFBO()
@@ -59,6 +58,7 @@ namespace luna
 
 		// init the renderpass info
 		m_renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		m_renderPassInfo.clearValueCount = 0;
 		m_renderPassInfo.renderPass = m_renderpass;
 		m_renderPassInfo.framebuffer = m_framebuffer;
 		m_renderPassInfo.renderArea.offset = { 0, 0 };
@@ -238,7 +238,7 @@ namespace luna
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pInputAttachments = Gbuff_inputAttachmentRef.data();
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].colorAttachmentCount = 1;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pColorAttachments = &composite_outputAttachmentRef;
-			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pDepthStencilAttachment = &depthstencilAttachmentRef;
+			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pDepthStencilAttachment = &depthstencilAttachmentRef; // stencil mask usage
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].preserveAttachmentCount = 1;
 			subPass[DFR_FBOATTs::eSUBPASS_LIGHTING].pPreserveAttachments = preserveattachment;
 

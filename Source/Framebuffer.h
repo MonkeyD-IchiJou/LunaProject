@@ -37,9 +37,6 @@ namespace luna
 		/* unbind the framebuffer and end the render pass */
 		void UnBind(const VkCommandBuffer& commandbuffer);
 
-		// color/depth/stencil clearing
-		inline void Clear(const VkClearValue & clearvalue, const uint32_t& i) { m_clearvalues[i] = clearvalue; }
-
 		/* get the width and height of the framebuffer */
 		inline VkExtent2D getResolution() const { return m_resolution; }
 
@@ -71,9 +68,6 @@ namespace luna
 
 		/* every framebuffer must have at least one attachment to draw/read at*/
 		std::vector<FramebufferAttachment> m_attachments;
-
-		/* clear color/depth at the beggining of the frame */
-		std::vector<VkClearValue> m_clearvalues;
 
 		VkRenderPassBeginInfo m_renderPassInfo{};
 

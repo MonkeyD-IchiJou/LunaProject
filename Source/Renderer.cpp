@@ -577,8 +577,6 @@ namespace luna
 		}
 
 		// create framebuffer for each swapchain images
-		VkClearValue clearvalue{};
-		clearvalue.color = {0.f, 1.f, 0.f, 1.f};
 		for (int i = 0; i < m_presentation_fbos.size(); i++)
 		{
 			m_presentation_fbos[i]->SetAttachment(
@@ -587,7 +585,6 @@ namespace luna
 				m_swapchain->getColorFormat(), 
 				PRESENT_FBOATTs::COLOR_ATTACHMENT
 			);
-			m_presentation_fbos[i]->Clear(clearvalue, PRESENT_FBOATTs::COLOR_ATTACHMENT);
 			m_presentation_fbos[i]->Init(m_swapchain->getExtent()); // must be the same as swap chain extent
 		}
 

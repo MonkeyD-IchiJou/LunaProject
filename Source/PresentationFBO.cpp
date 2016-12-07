@@ -12,7 +12,6 @@ namespace luna
 	PresentationFBO::PresentationFBO()
 	{
 		m_attachments.resize(PRESENT_FBOATTs::ALL_ATTACHMENTS);
-		m_clearvalues.resize(PRESENT_FBOATTs::ALL_ATTACHMENTS);
 	}
 
 	PresentationFBO::~PresentationFBO()
@@ -52,6 +51,7 @@ namespace luna
 
 		// render pass info preinit
 		m_renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		m_renderPassInfo.clearValueCount = 0;
 		m_renderPassInfo.renderPass = m_renderpass;
 		m_renderPassInfo.framebuffer = m_framebuffer;
 		m_renderPassInfo.renderArea.offset = { 0, 0 };
@@ -149,9 +149,7 @@ namespace luna
 
 		// image views are from swap chain
 		m_attachments.clear();
-		m_clearvalues.clear();
 
 		m_attachments.resize(PRESENT_FBOATTs::ALL_ATTACHMENTS);
-		m_clearvalues.resize(PRESENT_FBOATTs::ALL_ATTACHMENTS);
 	}
 }
