@@ -12,7 +12,7 @@ layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outFragcolor; // output as hdr color
 
 const float uVelocityScale = 1.2; // currentfps / targetfps
-const int MAX_SAMPLES = 48;
+const int MAX_SAMPLES = 64;
 
 void main()
 {

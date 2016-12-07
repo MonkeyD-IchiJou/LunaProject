@@ -5,13 +5,10 @@
 layout (binding = 0) uniform usampler2D InputData; // velocity data
 layout (binding = 1) uniform sampler2D InputColor; // color tex that need to be post-processed
 
-// input from vertex shader
-layout (location = 0) in vec2 inUV;
-
 // output as color
 layout (location = 0) out vec4 outFragcolor; // output as hdr color
 
-const float uVelocityScale = 1.2; // currentfps / targetfps
+const float uVelocityScale = 1.0; // currentfps / targetfps
 const int MAX_SAMPLES = 64;
 
 void main()

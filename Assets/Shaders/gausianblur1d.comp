@@ -47,5 +47,6 @@ void main()
 		result += imageLoad(inputImage, rightOffset[i]).rgb * weight[i];
 		result += imageLoad(inputImage, leftOffset[i]).rgb * weight[i];
 	}
+	
 	imageStore(resultImage, pixel_coords, vec4(result, 1.0));
 }

@@ -5,7 +5,7 @@
 layout(location = 0) in vec4 inPositionUV;
 
 // output uv to fragment
-layout (location = 0) out vec2 outUV;
+layout (location = 0) noperspective out vec2 outUV;
 
 out gl_PerVertex
 {

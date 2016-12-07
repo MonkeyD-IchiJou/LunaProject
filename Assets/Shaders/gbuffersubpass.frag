@@ -25,20 +25,17 @@ void main()
 	uvec4 outvec0 = uvec4(0);
 	uvec4 outvec1 = uvec4(0);
 	
-	vec4 NormalizedViewNormal = inViewNormal;
-	vec4 NormalizedWSNormal = inWSNormal;
-	
-	vec4 color = texture(samplerColor, vec2(NormalizedViewNormal.w, NormalizedWSNormal.w)) + vec4(inMaterialColor.xyz, 0.0);
+	vec4 color = texture(samplerColor, vec2(inViewNormal.w, inWSNormal.w)) + vec4(inMaterialColor.xyz, 0.0);
 	// inMaterialColor.a // material id
 	
 	outvec0.x = packUnorm4x8(color);
-	outvec0.y = packHalf2x16(NormalizedWSNormal.xy);
-	outvec0.z = packHalf2x16(vec2(NormalizedWSNormal.z, inWSPos.x));
+	outvec0.y = packHalf2x16(inWSNormal.xy);
+	outvec0.z = packHalf2x16(vec2(inWSNormal.z, inWSPos.x));
 	outvec0.w = packHalf2x16(inWSPos.yz);
 	
 	outvec1.x = packHalf2x16(inViewPos.xy);
-	outvec1.y = packHalf2x16(vec2(inViewPos.z, NormalizedViewNormal.x));
-	outvec1.z = packHalf2x16(NormalizedViewNormal.yz);
+	outvec1.y = packHalf2x16(vec2(inViewPos.z, inViewNormal.x));
+	outvec1.z = packHalf2x16(inViewNormal.yz);
 	
 	// velocity buffer calc
 	vec2 a = (inVPos.xy / inVPos.w) * 0.5 + 0.5;
